@@ -2,6 +2,28 @@
 #include <Api.h>
 #undef SANDBOX_ENGINE_INCLUDE_DEPENDENCIES
 
+extern u32 status;
+
+std::string const vertexShaderSource
+{
+R"glsl(
+void main()
+{
+
+}
+)glsl"
+};
+
+std::string const fragmentShaderSource
+{
+R"glsl(
+void main()
+{
+
+}
+)glsl"
+};
+
 s32 main()
 {
   r32 time{};
@@ -11,15 +33,15 @@ s32 main()
 
   r32 const renderRate{ 1.f / 60 };
 
-  GLFWwindow* pWindow{};
+  Window window{};
+  Model model{};
+  Shader shader{};
 
-  Mesh mesh{};
-  Material material{};
+  CreateWindow(window, 1280, 720, "Sandbox");
+  CreateModel(model, "C:\\Users\\Burmi\\Downloads\\Sandbox\\Models\\cozy_room.fbx");
+  CreateShader(shader, vertexShaderSource, fragmentShaderSource);
 
-  CreateWindow(pWindow, 1280, 720, "Sandbox");
-  CreateModel(mesh, material, "C:\\Users\\Michael\\Downloads\\Sandbox\\Models\\cozy_room.fbx");
-
-  while (1)
+  while (!status)
   {
     time = (r32)glfwGetTime();
     timeDelta = time - timePrev;
@@ -32,13 +54,13 @@ s32 main()
       timeRenderPrev = time;
     }
 
-    glfwSwapBuffers(pWindow);
+    glfwSwapBuffers(window.mpHdl);
     glfwPollEvents();
 
     timePrev = time;
   }
 
-  glfwDestroyWindow(pWindow);
+  glfwDestroyWindow(window.mpHdl);
 
   return 0;
 }

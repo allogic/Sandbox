@@ -150,15 +150,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source\Api.cpp" />
-    <ClCompile Include="Source\Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\Api.h" />
-    <ClInclude Include="Include\Material.h" />
-    <ClInclude Include="Include\Mesh.h" />
+    <ClInclude Include="Include\Common.h" />
+    <ClInclude Include="Include\Core.h" />
     <ClInclude Include="Include\Types.h" />
-    <ClInclude Include="Include\Shader.h" />
-    <ClInclude Include="Include\Vertex.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
