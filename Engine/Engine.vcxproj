@@ -155,6 +155,7 @@
     <ClInclude Include="Include\Api.h" />
     <ClInclude Include="Include\Common.h" />
     <ClInclude Include="Include\Core.h" />
+    <ClInclude Include="Include\Fwdecls.h" />
     <ClInclude Include="Include\Types.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
