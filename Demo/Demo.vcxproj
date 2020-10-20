@@ -151,6 +151,14 @@
   <ItemGroup>
     <ClCompile Include="..\Source\glad.c" />
     <ClCompile Include="Source\Main.cpp" />
+    <ClCompile Include="Source\Scenes\ModelLoading.cpp" />
+    <ClCompile Include="Source\Scenes\RayTracing.cpp" />
+    <ClCompile Include="Source\Scenes\DebugUtilities.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Include\Scenes\ModelLoading.h" />
+    <ClInclude Include="Include\Scenes\RayTracing.h" />
+    <ClInclude Include="Include\Scenes\DebugUtilities.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

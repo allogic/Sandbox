@@ -2,10 +2,22 @@
 #include <Api.h>
 #undef SANDBOX_ENGINE_INCLUDE_DEPENDENCIES
 
+std::vector<Scene*> sScenes      {};
+Scene*              spSceneActive{};
+
+s32 sStatus{};
+u32 sWidth { 1280 };
+u32 sHeight{ 720 };
+r32 sAspect{ (r32)sWidth / sHeight };
+
 MouseMoveClb   sOnMouseMove  {};
 MouseButtonClb sOnMouseButton{};
 WindowCloseClb sOnWindowClose{};
 KeyboardClb    sOnKeyboard   {};
+
+/*
+* Debug utilities.
+*/
 
 bool CheckShaderStatus(u32 id, u32 type, std::string& log) {
   int compileInfo, compileInfoSize;
@@ -23,7 +35,11 @@ bool CheckShaderStatus(u32 id, u32 type, std::string& log) {
   return true;
 }
 
-void CreateContext(Context& context, u32 width, u32 height, std::string const& title)
+/*
+* OpenGL context specific.
+*/
+
+void ContextCreate(GLFWwindow*& pHandle, u32 width, u32 height, std::string const& title)
 {
   glfwInit();
 
@@ -32,22 +48,115 @@ void CreateContext(Context& context, u32 width, u32 height, std::string const& t
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-  context.mpWindow = glfwCreateWindow((s32)width, (s32)height, title.data(), nullptr, nullptr);
+  pHandle = glfwCreateWindow((s32)width, (s32)height, title.data(), nullptr, nullptr);
 
-  glfwSetWindowUserPointer(context.mpWindow, &context);
+  glfwSetWindowCloseCallback(pHandle, sOnWindowClose);
+  glfwSetCursorPosCallback(pHandle, sOnMouseMove);
+  glfwSetMouseButtonCallback(pHandle, sOnMouseButton);
+  glfwSetKeyCallback(pHandle, sOnKeyboard);
 
-  glfwSetWindowCloseCallback(context.mpWindow, sOnWindowClose);
-  glfwSetCursorPosCallback(context.mpWindow, sOnMouseMove);
-  glfwSetMouseButtonCallback(context.mpWindow, sOnMouseButton);
-  glfwSetKeyCallback(context.mpWindow, sOnKeyboard);
-
-  glfwMakeContextCurrent(context.mpWindow);
+  glfwMakeContextCurrent(pHandle);
   glfwSwapInterval(0);
 
   gladLoadGL();
 }
 
-void CreateShader(Shader& shader, std::string const& vertexShaderSource, std::string const& fragmentShaderSource)
+/*
+* Scene management.
+*/
+
+void SceneCreate(Scene* pScene)
+{
+  sScenes.emplace_back(pScene);
+
+  if (!spSceneActive)
+  {
+    spSceneActive = sScenes.back();
+    spSceneActive->OnEnable(sAspect);
+  }
+}
+void SceneSwitch(u32 index)
+{
+  spSceneActive->OnDisable();
+  spSceneActive = sScenes[index];
+  spSceneActive->OnEnable(sAspect);
+}
+void SceneActive(Scene*& pScene)
+{
+  pScene = spSceneActive;
+}
+void SceneDestroyAll()
+{
+  spSceneActive = nullptr;
+
+  for (auto pScene : sScenes)
+  {
+    pScene->OnDisable();
+    delete pScene;
+  }
+
+  sScenes.clear();
+}
+
+/*
+* Camera management.
+*/
+
+void CameraCreate(Camera& camera, r32v3 const& position, r32 fov, r32 aspect, r32 near, r32 far)
+{
+  r32 const fovRad{ glm::radians(fov) };
+  r32v3 const right{ 1.f, 0.f, 0.f };
+  r32v3 const up{ 0.f, 1.f, 0.f };
+  r32v3 const front{ 0.f, 0.f, 1.f };
+
+  camera =
+  {
+    .mPosition  { position },
+    .mFovRad    { fovRad },
+    .mRight     { right },
+    .mUp        { up },
+    .mFront     { front },
+    .mLocalRight{ right },
+    .mLocalUp   { up },
+    .mLocalFront{ front },
+    .mNear      { near },
+    .mFar       { far },
+    .mProjection{ glm::perspective(fovRad, aspect, near, far) },
+    .mView      { glm::lookAt(position, position + front, up) },
+  };
+}
+void CameraUpdateController(Camera& camera, CameraControllerOrbit& controller, r32 timeDelta)
+{
+  if (glm::length(controller.mRotationVelocity) > controller.mRotationDeadzone)
+    controller.mRotationVelocity += -controller.mRotationVelocity * controller.mRotationDecay * timeDelta;
+  else
+    controller.mRotationVelocity = { 0.f, 0.f };
+
+  controller.mRotationVelocity += controller.mRotationDrag * controller.mRotationSpeed * timeDelta;
+
+  if (controller.mRotationVelocity.x > 180.f) controller.mRotationVelocity.x = -180.f;
+  if (controller.mRotationVelocity.x < -180.f) controller.mRotationVelocity.x = 180.f;
+
+  if (controller.mRotationVelocity.y > 180.f) controller.mRotationVelocity.y = -180.f;
+  if (controller.mRotationVelocity.y < -180.f) controller.mRotationVelocity.y = 180.f;
+
+  r32m4 localRotation{ glm::identity<r32m4>() };
+  localRotation = glm::rotate(localRotation, glm::radians(controller.mRotationVelocity.y), camera.mLocalRight);
+  localRotation = glm::rotate(localRotation, glm::radians(controller.mRotationVelocity.x), camera.mLocalUp);
+
+  camera.mLocalRight = localRotation * r32v4{ camera.mLocalRight, 1.f };
+  camera.mLocalUp = localRotation * r32v4{ camera.mLocalUp, 1.f };
+  camera.mLocalFront = localRotation * r32v4{ camera.mLocalFront, 1.f };
+
+  camera.mProjection = glm::perspective(camera.mFovRad, sAspect, camera.mNear, camera.mFar);
+  camera.mView = glm::lookAt(camera.mPosition, camera.mPosition + camera.mLocalFront, camera.mLocalUp);
+}
+
+/*
+* Shader management.
+*/
+
+void ShaderCreate(Shader& shader, std::string const& vertexShaderSource, std::string const& fragmentShaderSource)
 {
   shader.mPid = glCreateProgram();
   shader.mVid = glCreateShader(GL_VERTEX_SHADER);
@@ -76,8 +185,18 @@ void CreateShader(Shader& shader, std::string const& vertexShaderSource, std::st
   if (CheckShaderStatus(shader.mFid, GL_LINK_STATUS, log))
     std::printf("%s\n", log.data());
 }
+void ShaderDestroy(Shader const& shader)
+{
+  glDeleteShader(shader.mVid);
+  glDeleteShader(shader.mFid);
+  glDeleteProgram(shader.mPid);
+}
 
-void CreateMesh(Mesh& mesh, std::vector<r32> const& vertexLayout, u32 numVertexElements, std::vector<u32> const& indices)
+/*
+* Geometry management.
+*/
+
+void MeshCreate(Mesh& mesh, std::vector<r32> const& vertexLayout, u32 numVertexElements, std::vector<u32> const& indices)
 {
   mesh =
   {
@@ -104,8 +223,16 @@ void CreateMesh(Mesh& mesh, std::vector<r32> const& vertexLayout, u32 numVertexE
 
   glBindVertexArray(0);
 }
+void MeshDestroy(Mesh const& mesh)
+{
+  glDeleteBuffers(1, &mesh.mVbo);
+  glDeleteBuffers(1, &mesh.mEbo);
+  glDeleteVertexArrays(1, &mesh.mVao);
 
-void CreateModel(Model& model, std::string const& fileName)
+  delete[] mesh.mpVertices;
+  delete[] mesh.mpIndices;
+}
+void ModelCreate(Model& model, std::string const& fileName)
 {
   Assimp::Importer importer{};
 
@@ -181,56 +308,10 @@ void CreateModel(Model& model, std::string const& fileName)
 
   model.mTransform = glm::identity<r32m4>();
 }
-
-void CreateCamera(Camera& camera, r32v3 const& position, r32 fov, r32 aspect, r32 near, r32 far)
+void ModelDestroy(Model const& model)
 {
-  r32 const fovRad{ glm::radians(fov) };
-  r32v3 const right{ 1.f, 0.f, 0.f };
-  r32v3 const up{ 0.f, 1.f, 0.f };
-  r32v3 const front{ 0.f, 0.f, 1.f };
-
-  camera =
-  {
-    .mPosition  { position },
-    .mFovRad    { fovRad },
-    .mRight     { right },
-    .mUp        { up },
-    .mFront     { front },
-    .mLocalRight{ right },
-    .mLocalUp   { up },
-    .mLocalFront{ front },
-    .mNear      { near },
-    .mFar       { far },
-    .mProjection{ glm::perspective(fovRad, aspect, near, far) },
-    .mView      { glm::lookAt(position, position + front, up) },
-  };
-}
-
-void UpdateCamera(Camera& camera, r32 aspect, r32 timeDelta)
-{
-  if (glm::length(camera.mRotationVelocity) > camera.mRotationDeadzone)
-    camera.mRotationVelocity += -camera.mRotationVelocity * camera.mRotationDecay * timeDelta;
-  else
-    camera.mRotationVelocity = { 0.f, 0.f };
-
-  camera.mRotationVelocity += camera.mRotationDrag * camera.mRotationSpeed * timeDelta;
-
-  if (camera.mRotationVelocity.x > 180.f) camera.mRotationVelocity.x = -180.f;
-  if (camera.mRotationVelocity.x < -180.f) camera.mRotationVelocity.x = 180.f;
-
-  if (camera.mRotationVelocity.y > 180.f) camera.mRotationVelocity.y = -180.f;
-  if (camera.mRotationVelocity.y < -180.f) camera.mRotationVelocity.y = 180.f;
-
-  r32m4 localRotation{ glm::identity<r32m4>() };
-  localRotation = glm::rotate(localRotation, glm::radians(camera.mRotationVelocity.y), camera.mLocalRight);
-  localRotation = glm::rotate(localRotation, glm::radians(camera.mRotationVelocity.x), camera.mLocalUp);
-
-  camera.mLocalRight = localRotation * r32v4{ camera.mLocalRight, 1.f };
-  camera.mLocalUp = localRotation * r32v4{ camera.mLocalUp, 1.f };
-  camera.mLocalFront = localRotation * r32v4{ camera.mLocalFront, 1.f };
-
-  camera.mProjection = glm::perspective(camera.mFovRad, aspect, camera.mNear, camera.mFar);
-  camera.mView = glm::lookAt(camera.mPosition, camera.mPosition + camera.mLocalFront, camera.mLocalUp);
+  for (auto const& mesh : model.mMeshes)
+    MeshDestroy(mesh);
 }
 
 void ApplyUniformMat4(Shader const& shader, std::string const& name, r32m4 const& matrix)
@@ -243,13 +324,11 @@ void BindShader(Shader const& shader)
 {
   glUseProgram(shader.mPid);
 }
-
 void BindMesh(Mesh const& mesh)
 {
   glBindVertexArray(mesh.mVao);
   glDrawElements(GL_TRIANGLES, mesh.mNumIndices, GL_UNSIGNED_INT, nullptr);
 }
-
 void BindModel(Model const& model)
 {
   for (auto const& mesh : model.mMeshes)
@@ -257,4 +336,21 @@ void BindModel(Model const& model)
     glBindVertexArray(mesh.mVao);
     glDrawElements(GL_TRIANGLES, mesh.mNumIndices, GL_UNSIGNED_INT, nullptr); // use glDrawArrays here
   }
+}
+
+void LineBatchBegin()
+{
+
+}
+void LinePush(r32v3 const& p0, r32v3 const& p1, r32v3 const& c0, r32v3 const& c1)
+{
+
+}
+void LineBatchEnd()
+{
+
+}
+void LineBatchRender(Shader const& shader)
+{
+
 }

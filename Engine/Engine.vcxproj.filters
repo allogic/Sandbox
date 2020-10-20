@@ -30,6 +30,9 @@
     <ClInclude Include="Include\Fwdecls.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Include\Primitives.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Api.cpp">

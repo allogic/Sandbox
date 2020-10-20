@@ -7,11 +7,6 @@
 using Materials = std::vector<Material>;
 using Meshes    = std::vector<Mesh>;
 
-struct SANDBOX_ENGINE_API Context
-{
-  GLFWwindow* mpWindow{};
-};
-
 struct SANDBOX_ENGINE_API Material
 {
   
@@ -55,6 +50,10 @@ struct SANDBOX_ENGINE_API Camera
   r32   mFar             {};
   r32m4 mProjection      {};
   r32m4 mView            {};
+};
+
+struct SANDBOX_ENGINE_API CameraControllerOrbit
+{
   r32   mPositionSpeed   { 1000.f };
   r32   mRotationSpeed   { 3.f };
   u32   mLockDrag        {};
@@ -74,4 +73,16 @@ struct SANDBOX_ENGINE_API Shader
   u32 mPid{};
   u32 mVid{};
   u32 mFid{};
+};
+
+struct SANDBOX_ENGINE_API Scene
+{
+  Camera mCamera{};
+
+  virtual ~Scene() = default;
+
+  virtual void OnEnable(r32 aspect) = 0;
+  virtual void OnDisable() = 0;
+  virtual void OnUpdate(r32 timeDelta) = 0;
+  virtual void OnRender() const = 0;
 };
