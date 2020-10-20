@@ -63,7 +63,7 @@ extern "C" SANDBOX_ENGINE_API void ShaderDestroy(Shader const& shader);
 * Geometry management.
 */
 
-extern "C" SANDBOX_ENGINE_API void MeshCreate(Mesh& mesh, std::vector<r32> const& vertexLayout, u32 numVertexElements, std::vector<u32> const& indices);
+extern "C" SANDBOX_ENGINE_API void MeshCreate(Mesh& mesh, std::vector<Vertex> const& vertices, std::vector<u32> const& indices);
 extern "C" SANDBOX_ENGINE_API void MeshDestroy(Mesh const& mesh);
 extern "C" SANDBOX_ENGINE_API void ModelCreate(Model& model, std::string const& fileName);
 extern "C" SANDBOX_ENGINE_API void ModelDestroy(Model const& model);
@@ -74,7 +74,13 @@ extern "C" SANDBOX_ENGINE_API void BindShader(Shader const& shader);
 extern "C" SANDBOX_ENGINE_API void BindMesh(Mesh const& mesh);
 extern "C" SANDBOX_ENGINE_API void BindModel(Model const& model);
 
+/*
+* 3D debug utilities.
+*/
+
+extern "C" SANDBOX_ENGINE_API void LineBatchCreate();
 extern "C" SANDBOX_ENGINE_API void LineBatchBegin();
 extern "C" SANDBOX_ENGINE_API void LinePush(r32v3 const& p0, r32v3 const& p1, r32v3 const& c0, r32v3 const& c1);
 extern "C" SANDBOX_ENGINE_API void LineBatchEnd();
 extern "C" SANDBOX_ENGINE_API void LineBatchRender(Shader const& shader);
+extern "C" SANDBOX_ENGINE_API void LineBatchDestroy();

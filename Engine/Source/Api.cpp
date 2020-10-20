@@ -15,6 +15,8 @@ MouseButtonClb sOnMouseButton{};
 WindowCloseClb sOnWindowClose{};
 KeyboardClb    sOnKeyboard   {};
 
+Mesh sMeshLineBatch{};
+
 /*
 * Debug utilities.
 */
@@ -196,13 +198,10 @@ void ShaderDestroy(Shader const& shader)
 * Geometry management.
 */
 
-void MeshCreate(Mesh& mesh, std::vector<r32> const& vertexLayout, u32 numVertexElements, std::vector<u32> const& indices)
+void MeshCreate(Mesh& mesh, std::vector<Vertex> const& vertices, std::vector<u32> const& indices)
 {
-  mesh =
-  {
-    .mNumVertices{ (u32)vertexLayout.size() / numVertexElements },
-    .mNumIndices { (u32)indices.size() },
-  };
+  mesh.mVertices = vertices;
+  mesh.mIndices = indices;
 
   glGenVertexArrays(1, &mesh.mVao);
   glGenBuffers(1, &mesh.mVbo);
@@ -211,15 +210,17 @@ void MeshCreate(Mesh& mesh, std::vector<r32> const& vertexLayout, u32 numVertexE
   glBindVertexArray(mesh.mVao);
 
   glBindBuffer(GL_ARRAY_BUFFER, mesh.mVbo);
-  glBufferData(GL_ARRAY_BUFFER, vertexLayout.size() * sizeof(r32), vertexLayout.data(), GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, mesh.mVertices.size() * sizeof(Vertex), mesh.mVertices.data(), GL_STATIC_DRAW);
 
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(r32), nullptr);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(r32), (void*)(3 * sizeof(r32)));
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(r32v3)));
+  glEnableVertexAttribArray(2);
+  glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(2 * sizeof(r32v3)));
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.mEbo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(u32), indices.data(), GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.mIndices.size() * sizeof(u32), mesh.mIndices.data(), GL_STATIC_DRAW);
 
   glBindVertexArray(0);
 }
@@ -228,9 +229,6 @@ void MeshDestroy(Mesh const& mesh)
   glDeleteBuffers(1, &mesh.mVbo);
   glDeleteBuffers(1, &mesh.mEbo);
   glDeleteVertexArrays(1, &mesh.mVao);
-
-  delete[] mesh.mpVertices;
-  delete[] mesh.mpIndices;
 }
 void ModelCreate(Model& model, std::string const& fileName)
 {
@@ -245,13 +243,9 @@ void ModelCreate(Model& model, std::string const& fileName)
     if (!(pMesh->mPrimitiveTypes & aiPrimitiveType_TRIANGLE))
       continue;
 
-    Mesh mesh
-    {
-      .mNumVertices{ pMesh->mNumVertices },
-      .mNumIndices { pMesh->mNumFaces * 3 },
-      .mpVertices  { new Vertex[pMesh->mNumVertices] },
-      .mpIndices   { new u32[pMesh->mNumFaces * 3] },
-    };
+    Mesh mesh{};
+    mesh.mVertices.resize(pMesh->mNumVertices);
+    mesh.mIndices.resize(pMesh->mNumFaces * 3);
 
     glGenVertexArrays(1, &mesh.mVao);
     glGenBuffers(1, &mesh.mVbo);
@@ -261,30 +255,33 @@ void ModelCreate(Model& model, std::string const& fileName)
 
     for (u32 j{}; j < pMesh->mNumVertices; j++)
     {
-      mesh.mpVertices[j] =
+      mesh.mVertices[j] =
       {
         .mPosition{ pMesh->mVertices[j].x, pMesh->mVertices[j].y, pMesh->mVertices[j].z },
-        .mNormal{ pMesh->mNormals[j].x, pMesh->mNormals[j].y, pMesh->mNormals[j].z },
+        .mNormal  { pMesh->mNormals[j].x, pMesh->mNormals[j].y, pMesh->mNormals[j].z },
+        .mColor   { pMesh->mColors[j]->r, pMesh->mColors[j]->g, pMesh->mColors[j]->b, pMesh->mColors[j]->a },
       };
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, mesh.mVbo);
-    glBufferData(GL_ARRAY_BUFFER, mesh.mNumVertices * sizeof(Vertex), mesh.mpVertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, mesh.mVertices.size() * sizeof(Vertex), mesh.mVertices.data(), GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(r32v3)));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(2 * sizeof(r32v3)));
 
     for (u32 j{}, k{}; j < pMesh->mNumFaces; j++, k += 3)
     {
-      mesh.mpIndices[k + 0] = { pMesh->mFaces[j].mIndices[0] };
-      mesh.mpIndices[k + 1] = { pMesh->mFaces[j].mIndices[1] };
-      mesh.mpIndices[k + 2] = { pMesh->mFaces[j].mIndices[2] };
+      mesh.mIndices[k + 0] = { pMesh->mFaces[j].mIndices[0] };
+      mesh.mIndices[k + 1] = { pMesh->mFaces[j].mIndices[1] };
+      mesh.mIndices[k + 2] = { pMesh->mFaces[j].mIndices[2] };
     }
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.mEbo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.mNumIndices * sizeof(u32), mesh.mpIndices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.mIndices.size() * sizeof(u32), mesh.mIndices.data(), GL_STATIC_DRAW);
 
     glBindVertexArray(0);
 
@@ -327,30 +324,67 @@ void BindShader(Shader const& shader)
 void BindMesh(Mesh const& mesh)
 {
   glBindVertexArray(mesh.mVao);
-  glDrawElements(GL_TRIANGLES, mesh.mNumIndices, GL_UNSIGNED_INT, nullptr);
+  glDrawElements(GL_TRIANGLES, (s32)mesh.mIndices.size(), GL_UNSIGNED_INT, nullptr);
 }
 void BindModel(Model const& model)
 {
   for (auto const& mesh : model.mMeshes)
   {
     glBindVertexArray(mesh.mVao);
-    glDrawElements(GL_TRIANGLES, mesh.mNumIndices, GL_UNSIGNED_INT, nullptr); // use glDrawArrays here
+    glDrawElements(GL_TRIANGLES, (s32)mesh.mIndices.size(), GL_UNSIGNED_INT, nullptr);
   }
 }
 
+/*
+* 3D debug utilities.
+*/
+
+void LineBatchCreate()
+{
+  glGenVertexArrays(1, &sMeshLineBatch.mVao);
+  glGenBuffers(1, &sMeshLineBatch.mVbo);
+  glGenBuffers(1, &sMeshLineBatch.mEbo);
+}
 void LineBatchBegin()
 {
-
+  sMeshLineBatch.mVertices.clear();
+  sMeshLineBatch.mIndices.clear();
 }
-void LinePush(r32v3 const& p0, r32v3 const& p1, r32v3 const& c0, r32v3 const& c1)
+void LinePush(r32v3 const& p0, r32v3 const& p1, r32v4 const& c0, r32v4 const& c1)
 {
+  u32 const numVertices{ (u32)sMeshLineBatch.mVertices.size() };
 
+  sMeshLineBatch.mVertices.emplace_back(Vertex{ p0, r32v3{}, c0 });
+  sMeshLineBatch.mVertices.emplace_back(Vertex{ p1, r32v3{}, c1 });
+
+  sMeshLineBatch.mIndices.emplace_back(numVertices + 0);
+  sMeshLineBatch.mIndices.emplace_back(numVertices + 1);
 }
 void LineBatchEnd()
 {
+  glBindVertexArray(sMeshLineBatch.mVao);
 
+  glBindBuffer(GL_ARRAY_BUFFER, sMeshLineBatch.mVbo);
+  glBufferData(GL_ARRAY_BUFFER, sMeshLineBatch.mVertices.size() * sizeof(r32), sMeshLineBatch.mVertices.data(), GL_STATIC_DRAW);
+
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
+  glEnableVertexAttribArray(2);
+  glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(2 * sizeof(r32v3)));
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sMeshLineBatch.mEbo);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sMeshLineBatch.mIndices.size() * sizeof(u32), sMeshLineBatch.mIndices.data(), GL_STATIC_DRAW);
+
+  glBindVertexArray(0);
 }
 void LineBatchRender(Shader const& shader)
 {
+  BindShader(shader);
 
+  glBindVertexArray(sMeshLineBatch.mVao);
+  glDrawElements(GL_LINES, (s32)sMeshLineBatch.mIndices.size(), GL_UNSIGNED_INT, nullptr);
+}
+void LineBatchDestroy()
+{
+  MeshDestroy(sMeshLineBatch);
 }

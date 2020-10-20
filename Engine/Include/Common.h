@@ -6,6 +6,8 @@
 
 using Materials = std::vector<Material>;
 using Meshes    = std::vector<Mesh>;
+using Vertices  = std::vector<Vertex>;
+using Indices   = std::vector<u32>;
 
 struct SANDBOX_ENGINE_API Material
 {
@@ -16,17 +18,16 @@ struct SANDBOX_ENGINE_API Vertex
 {
   r32v3 mPosition{};
   r32v3 mNormal  {};
+  r32v4 mColor   {};
 };
 
 struct SANDBOX_ENGINE_API Mesh
 {
-  u32     mVao        {};
-  u32     mVbo        {};
-  u32     mEbo        {};
-  u32     mNumVertices{};
-  u32     mNumIndices {};
-  Vertex* mpVertices  {};
-  u32*    mpIndices   {};
+  u32      mVao        {};
+  u32      mVbo        {};
+  u32      mEbo        {};
+  Vertices mVertices   {};
+  Indices  mIndices    {};
 };
 
 struct SANDBOX_ENGINE_API Model

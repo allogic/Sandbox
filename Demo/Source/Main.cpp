@@ -59,6 +59,8 @@ s32 main()
 
   Scene* pScene{};
 
+  LineBatchCreate();
+
   while (!sStatus)
   {
     glfwPollEvents();
@@ -72,7 +74,12 @@ s32 main()
 
     if ((sTime - sTimePrevRender) >= fps)
     {
+      LineBatchBegin();
+
       pScene->OnRender();
+
+      LineBatchEnd();
+      LineBatchRender();
 
       glfwSwapBuffers(pWindow);
 
@@ -81,6 +88,8 @@ s32 main()
 
     sTimePrev = sTime;
   }
+
+  LineBatchDestroy();
 
   SceneDestroyAll();
 
