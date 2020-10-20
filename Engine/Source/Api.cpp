@@ -19,20 +19,20 @@ KeyboardClb    sOnKeyboard   {};
 * Debug utilities.
 */
 
-bool CheckShaderStatus(u32 id, u32 type, std::string& log) {
-  int compileInfo, compileInfoSize;
+u32 CheckShaderStatus(u32 id, u32 type, std::string& log) {
+  s32 compileInfo, compileInfoSize;
 
   glGetShaderiv(id, (GLenum)type, &compileInfo);
   glGetShaderiv(id, GL_INFO_LOG_LENGTH, &compileInfoSize);
 
-  if (compileInfoSize <= 0) return false;
+  if (compileInfoSize <= 0) return 0;
 
   log.clear();
   log.resize(compileInfoSize);
 
   glGetShaderInfoLog(id, compileInfoSize, nullptr, &log[0]);
 
-  return true;
+  return 1;
 }
 
 /*

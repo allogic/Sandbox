@@ -15,7 +15,7 @@ struct SANDBOX_ENGINE_API Material
 struct SANDBOX_ENGINE_API Vertex
 {
   r32v3 mPosition{};
-  r32v3 mNormal{};
+  r32v3 mNormal  {};
 };
 
 struct SANDBOX_ENGINE_API Mesh
@@ -38,18 +38,18 @@ struct SANDBOX_ENGINE_API Model
 
 struct SANDBOX_ENGINE_API Camera
 {
-  r32v3 mPosition        {};
-  r32   mFovRad          {};
-  r32v3 mRight           {};
-  r32v3 mUp              {};
-  r32v3 mFront           {};
-  r32v3 mLocalRight      {};
-  r32v3 mLocalUp         {};
-  r32v3 mLocalFront      {};
-  r32   mNear            {};
-  r32   mFar             {};
-  r32m4 mProjection      {};
-  r32m4 mView            {};
+  r32v3 mPosition  {};
+  r32   mFovRad    {};
+  r32v3 mRight     {};
+  r32v3 mUp        {};
+  r32v3 mFront     {};
+  r32v3 mLocalRight{};
+  r32v3 mLocalUp   {};
+  r32v3 mLocalFront{};
+  r32   mNear      {};
+  r32   mFar       {};
+  r32m4 mProjection{};
+  r32m4 mView      {};
 };
 
 struct SANDBOX_ENGINE_API CameraControllerOrbit

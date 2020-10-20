@@ -28,7 +28,7 @@ extern KeyboardClb    sOnKeyboard;
 * Debug utilities.
 */
 
-bool CheckShaderStatus(u32 id, u32 type, std::string& log);
+u32 CheckShaderStatus(u32 id, u32 type, std::string& log);
 
 /*
 * OpenGL context specific.
