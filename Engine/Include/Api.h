@@ -3,6 +3,7 @@
 #include <Types.h>
 #include <Core.h>
 #include <Common.h>
+#include <Shaders.h>
 
 #ifdef SANDBOX_ENGINE_INCLUDE_DEPENDENCIES
 #include <glad/glad.h>
@@ -14,15 +15,16 @@
 #include <assimp/postprocess.h>
 #endif
 
+extern GLFWwindow* spWindow;
+
+extern Scene* spSceneActive;
+
 extern s32 sStatus;
 extern u32 sWidth;
 extern u32 sHeight;
 extern r32 sAspect;
 
-extern WindowCloseClb sOnWindowClose;
-extern MouseMoveClb   sOnMouseMove;
-extern MouseButtonClb sOnMouseButton;
-extern KeyboardClb    sOnKeyboard;
+extern r32v2 sMousePosition;
 
 /*
 * Debug utilities.
@@ -34,7 +36,19 @@ u32 CheckShaderStatus(u32 id, u32 type, std::string& log);
 * OpenGL context specific.
 */
 
-extern "C" SANDBOX_ENGINE_API void ContextCreate(GLFWwindow*& pHandle, u32 width, u32 height, std::string const& title);
+extern "C" SANDBOX_ENGINE_API void ContextCreate(u32 width, u32 height, std::string const& title);
+extern "C" SANDBOX_ENGINE_API void ContextDestroy();
+
+/*
+* Mouse/Keyboard controls.
+*/
+
+extern "C" SANDBOX_ENGINE_API void  MouseDown();
+extern "C" SANDBOX_ENGINE_API void  MouseHeld();
+extern "C" SANDBOX_ENGINE_API void  MouseUp();
+extern "C" SANDBOX_ENGINE_API void  KeyDown();
+extern "C" SANDBOX_ENGINE_API void  KeyHeld();
+extern "C" SANDBOX_ENGINE_API void  KeyUp();
 
 /*
 * Scene management.
@@ -42,14 +56,13 @@ extern "C" SANDBOX_ENGINE_API void ContextCreate(GLFWwindow*& pHandle, u32 width
 
 extern "C" SANDBOX_ENGINE_API void SceneCreate(Scene* pScene);
 extern "C" SANDBOX_ENGINE_API void SceneSwitch(u32 index);
-extern "C" SANDBOX_ENGINE_API void SceneActive(Scene*& pScene);
 extern "C" SANDBOX_ENGINE_API void SceneDestroyAll();
 
 /*
 * Camera management.
 */
 
-extern "C" SANDBOX_ENGINE_API void CameraCreate(Camera& camera, r32v3 const& position, r32 fov, r32 aspect, r32 near, r32 far);
+extern "C" SANDBOX_ENGINE_API void CameraCreate(Camera& camera, r32v3 const& position, r32 fov, r32 near, r32 far);
 extern "C" SANDBOX_ENGINE_API void CameraUpdateController(Camera& camera, CameraControllerOrbit& controller, r32 timeDelta);
 
 /*
@@ -57,22 +70,20 @@ extern "C" SANDBOX_ENGINE_API void CameraUpdateController(Camera& camera, Camera
 */
 
 extern "C" SANDBOX_ENGINE_API void ShaderCreate(Shader& shader, std::string const& vertexShaderSource, std::string const& fragmentShaderSource);
+extern "C" SANDBOX_ENGINE_API void ShaderBind(Shader const& shader);
 extern "C" SANDBOX_ENGINE_API void ShaderDestroy(Shader const& shader);
+extern "C" SANDBOX_ENGINE_API void ShaderUniformMat4(Shader const& shader, std::string const& name, r32m4 const& matrix);
 
 /*
 * Geometry management.
 */
 
 extern "C" SANDBOX_ENGINE_API void MeshCreate(Mesh& mesh, std::vector<Vertex> const& vertices, std::vector<u32> const& indices);
+extern "C" SANDBOX_ENGINE_API void MeshBind(Mesh const& mesh);
 extern "C" SANDBOX_ENGINE_API void MeshDestroy(Mesh const& mesh);
 extern "C" SANDBOX_ENGINE_API void ModelCreate(Model& model, std::string const& fileName);
+extern "C" SANDBOX_ENGINE_API void ModelBind(Model const& model);
 extern "C" SANDBOX_ENGINE_API void ModelDestroy(Model const& model);
-
-extern "C" SANDBOX_ENGINE_API void ApplyUniformMat4(Shader const& shader, std::string const& name, r32m4 const& matrix);
-
-extern "C" SANDBOX_ENGINE_API void BindShader(Shader const& shader);
-extern "C" SANDBOX_ENGINE_API void BindMesh(Mesh const& mesh);
-extern "C" SANDBOX_ENGINE_API void BindModel(Model const& model);
 
 /*
 * 3D debug utilities.
@@ -80,7 +91,7 @@ extern "C" SANDBOX_ENGINE_API void BindModel(Model const& model);
 
 extern "C" SANDBOX_ENGINE_API void LineBatchCreate();
 extern "C" SANDBOX_ENGINE_API void LineBatchBegin();
-extern "C" SANDBOX_ENGINE_API void LinePush(r32v3 const& p0, r32v3 const& p1, r32v3 const& c0, r32v3 const& c1);
+extern "C" SANDBOX_ENGINE_API void LineBatchPush(r32v3 const& p0, r32v3 const& p1, r32v4 const& c0, r32v4 const& c1);
 extern "C" SANDBOX_ENGINE_API void LineBatchEnd();
-extern "C" SANDBOX_ENGINE_API void LineBatchRender(Shader const& shader);
+extern "C" SANDBOX_ENGINE_API void LineBatchRender();
 extern "C" SANDBOX_ENGINE_API void LineBatchDestroy();

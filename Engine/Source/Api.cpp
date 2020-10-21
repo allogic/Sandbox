@@ -2,20 +2,20 @@
 #include <Api.h>
 #undef SANDBOX_ENGINE_INCLUDE_DEPENDENCIES
 
+GLFWwindow* spWindow{};
+
 std::vector<Scene*> sScenes      {};
 Scene*              spSceneActive{};
 
 s32 sStatus{};
-u32 sWidth { 1280 };
-u32 sHeight{ 720 };
-r32 sAspect{ (r32)sWidth / sHeight };
+u32 sWidth {};
+u32 sHeight{};
+r32 sAspect{};
 
-MouseMoveClb   sOnMouseMove  {};
-MouseButtonClb sOnMouseButton{};
-WindowCloseClb sOnWindowClose{};
-KeyboardClb    sOnKeyboard   {};
+r32v2 sMousePosition{};
 
-Mesh sMeshLineBatch{};
+Shader sShaderLineBatch{};
+Mesh   sMeshLineBatch  {};
 
 /*
 * Debug utilities.
@@ -41,8 +41,12 @@ u32 CheckShaderStatus(u32 id, u32 type, std::string& log) {
 * OpenGL context specific.
 */
 
-void ContextCreate(GLFWwindow*& pHandle, u32 width, u32 height, std::string const& title)
+void ContextCreate(u32 width, u32 height, std::string const& title)
 {
+  sWidth = width;
+  sHeight = height;
+  sAspect = (r32)width / height;
+
   glfwInit();
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -50,17 +54,62 @@ void ContextCreate(GLFWwindow*& pHandle, u32 width, u32 height, std::string cons
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-  pHandle = glfwCreateWindow((s32)width, (s32)height, title.data(), nullptr, nullptr);
+  spWindow = glfwCreateWindow((s32)width, (s32)height, title.data(), nullptr, nullptr);
 
-  glfwSetWindowCloseCallback(pHandle, sOnWindowClose);
-  glfwSetCursorPosCallback(pHandle, sOnMouseMove);
-  glfwSetMouseButtonCallback(pHandle, sOnMouseButton);
-  glfwSetKeyCallback(pHandle, sOnKeyboard);
+  glfwSetWindowCloseCallback(spWindow, [](GLFWwindow*)
+  {
+    sStatus = 1;
+  });
+  glfwSetCursorPosCallback(spWindow, [](GLFWwindow*, r64 x, r64 y)
+  {
+    sMousePosition = { (r32)x, (r32)y };
+  });
+  glfwSetMouseButtonCallback(spWindow, [](GLFWwindow*, s32 button, s32 action, s32 mods)
+  {
+    
+  });
+  glfwSetKeyCallback(spWindow, [](GLFWwindow*, s32 key, s32 scancode, s32 action, s32 mods)
+  {
+    
+  });
 
-  glfwMakeContextCurrent(pHandle);
+  glfwMakeContextCurrent(spWindow);
   glfwSwapInterval(0);
 
   gladLoadGL();
+}
+void ContextDestroy()
+{
+  glfwDestroyWindow(spWindow);
+}
+
+/*
+* Mouse/Keyboard controls.
+*/
+
+void MouseDown()
+{
+
+}
+void MouseHeld()
+{
+
+}
+void MouseUp()
+{
+
+}
+void KeyDown()
+{
+
+}
+void KeyHeld()
+{
+
+}
+void KeyUp()
+{
+
 }
 
 /*
@@ -74,18 +123,14 @@ void SceneCreate(Scene* pScene)
   if (!spSceneActive)
   {
     spSceneActive = sScenes.back();
-    spSceneActive->OnEnable(sAspect);
+    spSceneActive->OnEnable();
   }
 }
 void SceneSwitch(u32 index)
 {
   spSceneActive->OnDisable();
   spSceneActive = sScenes[index];
-  spSceneActive->OnEnable(sAspect);
-}
-void SceneActive(Scene*& pScene)
-{
-  pScene = spSceneActive;
+  spSceneActive->OnEnable();
 }
 void SceneDestroyAll()
 {
@@ -104,12 +149,12 @@ void SceneDestroyAll()
 * Camera management.
 */
 
-void CameraCreate(Camera& camera, r32v3 const& position, r32 fov, r32 aspect, r32 near, r32 far)
+void CameraCreate(Camera& camera, r32v3 const& position, r32 fov, r32 near, r32 far)
 {
   r32 const fovRad{ glm::radians(fov) };
   r32v3 const right{ 1.f, 0.f, 0.f };
   r32v3 const up{ 0.f, 1.f, 0.f };
-  r32v3 const front{ 0.f, 0.f, 1.f };
+  r32v3 const front{ 0.f, 0.f, -1.f };
 
   camera =
   {
@@ -123,12 +168,25 @@ void CameraCreate(Camera& camera, r32v3 const& position, r32 fov, r32 aspect, r3
     .mLocalFront{ front },
     .mNear      { near },
     .mFar       { far },
-    .mProjection{ glm::perspective(fovRad, aspect, near, far) },
+    .mProjection{ glm::perspective(fovRad, sAspect, near, far) },
     .mView      { glm::lookAt(position, position + front, up) },
   };
 }
 void CameraUpdateController(Camera& camera, CameraControllerOrbit& controller, r32 timeDelta)
 {
+  if (key == GLFW_KEY_A) sCamera.mPosition += sCamera.mLocalRight * sCamera.mPositionSpeed * sTimeDelta;
+  if (key == GLFW_KEY_D) sCamera.mPosition += -sCamera.mLocalRight * sCamera.mPositionSpeed * sTimeDelta;
+  
+  if (key == GLFW_KEY_S) sCamera.mPosition += -sCamera.mLocalFront * sCamera.mPositionSpeed * sTimeDelta;
+  if (key == GLFW_KEY_W) sCamera.mPosition += sCamera.mLocalFront * sCamera.mPositionSpeed * sTimeDelta;
+
+  //r32v2 mousePosition{ (r32)x, (r32)y };
+  //r32v2 mousePositionDelta{ r32v2{ (r32)sWidth / 2, (r32)sHeight / 2 } - mousePosition };
+  //sCamera.mRotationDrag = sCamera.mLockDrag ? r32v2{} : r32v2{ mousePositionDelta.x, -mousePositionDelta.y };
+
+  //if (button == GLFW_MOUSE_BUTTON_RIGHT && (action == GLFW_PRESS || action == GLFW_REPEAT)) sCamera.mLockDrag = 0;
+  //else                                                                                      sCamera.mLockDrag = 1;
+
   if (glm::length(controller.mRotationVelocity) > controller.mRotationDeadzone)
     controller.mRotationVelocity += -controller.mRotationVelocity * controller.mRotationDecay * timeDelta;
   else
@@ -187,11 +245,20 @@ void ShaderCreate(Shader& shader, std::string const& vertexShaderSource, std::st
   if (CheckShaderStatus(shader.mFid, GL_LINK_STATUS, log))
     std::printf("%s\n", log.data());
 }
+void ShaderBind(Shader const& shader)
+{
+  glUseProgram(shader.mPid);
+}
 void ShaderDestroy(Shader const& shader)
 {
   glDeleteShader(shader.mVid);
   glDeleteShader(shader.mFid);
   glDeleteProgram(shader.mPid);
+}
+void ShaderUniformMat4(Shader const& shader, std::string const& name, r32m4 const& matrix)
+{
+  u32 id{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
+  glUniformMatrix4fv(id, 1, GL_FALSE, &matrix[0][0]);
 }
 
 /*
@@ -223,6 +290,11 @@ void MeshCreate(Mesh& mesh, std::vector<Vertex> const& vertices, std::vector<u32
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.mIndices.size() * sizeof(u32), mesh.mIndices.data(), GL_STATIC_DRAW);
 
   glBindVertexArray(0);
+}
+void MeshBind(Mesh const& mesh)
+{
+  glBindVertexArray(mesh.mVao);
+  glDrawElements(GL_TRIANGLES, (s32)mesh.mIndices.size(), GL_UNSIGNED_INT, nullptr);
 }
 void MeshDestroy(Mesh const& mesh)
 {
@@ -259,7 +331,7 @@ void ModelCreate(Model& model, std::string const& fileName)
       {
         .mPosition{ pMesh->mVertices[j].x, pMesh->mVertices[j].y, pMesh->mVertices[j].z },
         .mNormal  { pMesh->mNormals[j].x, pMesh->mNormals[j].y, pMesh->mNormals[j].z },
-        .mColor   { pMesh->mColors[j]->r, pMesh->mColors[j]->g, pMesh->mColors[j]->b, pMesh->mColors[j]->a },
+        .mColor   { 0.f, 0.f, 0.f, 1.f },
       };
     }
 
@@ -305,34 +377,18 @@ void ModelCreate(Model& model, std::string const& fileName)
 
   model.mTransform = glm::identity<r32m4>();
 }
-void ModelDestroy(Model const& model)
-{
-  for (auto const& mesh : model.mMeshes)
-    MeshDestroy(mesh);
-}
-
-void ApplyUniformMat4(Shader const& shader, std::string const& name, r32m4 const& matrix)
-{
-  u32 id{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
-  glUniformMatrix4fv(id, 1, GL_FALSE, &matrix[0][0]);
-}
-
-void BindShader(Shader const& shader)
-{
-  glUseProgram(shader.mPid);
-}
-void BindMesh(Mesh const& mesh)
-{
-  glBindVertexArray(mesh.mVao);
-  glDrawElements(GL_TRIANGLES, (s32)mesh.mIndices.size(), GL_UNSIGNED_INT, nullptr);
-}
-void BindModel(Model const& model)
+void ModelBind(Model const& model)
 {
   for (auto const& mesh : model.mMeshes)
   {
     glBindVertexArray(mesh.mVao);
     glDrawElements(GL_TRIANGLES, (s32)mesh.mIndices.size(), GL_UNSIGNED_INT, nullptr);
   }
+}
+void ModelDestroy(Model const& model)
+{
+  for (auto const& mesh : model.mMeshes)
+    MeshDestroy(mesh);
 }
 
 /*
@@ -341,6 +397,8 @@ void BindModel(Model const& model)
 
 void LineBatchCreate()
 {
+  ShaderCreate(sShaderLineBatch, sVertexShaderSourceLine, sFragmentShaderSourceLine);
+
   glGenVertexArrays(1, &sMeshLineBatch.mVao);
   glGenBuffers(1, &sMeshLineBatch.mVbo);
   glGenBuffers(1, &sMeshLineBatch.mEbo);
@@ -350,7 +408,7 @@ void LineBatchBegin()
   sMeshLineBatch.mVertices.clear();
   sMeshLineBatch.mIndices.clear();
 }
-void LinePush(r32v3 const& p0, r32v3 const& p1, r32v4 const& c0, r32v4 const& c1)
+void LineBatchPush(r32v3 const& p0, r32v3 const& p1, r32v4 const& c0, r32v4 const& c1)
 {
   u32 const numVertices{ (u32)sMeshLineBatch.mVertices.size() };
 
@@ -365,7 +423,7 @@ void LineBatchEnd()
   glBindVertexArray(sMeshLineBatch.mVao);
 
   glBindBuffer(GL_ARRAY_BUFFER, sMeshLineBatch.mVbo);
-  glBufferData(GL_ARRAY_BUFFER, sMeshLineBatch.mVertices.size() * sizeof(r32), sMeshLineBatch.mVertices.data(), GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sMeshLineBatch.mVertices.size() * sizeof(Vertex), sMeshLineBatch.mVertices.data(), GL_STATIC_DRAW);
 
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
@@ -377,9 +435,12 @@ void LineBatchEnd()
 
   glBindVertexArray(0);
 }
-void LineBatchRender(Shader const& shader)
+void LineBatchRender()
 {
-  BindShader(shader);
+  ShaderBind(sShaderLineBatch);
+
+  ShaderUniformMat4(sShaderLineBatch, "uProjection", spSceneActive->mCamera.mProjection);
+  ShaderUniformMat4(sShaderLineBatch, "uView", spSceneActive->mCamera.mView);
 
   glBindVertexArray(sMeshLineBatch.mVao);
   glDrawElements(GL_LINES, (s32)sMeshLineBatch.mIndices.size(), GL_UNSIGNED_INT, nullptr);
@@ -387,4 +448,5 @@ void LineBatchRender(Shader const& shader)
 void LineBatchDestroy()
 {
   MeshDestroy(sMeshLineBatch);
+  ShaderDestroy(sShaderLineBatch);
 }

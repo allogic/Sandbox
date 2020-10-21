@@ -82,7 +82,7 @@ struct SANDBOX_ENGINE_API Scene
 
   virtual ~Scene() = default;
 
-  virtual void OnEnable(r32 aspect) = 0;
+  virtual void OnEnable() = 0;
   virtual void OnDisable() = 0;
   virtual void OnUpdate(r32 timeDelta) = 0;
   virtual void OnRender() const = 0;

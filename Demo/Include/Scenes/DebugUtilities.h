@@ -4,7 +4,9 @@
 
 struct SceneDebugUtilities : Scene
 {
-  void OnEnable(r32 aspect) override;
+  CameraControllerOrbit mCameraController{};
+
+  void OnEnable() override;
   void OnDisable() override;
   void OnUpdate(r32 timeDelta) override;
   void OnRender() const override;

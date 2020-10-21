@@ -8,7 +8,7 @@ struct SceneModelLoading : Scene
   Model                 mModel           {};
   Shader                mShader          {};
 
-  void OnEnable(r32 aspect) override;
+  void OnEnable() override;
   void OnDisable() override;
   void OnUpdate(r32 deltaTime) override;
   void OnRender() const override;

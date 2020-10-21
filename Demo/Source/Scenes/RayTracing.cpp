@@ -4,7 +4,7 @@
 
 #include <Scenes/RayTracing.h>
 
-void SceneRayTracing::OnEnable(r32 aspect)
+void SceneRayTracing::OnEnable()
 {
 
 }
