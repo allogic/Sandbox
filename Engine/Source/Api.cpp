@@ -7,12 +7,20 @@ GLFWwindow* spWindow{};
 std::vector<Scene*> sScenes      {};
 Scene*              spSceneActive{};
 
-s32 sStatus{};
-u32 sWidth {};
-u32 sHeight{};
-r32 sAspect{};
-
+s32   sStatus       {};
+u32   sWidth        {};
+u32   sHeight       {};
+r32   sAspect       {};
 r32v2 sMousePosition{};
+
+s32 sMouseActionPrev   { -1 };
+s32 sMouseActionCurr   {};
+u32 sMouseKey          {};
+
+s32 sKeyboardKeyStates[128]{};
+s32 sKeyboardActionPrev{ -1 };
+s32 sKeyboardActionCurr{};
+u32 sKeyboardKey       {};
 
 Shader sShaderLineBatch{};
 Mesh   sMeshLineBatch  {};
@@ -41,7 +49,7 @@ u32 CheckShaderStatus(u32 id, u32 type, std::string& log) {
 * OpenGL context specific.
 */
 
-void ContextCreate(u32 width, u32 height, std::string const& title)
+void        ContextCreate(u32 width, u32 height, std::string const& title)
 {
   sWidth = width;
   sHeight = height;
@@ -57,66 +65,136 @@ void ContextCreate(u32 width, u32 height, std::string const& title)
   spWindow = glfwCreateWindow((s32)width, (s32)height, title.data(), nullptr, nullptr);
 
   glfwSetWindowCloseCallback(spWindow, [](GLFWwindow*)
-  {
-    sStatus = 1;
-  });
+    {
+      sStatus = 1;
+    });
   glfwSetCursorPosCallback(spWindow, [](GLFWwindow*, r64 x, r64 y)
-  {
-    sMousePosition = { (r32)x, (r32)y };
-  });
-  glfwSetMouseButtonCallback(spWindow, [](GLFWwindow*, s32 button, s32 action, s32 mods)
-  {
-    
-  });
+    {
+      sMousePosition = { (r32)x, (r32)y };
+    });
+  glfwSetMouseButtonCallback(spWindow, [](GLFWwindow*, s32 key, s32 action, s32 mods)
+    {
+      sMouseKey = (u32)key;
+
+      switch (action)
+      {
+      case GLFW_PRESS:
+        sMouseActionPrev = sMouseActionCurr;
+        sMouseActionCurr = GLFW_PRESS;
+        break;
+      case GLFW_RELEASE:
+        sMouseActionPrev = -1;
+        sMouseActionCurr = GLFW_RELEASE;
+        break;
+      }
+    });
   glfwSetKeyCallback(spWindow, [](GLFWwindow*, s32 key, s32 scancode, s32 action, s32 mods)
-  {
-    
-  });
+    {
+      sKeyboardKey = (u32)key;
+
+      switch (action)
+      {
+      case GLFW_PRESS:
+        sKeyboardActionPrev = sKeyboardActionCurr;
+        sKeyboardActionCurr = GLFW_PRESS;
+        break;
+      case GLFW_RELEASE:
+        sKeyboardActionPrev = -1;
+        sKeyboardActionCurr = GLFW_RELEASE;
+        break;
+      }
+    });
 
   glfwMakeContextCurrent(spWindow);
   glfwSwapInterval(0);
 
   gladLoadGL();
 }
-void ContextDestroy()
+GLFWwindow* ContextHandle()
+{
+  return spWindow;
+}
+void        ContextDestroy()
 {
   glfwDestroyWindow(spWindow);
 }
 
 /*
-* Mouse/Keyboard controls.
+* Event dispatching.
 */
 
-void MouseDown()
+void EventStateNext()
 {
-
+  if (sMouseActionCurr == GLFW_PRESS || sMouseActionCurr == GLFW_REPEAT && sMouseActionPrev == -1 || sMouseActionPrev == GLFW_PRESS || sMouseActionPrev == GLFW_REPEAT)
+  {
+    sMouseActionPrev = sMouseActionCurr;
+    sMouseActionCurr = GLFW_REPEAT;
+  }
+  if (sKeyboardActionCurr == GLFW_PRESS || sKeyboardActionCurr == GLFW_REPEAT && sKeyboardActionPrev == -1 || sKeyboardActionPrev == GLFW_PRESS || sKeyboardActionPrev == GLFW_REPEAT)
+  {
+    sKeyboardActionPrev = sKeyboardActionCurr;
+    sKeyboardActionCurr = GLFW_REPEAT;
+  }
 }
-void MouseHeld()
-{
 
+/*
+* Mouse/Keyboard/Window state handling.
+*/
+
+u32 WindowStatus()
+{
+  return sStatus;
 }
-void MouseUp()
+r32 WindowSizeX()
 {
-
+  return (r32)sWidth;
 }
-void KeyDown()
+r32 WindowSizeY()
 {
-
+  return (r32)sHeight;
 }
-void KeyHeld()
+r32 WindowAspect()
 {
-
+  return sAspect;
 }
-void KeyUp()
+r32 MousePositionX()
 {
-
+  return sMousePosition.x;
+}
+r32 MousePositionY()
+{
+  return sMousePosition.y;
+}
+u32 MouseDown(u32 key)
+{
+  return sMouseActionCurr == GLFW_PRESS && sMouseKey == key;
+}
+u32 MouseHeld(u32 key)
+{
+  return sMouseActionCurr == GLFW_REPEAT && sMouseKey == key;
+}
+u32 MouseUp(u32 key)
+{
+  return sMouseActionCurr == GLFW_RELEASE && sMouseKey == key;
+}
+u32 KeyDown(u32 key)
+{
+  return sKeyboardActionCurr == GLFW_PRESS && sKeyboardKey == key;
+}
+u32 KeyHeld(u32 key)
+{
+  return sKeyboardActionCurr == GLFW_REPEAT && sKeyboardKey == key;
+}
+u32 KeyUp(u32 key)
+{
+  return sKeyboardActionCurr == GLFW_RELEASE && sKeyboardKey == key;
 }
 
 /*
 * Scene management.
 */
 
-void SceneCreate(Scene* pScene)
+void   SceneCreate(Scene* pScene)
 {
   sScenes.emplace_back(pScene);
 
@@ -126,13 +204,17 @@ void SceneCreate(Scene* pScene)
     spSceneActive->OnEnable();
   }
 }
-void SceneSwitch(u32 index)
+void   SceneSwitch(u32 index)
 {
   spSceneActive->OnDisable();
   spSceneActive = sScenes[index];
   spSceneActive->OnEnable();
 }
-void SceneDestroyAll()
+Scene* SceneActive()
+{
+  return spSceneActive;
+}
+void   SceneDestroyAll()
 {
   spSceneActive = nullptr;
 
@@ -174,18 +256,29 @@ void CameraCreate(Camera& camera, r32v3 const& position, r32 fov, r32 near, r32 
 }
 void CameraUpdateController(Camera& camera, CameraControllerOrbit& controller, r32 timeDelta)
 {
-  if (key == GLFW_KEY_A) sCamera.mPosition += sCamera.mLocalRight * sCamera.mPositionSpeed * sTimeDelta;
-  if (key == GLFW_KEY_D) sCamera.mPosition += -sCamera.mLocalRight * sCamera.mPositionSpeed * sTimeDelta;
-  
-  if (key == GLFW_KEY_S) sCamera.mPosition += -sCamera.mLocalFront * sCamera.mPositionSpeed * sTimeDelta;
-  if (key == GLFW_KEY_W) sCamera.mPosition += sCamera.mLocalFront * sCamera.mPositionSpeed * sTimeDelta;
+  if (KeyDown(GLFW_KEY_A) || KeyHeld(GLFW_KEY_A)) camera.mPosition += -camera.mLocalRight * controller.mPositionSpeed * timeDelta;
+  if (KeyDown(GLFW_KEY_D) || KeyHeld(GLFW_KEY_D)) camera.mPosition += camera.mLocalRight * controller.mPositionSpeed * timeDelta;
 
-  //r32v2 mousePosition{ (r32)x, (r32)y };
-  //r32v2 mousePositionDelta{ r32v2{ (r32)sWidth / 2, (r32)sHeight / 2 } - mousePosition };
-  //sCamera.mRotationDrag = sCamera.mLockDrag ? r32v2{} : r32v2{ mousePositionDelta.x, -mousePositionDelta.y };
+  if (KeyDown(GLFW_KEY_S) || KeyHeld(GLFW_KEY_S)) camera.mPosition += -camera.mLocalFront * controller.mPositionSpeed * timeDelta;
+  if (KeyDown(GLFW_KEY_W) || KeyHeld(GLFW_KEY_W)) camera.mPosition += camera.mLocalFront * controller.mPositionSpeed * timeDelta;
 
-  //if (button == GLFW_MOUSE_BUTTON_RIGHT && (action == GLFW_PRESS || action == GLFW_REPEAT)) sCamera.mLockDrag = 0;
-  //else                                                                                      sCamera.mLockDrag = 1;
+  static r32v2 mousePositionDown{};
+
+  if (MouseDown(GLFW_MOUSE_BUTTON_RIGHT))
+  {
+    mousePositionDown = { MousePositionX(), MousePositionY() };
+  }
+  if (MouseHeld(GLFW_MOUSE_BUTTON_RIGHT))
+  {
+    r32v2 mousePosition{ MousePositionX(), MousePositionY() };
+    r32v2 windowSize{ WindowSizeX(), WindowSizeY() };
+    r32v2 mousePositionDelta{ mousePositionDown - mousePosition };
+    controller.mRotationDrag = r32v2{ mousePositionDelta.x, -mousePositionDelta.y };
+  }
+  else
+  {
+    controller.mRotationDrag = {};
+  }
 
   if (glm::length(controller.mRotationVelocity) > controller.mRotationDeadzone)
     controller.mRotationVelocity += -controller.mRotationVelocity * controller.mRotationDecay * timeDelta;

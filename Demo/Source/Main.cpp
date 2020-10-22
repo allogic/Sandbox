@@ -23,28 +23,30 @@ s32 main()
 
   LineBatchCreate();
 
-  while (!sStatus)
+  while (!WindowStatus())
   {
     glfwPollEvents();
 
     sTime = (r32)glfwGetTime();
     sTimeDelta = sTime - sTimePrev;
 
-    spSceneActive->OnUpdate(sTimeDelta);
+    SceneActive()->OnUpdate(sTimeDelta);
 
     if ((sTime - sTimePrevRender) >= fps)
     {
       LineBatchBegin();
 
-      spSceneActive->OnRender();
+      SceneActive()->OnRender();
 
       LineBatchEnd();
       LineBatchRender();
 
-      glfwSwapBuffers(spWindow);
+      glfwSwapBuffers(ContextHandle());
 
       sTimePrevRender = sTime;
     }
+
+    EventStateNext();
 
     sTimePrev = sTime;
   }

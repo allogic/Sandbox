@@ -13,14 +13,12 @@ struct SANDBOX_ENGINE_API Material
 {
   
 };
-
 struct SANDBOX_ENGINE_API Vertex
 {
   r32v3 mPosition{};
   r32v3 mNormal  {};
   r32v4 mColor   {};
 };
-
 struct SANDBOX_ENGINE_API Mesh
 {
   u32      mVao        {};
@@ -29,14 +27,12 @@ struct SANDBOX_ENGINE_API Mesh
   Vertices mVertices   {};
   Indices  mIndices    {};
 };
-
 struct SANDBOX_ENGINE_API Model
 {
   Materials mMaterials{};
   Meshes    mMeshes   {};
   r32m4     mTransform{};
 };
-
 struct SANDBOX_ENGINE_API Camera
 {
   r32v3 mPosition  {};
@@ -52,30 +48,25 @@ struct SANDBOX_ENGINE_API Camera
   r32m4 mProjection{};
   r32m4 mView      {};
 };
-
 struct SANDBOX_ENGINE_API CameraControllerOrbit
 {
-  r32   mPositionSpeed   { 1000.f };
-  r32   mRotationSpeed   { 3.f };
-  u32   mLockDrag        {};
+  r32   mPositionSpeed   { 10.f };
+  r32   mRotationSpeed   { 0.5f };
   r32v2 mRotationDrag    {};
-  r32   mRotationDecay   { 1000.f };
+  r32   mRotationDecay   { 10.f };
   r32   mRotationDeadzone{ 0.001f };
   r32v2 mRotationVelocity{};
 };
-
 struct SANDBOX_ENGINE_API Texture
 {
   u32 mTid{};
 };
-
 struct SANDBOX_ENGINE_API Shader
 {
   u32 mPid{};
   u32 mVid{};
   u32 mFid{};
 };
-
 struct SANDBOX_ENGINE_API Scene
 {
   Camera mCamera{};
