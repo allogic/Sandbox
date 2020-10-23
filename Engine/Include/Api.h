@@ -46,6 +46,8 @@ extern "C" SANDBOX_ENGINE_API r32 WindowSizeY();
 extern "C" SANDBOX_ENGINE_API r32 WindowAspect();
 extern "C" SANDBOX_ENGINE_API r32 MousePositionX();
 extern "C" SANDBOX_ENGINE_API r32 MousePositionY();
+extern "C" SANDBOX_ENGINE_API r32 MouseScrollX();
+extern "C" SANDBOX_ENGINE_API r32 MouseScrollY();
 extern "C" SANDBOX_ENGINE_API u32 MouseDown(u32 key);
 extern "C" SANDBOX_ENGINE_API u32 MouseHeld(u32 key);
 extern "C" SANDBOX_ENGINE_API u32 MouseUp(u32 key);

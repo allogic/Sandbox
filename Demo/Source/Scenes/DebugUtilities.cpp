@@ -6,7 +6,7 @@
 
 void SceneDebugUtilities::OnEnable()
 {
-  CameraCreate(mCamera, { 0.f, 0.f, 10.f }, 45.f, 0.001f, 1000.f);
+  CameraCreate(mCamera, { 0.f, 0.f, 0.f }, 45.f, 0.001f, 1000.f);
 }
 
 void SceneDebugUtilities::OnDisable()

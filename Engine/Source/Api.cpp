@@ -11,7 +11,9 @@ s32   sStatus       {};
 u32   sWidth        {};
 u32   sHeight       {};
 r32   sAspect       {};
+
 r32v2 sMousePosition{};
+r32v2 sMouseScroll  {};
 
 Event sMouseKeyStates[8]     {};
 Event sKeyboardKeyStates[256]{};
@@ -74,6 +76,10 @@ void        ContextCreate(u32 width, u32 height, std::string const& title)
   glfwSetCursorPosCallback(spWindow, [](GLFWwindow*, r64 x, r64 y)
     {
       sMousePosition = { (r32)x, (r32)y };
+    });
+  glfwSetScrollCallback(spWindow, [](GLFWwindow*, r64 xOffset, r64 yOffset)
+    {
+      sMouseScroll = { (r32)xOffset, (r32)yOffset };
     });
 
   glfwMakeContextCurrent(spWindow);
@@ -189,6 +195,16 @@ r32 MousePositionY()
 {
   return sMousePosition.y;
 }
+r32 MouseScrollX()
+{
+  return sMouseScroll.x;
+}
+r32 MouseScrollY()
+{
+  r32 scrollY{ sMouseScroll.y };
+  sMouseScroll.y = 0.f;
+  return scrollY;
+}
 u32 MouseDown(u32 key)
 {
   return sMouseKeyStates[key].mActionCurr == EventType::Down;
@@ -297,6 +313,7 @@ void CameraUpdateControllerSpace(Camera& camera, CameraControllerSpace& controll
     r32v2 mousePosition{ MousePositionX(), MousePositionY() };
     r32v2 mousePositionDelta{ mousePositionDown - mousePosition };
     r32v2 mousePositionDeltaAligned{ mousePositionDelta.x, mousePositionDelta.y };
+
     controller.mRotationVelocity += mousePositionDeltaAligned * controller.mRotationSpeed * timeDelta;
   }
 
@@ -318,11 +335,50 @@ void CameraUpdateControllerSpace(Camera& camera, CameraControllerSpace& controll
 }
 void CameraUpdateControllerOrbit(Camera& camera, CameraControllerOrbit& controller, r32 timeDelta)
 {
-  //if (controller.mRotationVelocity.x > 180.f) controller.mRotationVelocity.x = -180.f;
-  //if (controller.mRotationVelocity.x < -180.f) controller.mRotationVelocity.x = 180.f;
-  //
-  //if (controller.mRotationVelocity.y > 180.f) controller.mRotationVelocity.y = -180.f;
-  //if (controller.mRotationVelocity.y < -180.f) controller.mRotationVelocity.y = 180.f;
+  if (KeyHeld(GLFW_KEY_A)) controller.mPositionVelocity += -camera.mLocalRight * controller.mPositionSpeed * timeDelta;
+  if (KeyHeld(GLFW_KEY_D)) controller.mPositionVelocity += camera.mLocalRight * controller.mPositionSpeed * timeDelta;
+
+  r32v3 mLocalFrontNoXRot{ glm::cross(camera.mUp, camera.mLocalRight) };
+
+  if (KeyHeld(GLFW_KEY_S)) controller.mPositionVelocity += -mLocalFrontNoXRot * controller.mPositionSpeed * timeDelta;
+  if (KeyHeld(GLFW_KEY_W)) controller.mPositionVelocity += mLocalFrontNoXRot * controller.mPositionSpeed * timeDelta;
+
+  static r32v2 mousePositionDown{};
+
+  if (MouseDown(GLFW_MOUSE_BUTTON_RIGHT))
+  {
+    mousePositionDown = { MousePositionX(), MousePositionY() };
+  }
+  if (MouseHeld(GLFW_MOUSE_BUTTON_RIGHT))
+  {
+    r32v2 mousePosition{ MousePositionX(), MousePositionY() };
+    r32v2 mousePositionDelta{ mousePositionDown - mousePosition };
+    r32v2 mousePositionDeltaAligned{ mousePositionDelta.x, mousePositionDelta.y };
+
+    controller.mRotationVelocity += mousePositionDeltaAligned * controller.mRotationSpeed * timeDelta;
+  }
+
+  controller.mScrollVelocity += -MouseScrollY() * controller.mScrollSpeed * timeDelta;
+
+  controller.mPositionVelocity += -controller.mPositionVelocity * controller.mPositionDecay * timeDelta;
+  controller.mRotationVelocity += -controller.mRotationVelocity * controller.mRotationDecay * timeDelta;
+  controller.mScrollVelocity += -controller.mScrollVelocity * controller.mScrollDecay * timeDelta;
+
+  camera.mPosition += controller.mPositionVelocity;
+
+  controller.mDistance += controller.mScrollVelocity;
+  controller.mDistance = glm::clamp(controller.mDistance, controller.mDistanceMin, controller.mDistanceMax);
+
+  r32m4 localRotation{ glm::identity<r32m4>() };
+  localRotation = glm::rotate(localRotation, glm::radians(controller.mRotationVelocity.x), camera.mUp);
+  localRotation = glm::rotate(localRotation, glm::radians(controller.mRotationVelocity.y), camera.mLocalRight);
+
+  camera.mLocalRight = localRotation * r32v4{ camera.mLocalRight, 1.f };
+  camera.mLocalUp = localRotation * r32v4{ camera.mLocalUp, 1.f };
+  camera.mLocalFront = localRotation * r32v4{ camera.mLocalFront, 1.f };
+
+  camera.mProjection = glm::perspective(camera.mFovRad, sAspect, camera.mNear, camera.mFar);
+  camera.mView = glm::lookAt(camera.mPosition - camera.mLocalFront * controller.mDistance, camera.mPosition, camera.mLocalUp);
 }
 
 /*

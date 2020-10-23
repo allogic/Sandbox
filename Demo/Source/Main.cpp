@@ -30,6 +30,10 @@ s32 main()
     sTime = (r32)glfwGetTime();
     sTimeDelta = sTime - sTimePrev;
 
+    if (KeyDown(GLFW_KEY_1)) SceneSwitch(0);
+    if (KeyDown(GLFW_KEY_2)) SceneSwitch(1);
+    if (KeyDown(GLFW_KEY_3)) SceneSwitch(2);
+
     SceneActive()->OnUpdate(sTimeDelta);
 
     if ((sTime - sTimeRenderFixedPrev) >= sTimeRenderFixed)
@@ -43,6 +47,10 @@ s32 main()
 
       sTimeRenderFixedPrev = sTime;
     }
+
+    // bind once
+    SceneActive()->OnGizmos(sTimeDelta);
+    // draw once
 
     sTimePrev = sTime;
   }
