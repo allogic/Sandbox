@@ -13,17 +13,13 @@ u32   sHeight       {};
 r32   sAspect       {};
 r32v2 sMousePosition{};
 
-s32 sMouseActionPrev   { -1 };
-s32 sMouseActionCurr   {};
-u32 sMouseKey          {};
+Event sMouseKeyStates[8]     {};
+Event sKeyboardKeyStates[256]{};
 
-s32 sKeyboardKeyStates[128]{};
-s32 sKeyboardActionPrev{ -1 };
-s32 sKeyboardActionCurr{};
-u32 sKeyboardKey       {};
-
-Shader sShaderLineBatch{};
-Mesh   sMeshLineBatch  {};
+Shader sLineBatchShader      {};
+Mesh   sLineBatchMesh        {};
+u32    sLineBatchOffsetVertex{};
+u32    sLineBatchOffsetIndex {};
 
 /*
 * Debug utilities.
@@ -57,6 +53,13 @@ void        ContextCreate(u32 width, u32 height, std::string const& title)
 
   glfwInit();
 
+  GLFWmonitor* pMonitor{ glfwGetPrimaryMonitor() };
+  GLFWvidmode const* pMode{ glfwGetVideoMode(pMonitor) };
+
+  glfwWindowHint(GLFW_REFRESH_RATE, pMode->refreshRate);
+  glfwWindowHint(GLFW_RED_BITS, pMode->redBits);
+  glfwWindowHint(GLFW_GREEN_BITS, pMode->greenBits);
+  glfwWindowHint(GLFW_BLUE_BITS, pMode->blueBits);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -71,38 +74,6 @@ void        ContextCreate(u32 width, u32 height, std::string const& title)
   glfwSetCursorPosCallback(spWindow, [](GLFWwindow*, r64 x, r64 y)
     {
       sMousePosition = { (r32)x, (r32)y };
-    });
-  glfwSetMouseButtonCallback(spWindow, [](GLFWwindow*, s32 key, s32 action, s32 mods)
-    {
-      sMouseKey = (u32)key;
-
-      switch (action)
-      {
-      case GLFW_PRESS:
-        sMouseActionPrev = sMouseActionCurr;
-        sMouseActionCurr = GLFW_PRESS;
-        break;
-      case GLFW_RELEASE:
-        sMouseActionPrev = -1;
-        sMouseActionCurr = GLFW_RELEASE;
-        break;
-      }
-    });
-  glfwSetKeyCallback(spWindow, [](GLFWwindow*, s32 key, s32 scancode, s32 action, s32 mods)
-    {
-      sKeyboardKey = (u32)key;
-
-      switch (action)
-      {
-      case GLFW_PRESS:
-        sKeyboardActionPrev = sKeyboardActionCurr;
-        sKeyboardActionCurr = GLFW_PRESS;
-        break;
-      case GLFW_RELEASE:
-        sKeyboardActionPrev = -1;
-        sKeyboardActionCurr = GLFW_RELEASE;
-        break;
-      }
     });
 
   glfwMakeContextCurrent(spWindow);
@@ -123,17 +94,70 @@ void        ContextDestroy()
 * Event dispatching.
 */
 
-void EventStateNext()
+void EventsPoll()
 {
-  if (sMouseActionCurr == GLFW_PRESS || sMouseActionCurr == GLFW_REPEAT && sMouseActionPrev == -1 || sMouseActionPrev == GLFW_PRESS || sMouseActionPrev == GLFW_REPEAT)
+  glfwPollEvents();
+
+  for (u32 i{}; i < 8; i++)
   {
-    sMouseActionPrev = sMouseActionCurr;
-    sMouseActionCurr = GLFW_REPEAT;
+    s32 action{ glfwGetMouseButton(spWindow, (s32)i) };
+    Event& event{ sMouseKeyStates[i] };
+
+    event.mActionPrev = event.mActionCurr;
+
+    if (action == GLFW_PRESS)
+    {
+      if (event.mActionCurr != EventType::Down && event.mActionPrev != EventType::Held)
+      {
+        event.mActionCurr = EventType::Down;
+      }
+      else
+      {
+        event.mActionCurr = EventType::Held;
+      }
+    }
+
+    if (action == GLFW_RELEASE)
+    {
+      if (event.mActionCurr != EventType::Up && event.mActionPrev == EventType::Held)
+      {
+        event.mActionCurr = EventType::Up;
+      }
+      else
+      {
+        event.mActionCurr = EventType::None;
+      }
+    }
   }
-  if (sKeyboardActionCurr == GLFW_PRESS || sKeyboardActionCurr == GLFW_REPEAT && sKeyboardActionPrev == -1 || sKeyboardActionPrev == GLFW_PRESS || sKeyboardActionPrev == GLFW_REPEAT)
+
+  for (u32 i{}; i < 256; i++)
   {
-    sKeyboardActionPrev = sKeyboardActionCurr;
-    sKeyboardActionCurr = GLFW_REPEAT;
+    Event& event{ sKeyboardKeyStates[i] };
+    s32 action{ glfwGetKey(spWindow, (s32)i) };
+
+    if (action == GLFW_PRESS)
+    {
+      if (event.mActionCurr != EventType::Down && event.mActionPrev != EventType::Held)
+      {
+        event.mActionCurr = EventType::Down;
+      }
+      else
+      {
+        event.mActionCurr = EventType::Held;
+      }
+    }
+
+    if (action == GLFW_RELEASE)
+    {
+      if (event.mActionCurr != EventType::Up && event.mActionPrev == EventType::Held)
+      {
+        event.mActionCurr = EventType::Up;
+      }
+      else
+      {
+        event.mActionCurr = EventType::None;
+      }
+    }
   }
 }
 
@@ -167,27 +191,27 @@ r32 MousePositionY()
 }
 u32 MouseDown(u32 key)
 {
-  return sMouseActionCurr == GLFW_PRESS && sMouseKey == key;
+  return sMouseKeyStates[key].mActionCurr == EventType::Down;
 }
 u32 MouseHeld(u32 key)
 {
-  return sMouseActionCurr == GLFW_REPEAT && sMouseKey == key;
+  return sMouseKeyStates[key].mActionCurr == EventType::Held;
 }
 u32 MouseUp(u32 key)
 {
-  return sMouseActionCurr == GLFW_RELEASE && sMouseKey == key;
+  return sMouseKeyStates[key].mActionCurr == EventType::Up;
 }
 u32 KeyDown(u32 key)
 {
-  return sKeyboardActionCurr == GLFW_PRESS && sKeyboardKey == key;
+  return sKeyboardKeyStates[key].mActionCurr == EventType::Down;
 }
 u32 KeyHeld(u32 key)
 {
-  return sKeyboardActionCurr == GLFW_REPEAT && sKeyboardKey == key;
+  return sKeyboardKeyStates[key].mActionCurr == EventType::Held;
 }
 u32 KeyUp(u32 key)
 {
-  return sKeyboardActionCurr == GLFW_RELEASE && sKeyboardKey == key;
+  return sKeyboardKeyStates[key].mActionCurr == EventType::Up;
 }
 
 /*
@@ -254,13 +278,13 @@ void CameraCreate(Camera& camera, r32v3 const& position, r32 fov, r32 near, r32 
     .mView      { glm::lookAt(position, position + front, up) },
   };
 }
-void CameraUpdateController(Camera& camera, CameraControllerOrbit& controller, r32 timeDelta)
+void CameraUpdateControllerSpace(Camera& camera, CameraControllerSpace& controller, r32 timeDelta)
 {
-  if (KeyDown(GLFW_KEY_A) || KeyHeld(GLFW_KEY_A)) camera.mPosition += -camera.mLocalRight * controller.mPositionSpeed * timeDelta;
-  if (KeyDown(GLFW_KEY_D) || KeyHeld(GLFW_KEY_D)) camera.mPosition += camera.mLocalRight * controller.mPositionSpeed * timeDelta;
+  if (KeyHeld(GLFW_KEY_A)) controller.mPositionVelocity += -camera.mLocalRight * controller.mPositionSpeed * timeDelta;
+  if (KeyHeld(GLFW_KEY_D)) controller.mPositionVelocity += camera.mLocalRight * controller.mPositionSpeed * timeDelta;
 
-  if (KeyDown(GLFW_KEY_S) || KeyHeld(GLFW_KEY_S)) camera.mPosition += -camera.mLocalFront * controller.mPositionSpeed * timeDelta;
-  if (KeyDown(GLFW_KEY_W) || KeyHeld(GLFW_KEY_W)) camera.mPosition += camera.mLocalFront * controller.mPositionSpeed * timeDelta;
+  if (KeyHeld(GLFW_KEY_S)) controller.mPositionVelocity += -camera.mLocalFront * controller.mPositionSpeed * timeDelta;
+  if (KeyHeld(GLFW_KEY_W)) controller.mPositionVelocity += camera.mLocalFront * controller.mPositionSpeed * timeDelta;
 
   static r32v2 mousePositionDown{};
 
@@ -271,27 +295,15 @@ void CameraUpdateController(Camera& camera, CameraControllerOrbit& controller, r
   if (MouseHeld(GLFW_MOUSE_BUTTON_RIGHT))
   {
     r32v2 mousePosition{ MousePositionX(), MousePositionY() };
-    r32v2 windowSize{ WindowSizeX(), WindowSizeY() };
     r32v2 mousePositionDelta{ mousePositionDown - mousePosition };
-    controller.mRotationDrag = r32v2{ mousePositionDelta.x, -mousePositionDelta.y };
-  }
-  else
-  {
-    controller.mRotationDrag = {};
+    r32v2 mousePositionDeltaAligned{ mousePositionDelta.x, mousePositionDelta.y };
+    controller.mRotationVelocity += mousePositionDeltaAligned * controller.mRotationSpeed * timeDelta;
   }
 
-  if (glm::length(controller.mRotationVelocity) > controller.mRotationDeadzone)
-    controller.mRotationVelocity += -controller.mRotationVelocity * controller.mRotationDecay * timeDelta;
-  else
-    controller.mRotationVelocity = { 0.f, 0.f };
+  controller.mPositionVelocity += -controller.mPositionVelocity * controller.mPositionDecay * timeDelta;
+  controller.mRotationVelocity += -controller.mRotationVelocity * controller.mRotationDecay * timeDelta;
 
-  controller.mRotationVelocity += controller.mRotationDrag * controller.mRotationSpeed * timeDelta;
-
-  if (controller.mRotationVelocity.x > 180.f) controller.mRotationVelocity.x = -180.f;
-  if (controller.mRotationVelocity.x < -180.f) controller.mRotationVelocity.x = 180.f;
-
-  if (controller.mRotationVelocity.y > 180.f) controller.mRotationVelocity.y = -180.f;
-  if (controller.mRotationVelocity.y < -180.f) controller.mRotationVelocity.y = 180.f;
+  camera.mPosition += controller.mPositionVelocity;
 
   r32m4 localRotation{ glm::identity<r32m4>() };
   localRotation = glm::rotate(localRotation, glm::radians(controller.mRotationVelocity.y), camera.mLocalRight);
@@ -303,6 +315,14 @@ void CameraUpdateController(Camera& camera, CameraControllerOrbit& controller, r
 
   camera.mProjection = glm::perspective(camera.mFovRad, sAspect, camera.mNear, camera.mFar);
   camera.mView = glm::lookAt(camera.mPosition, camera.mPosition + camera.mLocalFront, camera.mLocalUp);
+}
+void CameraUpdateControllerOrbit(Camera& camera, CameraControllerOrbit& controller, r32 timeDelta)
+{
+  //if (controller.mRotationVelocity.x > 180.f) controller.mRotationVelocity.x = -180.f;
+  //if (controller.mRotationVelocity.x < -180.f) controller.mRotationVelocity.x = 180.f;
+  //
+  //if (controller.mRotationVelocity.y > 180.f) controller.mRotationVelocity.y = -180.f;
+  //if (controller.mRotationVelocity.y < -180.f) controller.mRotationVelocity.y = 180.f;
 }
 
 /*
@@ -485,61 +505,72 @@ void ModelDestroy(Model const& model)
 }
 
 /*
+* Drawing methods.
+*/
+
+void DrawLines(Mesh const& mesh)
+{
+
+}
+void DrawTriangles(Mesh const& mesh)
+{
+
+}
+
+/*
 * 3D debug utilities.
 */
 
-void LineBatchCreate()
+void LineBatchCreate(u32 vertexBufferSize)
 {
-  ShaderCreate(sShaderLineBatch, sVertexShaderSourceLine, sFragmentShaderSourceLine);
+  ShaderCreate(sLineBatchShader, sVertexShaderSourceLine, sFragmentShaderSourceLine);
 
-  glGenVertexArrays(1, &sMeshLineBatch.mVao);
-  glGenBuffers(1, &sMeshLineBatch.mVbo);
-  glGenBuffers(1, &sMeshLineBatch.mEbo);
-}
-void LineBatchBegin()
-{
-  sMeshLineBatch.mVertices.clear();
-  sMeshLineBatch.mIndices.clear();
-}
-void LineBatchPush(r32v3 const& p0, r32v3 const& p1, r32v4 const& c0, r32v4 const& c1)
-{
-  u32 const numVertices{ (u32)sMeshLineBatch.mVertices.size() };
+  glGenVertexArrays(1, &sLineBatchMesh.mVao);
+  glGenBuffers(1, &sLineBatchMesh.mVbo);
+  glGenBuffers(1, &sLineBatchMesh.mEbo);
 
-  sMeshLineBatch.mVertices.emplace_back(Vertex{ p0, r32v3{}, c0 });
-  sMeshLineBatch.mVertices.emplace_back(Vertex{ p1, r32v3{}, c1 });
+  glBindVertexArray(sLineBatchMesh.mVao);
 
-  sMeshLineBatch.mIndices.emplace_back(numVertices + 0);
-  sMeshLineBatch.mIndices.emplace_back(numVertices + 1);
-}
-void LineBatchEnd()
-{
-  glBindVertexArray(sMeshLineBatch.mVao);
-
-  glBindBuffer(GL_ARRAY_BUFFER, sMeshLineBatch.mVbo);
-  glBufferData(GL_ARRAY_BUFFER, sMeshLineBatch.mVertices.size() * sizeof(Vertex), sMeshLineBatch.mVertices.data(), GL_STATIC_DRAW);
+  glBindBuffer(GL_ARRAY_BUFFER, sLineBatchMesh.mVbo);
+  glBufferData(GL_ARRAY_BUFFER, vertexBufferSize * sizeof(Vertex), nullptr, GL_STATIC_DRAW);
 
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
   glEnableVertexAttribArray(2);
   glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(2 * sizeof(r32v3)));
 
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sMeshLineBatch.mEbo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sMeshLineBatch.mIndices.size() * sizeof(u32), sMeshLineBatch.mIndices.data(), GL_STATIC_DRAW);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sLineBatchMesh.mEbo);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, vertexBufferSize * 2 * sizeof(u32), nullptr, GL_STATIC_DRAW);
 
   glBindVertexArray(0);
 }
+void LineBatchPush(r32v3 const& p0, r32v3 const& p1, r32v4 const& c0, r32v4 const& c1)
+{
+  Vertex vertices[2]{ { p0, {}, c0 }, { p1, {}, c1 } };
+  u32 indices[2]{ sLineBatchOffsetIndex + 0, sLineBatchOffsetIndex + 1 };
+
+  glBindVertexArray(sLineBatchMesh.mVao);
+
+  glBindBuffer(GL_ARRAY_BUFFER, sLineBatchMesh.mVbo);
+  glBufferSubData(GL_ARRAY_BUFFER, sLineBatchOffsetVertex * sizeof(Vertex), 2 * sizeof(Vertex), vertices);
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sLineBatchMesh.mEbo);
+  glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, sLineBatchOffsetIndex * sizeof(u32), 2 * sizeof(u32), indices);
+  
+  sLineBatchOffsetVertex += 2;
+  sLineBatchOffsetIndex += 2;
+}
 void LineBatchRender()
 {
-  ShaderBind(sShaderLineBatch);
+  glBindVertexArray(sLineBatchMesh.mVao);
 
-  ShaderUniformMat4(sShaderLineBatch, "uProjection", spSceneActive->mCamera.mProjection);
-  ShaderUniformMat4(sShaderLineBatch, "uView", spSceneActive->mCamera.mView);
+  ShaderBind(sLineBatchShader);
 
-  glBindVertexArray(sMeshLineBatch.mVao);
-  glDrawElements(GL_LINES, (s32)sMeshLineBatch.mIndices.size(), GL_UNSIGNED_INT, nullptr);
-}
-void LineBatchDestroy()
-{
-  MeshDestroy(sMeshLineBatch);
-  ShaderDestroy(sShaderLineBatch);
+  ShaderUniformMat4(sLineBatchShader, "uProjection", spSceneActive->mCamera.mProjection);
+  ShaderUniformMat4(sLineBatchShader, "uView", spSceneActive->mCamera.mView);
+
+  glDrawElements(GL_LINES, sLineBatchOffsetIndex, GL_UNSIGNED_INT, nullptr);
+
+  sLineBatchOffsetVertex = 0;
+  sLineBatchOffsetIndex = 0;
 }

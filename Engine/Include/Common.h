@@ -48,14 +48,18 @@ struct SANDBOX_ENGINE_API Camera
   r32m4 mProjection{};
   r32m4 mView      {};
 };
+struct SANDBOX_ENGINE_API CameraControllerSpace
+{
+  r32   mPositionSpeed   { 0.02f };
+  r32   mRotationSpeed   { 0.2f };
+  r32   mPositionDecay   { 20.f };
+  r32   mRotationDecay   { 1000.f };
+  r32v3 mPositionVelocity{};
+  r32v2 mRotationVelocity{};
+};
 struct SANDBOX_ENGINE_API CameraControllerOrbit
 {
-  r32   mPositionSpeed   { 10.f };
-  r32   mRotationSpeed   { 0.5f };
-  r32v2 mRotationDrag    {};
-  r32   mRotationDecay   { 10.f };
-  r32   mRotationDeadzone{ 0.001f };
-  r32v2 mRotationVelocity{};
+
 };
 struct SANDBOX_ENGINE_API Texture
 {
@@ -76,5 +80,6 @@ struct SANDBOX_ENGINE_API Scene
   virtual void OnEnable() = 0;
   virtual void OnDisable() = 0;
   virtual void OnUpdate(r32 timeDelta) = 0;
+  virtual void OnUpdateFixed(r32 timeDelta) {}
   virtual void OnRender() const = 0;
 };

@@ -4,7 +4,7 @@
 
 struct SceneModelLoading : Scene
 {
-  CameraControllerOrbit mCameraController{};
+  CameraControllerSpace mCameraController{};
   Model                 mModel           {};
   Shader                mShader          {};
 

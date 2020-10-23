@@ -7,6 +7,7 @@
 #include <string>
 #include <functional>
 #include <cstdio>
+#include <cstdint>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>

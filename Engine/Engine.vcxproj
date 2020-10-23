@@ -155,6 +155,7 @@
     <ClInclude Include="Include\Api.h" />
     <ClInclude Include="Include\Common.h" />
     <ClInclude Include="Include\Core.h" />
+    <ClInclude Include="Include\Event.h" />
     <ClInclude Include="Include\Fwdecls.h" />
     <ClInclude Include="Include\Primitives.h" />
     <ClInclude Include="Include\Shaders.h" />

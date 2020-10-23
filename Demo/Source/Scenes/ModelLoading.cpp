@@ -19,7 +19,7 @@ void SceneModelLoading::OnDisable()
 
 void SceneModelLoading::OnUpdate(r32 timeDelta)
 {
-  CameraUpdateController(mCamera, mCameraController, timeDelta);
+  CameraUpdateControllerSpace(mCamera, mCameraController, timeDelta);
 }
 
 void SceneModelLoading::OnRender() const

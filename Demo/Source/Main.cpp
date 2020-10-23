@@ -6,52 +6,46 @@
 #include <Scenes/ModelLoading.h>
 #include <Scenes/RayTracing.h>
 
-r32 sTime          {};
-r32 sTimeDelta     {};
-r32 sTimePrev      {};
-r32 sTimePrevRender{};
+r32 sTimeRenderFixed    { 1.f / 60 };
+r32 sTimeRenderFixedPrev{};
+
+r32 sTime     {};
+r32 sTimeDelta{};
+r32 sTimePrev {};
 
 s32 main()
 {
-  r32 const fps{ 1.f / 60 };
-
   ContextCreate(1280, 720, "Sandbox");
 
   SceneCreate(new SceneDebugUtilities);
   SceneCreate(new SceneModelLoading);
   SceneCreate(new SceneRayTracing);
 
-  LineBatchCreate();
+  LineBatchCreate(65536);
 
   while (!WindowStatus())
   {
-    glfwPollEvents();
+    EventsPoll();
 
     sTime = (r32)glfwGetTime();
     sTimeDelta = sTime - sTimePrev;
 
     SceneActive()->OnUpdate(sTimeDelta);
 
-    if ((sTime - sTimePrevRender) >= fps)
+    if ((sTime - sTimeRenderFixedPrev) >= sTimeRenderFixed)
     {
-      LineBatchBegin();
-
+      SceneActive()->OnUpdateFixed(sTimeDelta);
       SceneActive()->OnRender();
 
-      LineBatchEnd();
       LineBatchRender();
 
       glfwSwapBuffers(ContextHandle());
 
-      sTimePrevRender = sTime;
+      sTimeRenderFixedPrev = sTime;
     }
-
-    EventStateNext();
 
     sTimePrev = sTime;
   }
-
-  LineBatchDestroy();
 
   SceneDestroyAll();
 

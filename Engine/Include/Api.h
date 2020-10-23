@@ -2,6 +2,7 @@
 
 #include <Types.h>
 #include <Core.h>
+#include <Event.h>
 #include <Common.h>
 #include <Shaders.h>
 
@@ -33,7 +34,7 @@ extern "C" SANDBOX_ENGINE_API void        ContextDestroy();
 * Event dispatching.
 */
 
-extern "C" SANDBOX_ENGINE_API void EventStateNext();
+extern "C" SANDBOX_ENGINE_API void EventsPoll();
 
 /*
 * Mouse/Keyboard/Window state handling.
@@ -66,7 +67,8 @@ extern "C" SANDBOX_ENGINE_API void   SceneDestroyAll();
 */
 
 extern "C" SANDBOX_ENGINE_API void CameraCreate(Camera& camera, r32v3 const& position, r32 fov, r32 near, r32 far);
-extern "C" SANDBOX_ENGINE_API void CameraUpdateController(Camera& camera, CameraControllerOrbit& controller, r32 timeDelta);
+extern "C" SANDBOX_ENGINE_API void CameraUpdateControllerSpace(Camera& camera, CameraControllerSpace& controller, r32 timeDelta);
+extern "C" SANDBOX_ENGINE_API void CameraUpdateControllerOrbit(Camera& camera, CameraControllerOrbit& controller, r32 timeDelta);
 
 /*
 * Shader management.
@@ -89,12 +91,16 @@ extern "C" SANDBOX_ENGINE_API void ModelBind(Model const& model);
 extern "C" SANDBOX_ENGINE_API void ModelDestroy(Model const& model);
 
 /*
+* Drawing methods.
+*/
+
+extern "C" SANDBOX_ENGINE_API void DrawLines(Mesh const& mesh);
+extern "C" SANDBOX_ENGINE_API void DrawTriangles(Mesh const& mesh);
+
+/*
 * 3D debug utilities.
 */
 
-extern "C" SANDBOX_ENGINE_API void LineBatchCreate();
-extern "C" SANDBOX_ENGINE_API void LineBatchBegin();
+extern "C" SANDBOX_ENGINE_API void LineBatchCreate(u32 vertexBufferSize);
 extern "C" SANDBOX_ENGINE_API void LineBatchPush(r32v3 const& p0, r32v3 const& p1, r32v4 const& c0, r32v4 const& c1);
-extern "C" SANDBOX_ENGINE_API void LineBatchEnd();
 extern "C" SANDBOX_ENGINE_API void LineBatchRender();
-extern "C" SANDBOX_ENGINE_API void LineBatchDestroy();

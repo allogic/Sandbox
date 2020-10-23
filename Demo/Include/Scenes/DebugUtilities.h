@@ -4,7 +4,7 @@
 
 struct SceneDebugUtilities : Scene
 {
-  CameraControllerOrbit mCameraController{};
+  CameraControllerSpace mCameraController{};
 
   void OnEnable() override;
   void OnDisable() override;
