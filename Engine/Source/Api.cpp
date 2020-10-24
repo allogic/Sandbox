@@ -18,10 +18,10 @@ r32v2 sMouseScroll  {};
 Event sMouseKeyStates[GLFW_MOUSE_BUTTON_LAST]{};
 Event sKeyboardKeyStates[GLFW_KEY_LAST]      {};
 
-Shader sLineBatchShader      {};
-Mesh   sLineBatchMesh        {};
-u32    sLineBatchOffsetVertex{};
-u32    sLineBatchOffsetIndex {};
+Shader sGizmoLineBatchShader      {};
+Mesh   sGizmoLineBatchMesh        {};
+u32    sGizmoLineBatchOffsetVertex{};
+u32    sGizmoLineBatchOffsetIndex {};
 
 /*
 * Debug utilities.
@@ -474,10 +474,10 @@ void ShaderUniformMat4(Shader const& shader, std::string const& name, r32m4 cons
 * Geometry management.
 */
 
-void MeshCreate(Mesh& mesh, std::vector<Vertex> const& vertices, std::vector<u32> const& indices)
+void MeshCreate(Mesh& mesh, VertexLayout vertexLayoutType, u32 vertexBufferSize, u32 indexBufferSize)
 {
-  mesh.mVertices = vertices;
-  mesh.mIndices = indices;
+  mesh.mVertices.resize(vertexBufferSize);
+  mesh.mIndices.resize(indexBufferSize);
 
   glGenVertexArrays(1, &mesh.mVao);
   glGenBuffers(1, &mesh.mVbo);
@@ -486,24 +486,43 @@ void MeshCreate(Mesh& mesh, std::vector<Vertex> const& vertices, std::vector<u32
   glBindVertexArray(mesh.mVao);
 
   glBindBuffer(GL_ARRAY_BUFFER, mesh.mVbo);
-  glBufferData(GL_ARRAY_BUFFER, mesh.mVertices.size() * sizeof(Vertex), mesh.mVertices.data(), GL_STATIC_DRAW);
 
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
-  glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(r32v3)));
-  glEnableVertexAttribArray(2);
-  glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(2 * sizeof(r32v3)));
+  switch (vertexLayoutType)
+  {
+    case GizmoLines:
+    {
+      glBufferData(GL_ARRAY_BUFFER, mesh.mVertices.size() * sizeof(VertexGizmoLine), nullptr, GL_STATIC_DRAW);
+      glEnableVertexAttribArray(0);
+      glEnableVertexAttribArray(1);
+      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexGizmoLine), (void*)(0));
+      glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexGizmoLine), (void*)(sizeof(r32v4)));
+      break;
+    }
+    case Lambert:
+    {
+      glBufferData(GL_ARRAY_BUFFER, mesh.mVertices.size() * sizeof(VertexLambert), nullptr, GL_STATIC_DRAW);
+      glEnableVertexAttribArray(0);
+      glEnableVertexAttribArray(1);
+      glEnableVertexAttribArray(2);
+      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexLambert), (void*)(0));
+      glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexLambert), (void*)(sizeof(r32v3) + sizeof(r32v3)));
+      glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(VertexLambert), (void*)(sizeof(r32v3) + sizeof(r32v3) + sizeof(r32v4)));
+      break;
+    }
+  }
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.mEbo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.mIndices.size() * sizeof(u32), mesh.mIndices.data(), GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.mIndices.size() * sizeof(u32), nullptr, GL_STATIC_DRAW);
 
   glBindVertexArray(0);
 }
 void MeshBind(Mesh const& mesh)
 {
   glBindVertexArray(mesh.mVao);
-  glDrawElements(GL_TRIANGLES, (s32)mesh.mIndices.size(), GL_UNSIGNED_INT, nullptr);
+}
+void MeshRender(Mesh const& mesh)
+{
+  DrawTriangles(mesh);
 }
 void MeshDestroy(Mesh const& mesh)
 {
@@ -586,12 +605,12 @@ void ModelCreate(Model& model, std::string const& fileName)
 
   model.mTransform = glm::identity<r32m4>();
 }
-void ModelBind(Model const& model)
+void ModelRender(Model const& model)
 {
   for (auto const& mesh : model.mMeshes)
   {
-    glBindVertexArray(mesh.mVao);
-    glDrawElements(GL_TRIANGLES, (s32)mesh.mIndices.size(), GL_UNSIGNED_INT, nullptr);
+    MeshBind(mesh);
+    MeshRender(mesh);
   }
 }
 void ModelDestroy(Model const& model)
@@ -606,67 +625,47 @@ void ModelDestroy(Model const& model)
 
 void DrawLines(Mesh const& mesh)
 {
-
+  glDrawElements(GL_LINES, (s32)mesh.mIndices.size(), GL_UNSIGNED_INT, nullptr);
 }
 void DrawTriangles(Mesh const& mesh)
 {
-
+  glDrawElements(GL_TRIANGLES, (s32)mesh.mIndices.size(), GL_UNSIGNED_INT, nullptr);
 }
 
 /*
 * 3D debug utilities.
 */
 
-void LineBatchCreate(u32 vertexBufferSize)
+void GizmoLineBatchCreate(u32 vertexBufferSize)
 {
-  ShaderCreate(sLineBatchShader, sVertexShaderSourceLine, sFragmentShaderSourceLine);
-
-  glGenVertexArrays(1, &sLineBatchMesh.mVao);
-  glGenBuffers(1, &sLineBatchMesh.mVbo);
-  glGenBuffers(1, &sLineBatchMesh.mEbo);
-
-  glBindVertexArray(sLineBatchMesh.mVao);
-
-  glBindBuffer(GL_ARRAY_BUFFER, sLineBatchMesh.mVbo);
-  glBufferData(GL_ARRAY_BUFFER, vertexBufferSize * sizeof(Vertex), nullptr, GL_STATIC_DRAW);
-
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
-  glEnableVertexAttribArray(2);
-  glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(2 * sizeof(r32v3)));
-
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sLineBatchMesh.mEbo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, vertexBufferSize * 2 * sizeof(u32), nullptr, GL_STATIC_DRAW);
-
-  glBindVertexArray(0);
+  ShaderCreate(sGizmoLineBatchShader, sVertexShaderSourceGizmoLine, sFragmentShaderSourceGizmoLine);
+  MeshCreate(sGizmoLineBatchMesh, VertexLayout::GizmoLines, vertexBufferSize, vertexBufferSize * 2);
 }
-void LineBatchPush(r32v3 const& p0, r32v3 const& p1, r32v4 const& c0, r32v4 const& c1)
+void GizmoLineBatchBind()
 {
-  Vertex vertices[2]{ { p0, {}, c0 }, { p1, {}, c1 } };
-  u32 indices[2]{ sLineBatchOffsetIndex + 0, sLineBatchOffsetIndex + 1 };
+  MeshBind(sGizmoLineBatchMesh);
+}
+void GizmoLineBatchPushLine(r32v3 const& p0, r32v3 const& p1, r32v4 const& color)
+{
+  VertexGizmoLine vertices[2]{ { p0, color }, { p1, color } };
+  u32 indices[2]{ sGizmoLineBatchOffsetIndex + 0, sGizmoLineBatchOffsetIndex + 1 };
 
-  glBindVertexArray(sLineBatchMesh.mVao);
+  glBindBuffer(GL_ARRAY_BUFFER, sGizmoLineBatchMesh.mVbo);
+  glBufferSubData(GL_ARRAY_BUFFER, sGizmoLineBatchOffsetVertex * sizeof(VertexGizmoLine), 2 * sizeof(VertexGizmoLine), vertices);
 
-  glBindBuffer(GL_ARRAY_BUFFER, sLineBatchMesh.mVbo);
-  glBufferSubData(GL_ARRAY_BUFFER, sLineBatchOffsetVertex * sizeof(Vertex), 2 * sizeof(Vertex), vertices);
-
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sLineBatchMesh.mEbo);
-  glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, sLineBatchOffsetIndex * sizeof(u32), 2 * sizeof(u32), indices);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sGizmoLineBatchMesh.mEbo);
+  glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, sGizmoLineBatchOffsetIndex * sizeof(u32), 2 * sizeof(u32), indices);
   
-  sLineBatchOffsetVertex += 2;
-  sLineBatchOffsetIndex += 2;
+  sGizmoLineBatchOffsetVertex += 2;
+  sGizmoLineBatchOffsetIndex += 2;
 }
-void LineBatchRender()
+void GizmoLineBatchRender()
 {
-  glBindVertexArray(sLineBatchMesh.mVao);
+  ShaderBind(sGizmoLineBatchShader);
+  ShaderUniformMat4(sGizmoLineBatchShader, "uProjection", spSceneActive->mCamera.mProjection);
+  ShaderUniformMat4(sGizmoLineBatchShader, "uView", spSceneActive->mCamera.mView);
+  MeshRender(sGizmoLineBatchMesh);
 
-  ShaderBind(sLineBatchShader);
-
-  ShaderUniformMat4(sLineBatchShader, "uProjection", spSceneActive->mCamera.mProjection);
-  ShaderUniformMat4(sLineBatchShader, "uView", spSceneActive->mCamera.mView);
-
-  glDrawElements(GL_LINES, sLineBatchOffsetIndex, GL_UNSIGNED_INT, nullptr);
-
-  sLineBatchOffsetVertex = 0;
-  sLineBatchOffsetIndex = 0;
+  sGizmoLineBatchOffsetVertex = 0;
+  sGizmoLineBatchOffsetIndex = 0;
 }

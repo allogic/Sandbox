@@ -26,13 +26,11 @@ void SceneDebugUtilities::OnUpdateFixed(r32 timeDelta)
 
 void SceneDebugUtilities::OnRender() const
 {
-  glClearColor(0.2f, 0.f, 0.f, 1.f);
-  glClear(GL_COLOR_BUFFER_BIT);
 
-  LineBatchPush({ 0.f, 0.f, 0.f }, { 1.f, 0.f, 0.f }, { 1.f, 0.f, 0.f, 1.f }, { 1.f, 0.f, 0.f, 1.f });
-  LineBatchPush({ 0.f, 0.f, 0.f }, { 0.f, 1.f, 0.f }, { 0.f, 1.f, 0.f, 1.f }, { 0.f, 1.f, 0.f, 1.f });
-  LineBatchPush({ 0.f, 0.f, 0.f }, { 0.f, 0.f, 1.f }, { 0.f, 0.f, 1.f, 1.f }, { 0.f, 0.f, 1.f, 1.f });
+}
 
+void SceneDebugUtilities::OnGizmos(r32 timeDelta)
+{
   u32 size{ 32 };
 
   for (u32 i{}; i <= size; i++)
@@ -56,7 +54,7 @@ void SceneDebugUtilities::OnRender() const
       endP0 += -half * spacing;
       endP1 += -half * spacing;
 
-      LineBatchPush(startP0, endP0, color, color);
-      LineBatchPush(startP1, endP1, color, color);
+      GizmoLineBatchPushLine(startP0, endP0, color);
+      GizmoLineBatchPushLine(startP1, endP1, color);
     }
 }

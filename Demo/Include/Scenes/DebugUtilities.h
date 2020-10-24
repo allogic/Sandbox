@@ -11,4 +11,5 @@ struct SceneDebugUtilities : Scene
   void OnUpdate(r32 timeDelta) override;
   void OnUpdateFixed(r32 timeDelta) override;
   void OnRender() const override;
+  void OnGizmos(r32 timeDelta) override;
 };

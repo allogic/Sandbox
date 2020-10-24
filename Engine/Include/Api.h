@@ -84,14 +84,22 @@ extern "C" SANDBOX_ENGINE_API void ShaderDestroy(Shader const& shader);
 extern "C" SANDBOX_ENGINE_API void ShaderUniformMat4(Shader const& shader, std::string const& name, r32m4 const& matrix);
 
 /*
+* Vertex layouts.
+*/
+
+void VertexLayoutBindLines();
+void VertexLayoutBindLambert();
+
+/*
 * Geometry management.
 */
 
-extern "C" SANDBOX_ENGINE_API void MeshCreate(Mesh& mesh, std::vector<Vertex> const& vertices, std::vector<u32> const& indices);
+extern "C" SANDBOX_ENGINE_API void MeshCreate(Mesh& mesh, VertexLayout vertexLayoutType, u32 vertexBufferSize, u32 indexBufferSize);
 extern "C" SANDBOX_ENGINE_API void MeshBind(Mesh const& mesh);
+extern "C" SANDBOX_ENGINE_API void MeshRender(Mesh const& mesh);
 extern "C" SANDBOX_ENGINE_API void MeshDestroy(Mesh const& mesh);
 extern "C" SANDBOX_ENGINE_API void ModelCreate(Model& model, std::string const& fileName);
-extern "C" SANDBOX_ENGINE_API void ModelBind(Model const& model);
+extern "C" SANDBOX_ENGINE_API void ModelRender(Model const& model);
 extern "C" SANDBOX_ENGINE_API void ModelDestroy(Model const& model);
 
 /*
@@ -105,6 +113,7 @@ extern "C" SANDBOX_ENGINE_API void DrawTriangles(Mesh const& mesh);
 * 3D debug utilities.
 */
 
-extern "C" SANDBOX_ENGINE_API void LineBatchCreate(u32 vertexBufferSize);
-extern "C" SANDBOX_ENGINE_API void LineBatchPush(r32v3 const& p0, r32v3 const& p1, r32v4 const& c0, r32v4 const& c1);
-extern "C" SANDBOX_ENGINE_API void LineBatchRender();
+extern "C" SANDBOX_ENGINE_API void GizmoLineBatchCreate(u32 vertexBufferSize);
+extern "C" SANDBOX_ENGINE_API void GizmoLineBatchBind();
+extern "C" SANDBOX_ENGINE_API void GizmoLineBatchPushLine(r32v3 const& p0, r32v3 const& p1, r32v4 const& color);
+extern "C" SANDBOX_ENGINE_API void GizmoLineBatchRender();

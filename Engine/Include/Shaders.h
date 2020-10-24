@@ -1,18 +1,25 @@
 #pragma once
 
 #include <Core.h>
+#include <Types.h>
+
+enum VertexLayout : u32
+{
+  GizmoLines,
+  Lambert,
+};
 
 /*
 * Debug shaders.
 */
 
-std::string const sVertexShaderSourceLine
+std::string const sVertexShaderSourceGizmoLine
 {
 R"glsl(
 #version 460 core
 
 layout (location = 0) in vec3 lPosition;
-layout (location = 2) in vec4 lColor;
+layout (location = 1) in vec4 lColor;
 
 uniform mat4 uProjection;
 uniform mat4 uView;
@@ -29,7 +36,7 @@ void main()
 }
 )glsl"
 };
-std::string const sFragmentShaderSourceLine
+std::string const sFragmentShaderSourceGizmoLine
 {
 R"glsl(
 #version 460 core
@@ -90,7 +97,7 @@ out vec4 color;
 
 void main()
 {
-  color = vec4(fNormal, 1.0f);
+  color = vec4(1.f, 0.f, 0.f, 1.0f);
 }
 )glsl"
 };

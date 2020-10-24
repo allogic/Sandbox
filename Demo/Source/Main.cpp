@@ -22,7 +22,7 @@ s32 main()
   SceneCreate(new SceneModelLoading);
   SceneCreate(new SceneRayTracing);
 
-  LineBatchCreate(65536);
+  GizmoLineBatchCreate(65536);
 
   while (!WindowStatus())
   {
@@ -41,19 +41,20 @@ s32 main()
     {
       sTimeRenderFixedDelta = sTime - sTimeRenderFixedPrev;
 
+      glClearColor(0.f, 0.f, 0.f, 0.f);
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
       SceneActive()->OnUpdateFixed(sTimeRenderFixedDelta);
       SceneActive()->OnRender();
 
-      LineBatchRender();
+      GizmoLineBatchBind();
+      SceneActive()->OnGizmos(sTimeRenderFixedDelta);
+      GizmoLineBatchRender();
 
       glfwSwapBuffers(ContextHandle());
 
       sTimeRenderFixedPrev = sTime;
     }
-
-    // bind once
-    SceneActive()->OnGizmos(sTimeDelta);
-    // draw once
 
     sTimePrev = sTime;
   }

@@ -1,6 +1,7 @@
 #pragma once
 
 struct GLFWwindow;
-struct Vertex;
+struct VertexGizmoLine;
+struct VertexLambert;
 struct Material;
 struct Mesh;
