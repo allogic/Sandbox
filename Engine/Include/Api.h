@@ -69,8 +69,10 @@ extern "C" SANDBOX_ENGINE_API void   SceneDestroyAll();
 */
 
 extern "C" SANDBOX_ENGINE_API void CameraCreate(Camera& camera, r32v3 const& position, r32 fov, r32 near, r32 far);
-extern "C" SANDBOX_ENGINE_API void CameraUpdateControllerSpace(Camera& camera, CameraControllerSpace& controller, r32 timeDelta);
-extern "C" SANDBOX_ENGINE_API void CameraUpdateControllerOrbit(Camera& camera, CameraControllerOrbit& controller, r32 timeDelta);
+extern "C" SANDBOX_ENGINE_API void CameraUpdateControllerInputSpace(Camera & camera, CameraControllerSpace & controller, r32 timeDelta);
+extern "C" SANDBOX_ENGINE_API void CameraUpdateControllerInputOrbit(Camera & camera, CameraControllerOrbit & controller, r32 timeDelta);
+extern "C" SANDBOX_ENGINE_API void CameraUpdateControllerPhysicsSpace(Camera& camera, CameraControllerSpace& controller);
+extern "C" SANDBOX_ENGINE_API void CameraUpdateControllerPhysicsOrbit(Camera& camera, CameraControllerOrbit& controller);
 
 /*
 * Shader management.

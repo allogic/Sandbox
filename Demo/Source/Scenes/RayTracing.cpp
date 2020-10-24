@@ -16,7 +16,12 @@ void SceneRayTracing::OnDisable()
 
 void SceneRayTracing::OnUpdate(r32 timeDelta)
 {
-  CameraUpdateControllerOrbit(mCamera, mCameraController, timeDelta);
+  CameraUpdateControllerInputOrbit(mCamera, mCameraController, timeDelta);
+}
+
+void SceneRayTracing::OnUpdateFixed(r32 timeDelta)
+{
+  CameraUpdateControllerPhysicsOrbit(mCamera, mCameraController);
 }
 
 void SceneRayTracing::OnRender() const

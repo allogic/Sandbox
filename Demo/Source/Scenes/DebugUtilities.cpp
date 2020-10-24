@@ -16,7 +16,12 @@ void SceneDebugUtilities::OnDisable()
 
 void SceneDebugUtilities::OnUpdate(r32 timeDelta)
 {
-  CameraUpdateControllerSpace(mCamera, mCameraController, timeDelta);
+  CameraUpdateControllerInputSpace(mCamera, mCameraController, timeDelta);
+}
+
+void SceneDebugUtilities::OnUpdateFixed(r32 timeDelta)
+{
+  CameraUpdateControllerPhysicsSpace(mCamera, mCameraController);
 }
 
 void SceneDebugUtilities::OnRender() const

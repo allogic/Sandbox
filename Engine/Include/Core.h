@@ -7,6 +7,7 @@
 #include <string>
 #include <functional>
 #include <cstdio>
+#include <limits>
 #include <cstdint>
 
 #include <glm/glm.hpp>

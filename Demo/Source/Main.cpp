@@ -6,12 +6,13 @@
 #include <Scenes/ModelLoading.h>
 #include <Scenes/RayTracing.h>
 
-r32 sTimeRenderFixed    { 1.f / 60 };
-r32 sTimeRenderFixedPrev{};
-
 r32 sTime     {};
-r32 sTimeDelta{};
 r32 sTimePrev {};
+r32 sTimeDelta{};
+
+r32 sTimeRenderFixed     { 1.f / 60 };
+r32 sTimeRenderFixedPrev {};
+r32 sTimeRenderFixedDelta{};
 
 s32 main()
 {
@@ -38,7 +39,9 @@ s32 main()
 
     if ((sTime - sTimeRenderFixedPrev) >= sTimeRenderFixed)
     {
-      SceneActive()->OnUpdateFixed(sTimeDelta);
+      sTimeRenderFixedDelta = sTime - sTimeRenderFixedPrev;
+
+      SceneActive()->OnUpdateFixed(sTimeRenderFixedDelta);
       SceneActive()->OnRender();
 
       LineBatchRender();
