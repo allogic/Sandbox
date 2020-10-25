@@ -155,11 +155,11 @@
     <ClInclude Include="Include\Api.h" />
     <ClInclude Include="Include\Common.h" />
     <ClInclude Include="Include\Core.h" />
-    <ClInclude Include="Include\Event.h" />
-    <ClInclude Include="Include\Fwdecls.h" />
+    <ClInclude Include="Include\Events.h" />
     <ClInclude Include="Include\Primitives.h" />
     <ClInclude Include="Include\Shaders.h" />
     <ClInclude Include="Include\Types.h" />
+    <ClInclude Include="Include\Geometry.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

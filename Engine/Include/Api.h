@@ -2,13 +2,11 @@
 
 #include <Types.h>
 #include <Core.h>
-#include <Event.h>
+#include <Events.h>
 #include <Common.h>
 #include <Shaders.h>
 
 #ifdef SANDBOX_ENGINE_INCLUDE_DEPENDENCIES
-#include <glad/glad.h>
-
 #include <GLFW/glfw3.h>
 
 #include <assimp/Importer.hpp>
@@ -84,30 +82,12 @@ extern "C" SANDBOX_ENGINE_API void ShaderDestroy(Shader const& shader);
 extern "C" SANDBOX_ENGINE_API void ShaderUniformMat4(Shader const& shader, std::string const& name, r32m4 const& matrix);
 
 /*
-* Vertex layouts.
+* Model management.
 */
 
-void VertexLayoutBindLines();
-void VertexLayoutBindLambert();
-
-/*
-* Geometry management.
-*/
-
-extern "C" SANDBOX_ENGINE_API void MeshCreate(Mesh& mesh, VertexLayout vertexLayoutType, u32 vertexBufferSize, u32 indexBufferSize);
-extern "C" SANDBOX_ENGINE_API void MeshBind(Mesh const& mesh);
-extern "C" SANDBOX_ENGINE_API void MeshRender(Mesh const& mesh);
-extern "C" SANDBOX_ENGINE_API void MeshDestroy(Mesh const& mesh);
 extern "C" SANDBOX_ENGINE_API void ModelCreate(Model& model, std::string const& fileName);
 extern "C" SANDBOX_ENGINE_API void ModelRender(Model const& model);
 extern "C" SANDBOX_ENGINE_API void ModelDestroy(Model const& model);
-
-/*
-* Drawing methods.
-*/
-
-extern "C" SANDBOX_ENGINE_API void DrawLines(Mesh const& mesh);
-extern "C" SANDBOX_ENGINE_API void DrawTriangles(Mesh const& mesh);
 
 /*
 * 3D debug utilities.
@@ -116,4 +96,5 @@ extern "C" SANDBOX_ENGINE_API void DrawTriangles(Mesh const& mesh);
 extern "C" SANDBOX_ENGINE_API void GizmoLineBatchCreate(u32 vertexBufferSize);
 extern "C" SANDBOX_ENGINE_API void GizmoLineBatchBind();
 extern "C" SANDBOX_ENGINE_API void GizmoLineBatchPushLine(r32v3 const& p0, r32v3 const& p1, r32v4 const& color);
+extern "C" SANDBOX_ENGINE_API void GizmoLineBatchUnbind();
 extern "C" SANDBOX_ENGINE_API void GizmoLineBatchRender();

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Core.h>
-#include <Fwdecls.h>
 
 using s32 = int;
 using u32 = int unsigned;

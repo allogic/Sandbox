@@ -2,43 +2,16 @@
 
 #include <Types.h>
 #include <Core.h>
-#include <Fwdecls.h>
-
-using Materials       = std::vector<Material>;
-using Meshes          = std::vector<Mesh>;
-using Indices         = std::vector<u32>;
+#include <Geometry.h>
 
 struct SANDBOX_ENGINE_API Material
 {
   
 };
-struct SANDBOX_ENGINE_API VertexGizmoLine
-{
-  r32v3 mPosition{};
-  r32v4 mColor   {};
-};
-struct SANDBOX_ENGINE_API VertexLambert
-{
-  r32v3 mPosition{};
-  r32v3 mNormal{};
-  r32v4 mColor{};
-};
-template<typename Vertex>
-struct Mesh
-{
-  u32                 mVao        {};
-  u32                 mVbo        {};
-  u32                 mEbo        {};
-  std::vector<Vertex> mVertices   {};
-  Indices             mIndices    {};
-};
-using MeshGizmo   = Mesh<VertexGizmoLine>;
-using MeshLambert = Mesh<VertexGizmoLine>;
 struct SANDBOX_ENGINE_API Model
 {
-  Materials mMaterials{};
-  Meshes    mMeshes   {};
-  r32m4     mTransform{};
+  ModelLambert mModel{};
+  r32m4        mTransform{};
 };
 struct SANDBOX_ENGINE_API Camera
 {

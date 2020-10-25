@@ -18,10 +18,10 @@ r32v2 sMouseScroll  {};
 Event sMouseKeyStates[GLFW_MOUSE_BUTTON_LAST]{};
 Event sKeyboardKeyStates[GLFW_KEY_LAST]      {};
 
-Shader sGizmoLineBatchShader      {};
-Mesh   sGizmoLineBatchMesh        {};
-u32    sGizmoLineBatchOffsetVertex{};
-u32    sGizmoLineBatchOffsetIndex {};
+Shader    sGizmoLineBatchShader      {};
+MeshGizmo sGizmoLineBatchMesh        {};
+u32       sGizmoLineBatchOffsetVertex{};
+u32       sGizmoLineBatchOffsetIndex {};
 
 /*
 * Debug utilities.
@@ -471,65 +471,9 @@ void ShaderUniformMat4(Shader const& shader, std::string const& name, r32m4 cons
 }
 
 /*
-* Geometry management.
+* Model management.
 */
 
-void MeshCreate(Mesh& mesh, VertexLayout vertexLayoutType, u32 vertexBufferSize, u32 indexBufferSize)
-{
-  mesh.mVertices.resize(vertexBufferSize);
-  mesh.mIndices.resize(indexBufferSize);
-
-  glGenVertexArrays(1, &mesh.mVao);
-  glGenBuffers(1, &mesh.mVbo);
-  glGenBuffers(1, &mesh.mEbo);
-
-  glBindVertexArray(mesh.mVao);
-
-  glBindBuffer(GL_ARRAY_BUFFER, mesh.mVbo);
-
-  switch (vertexLayoutType)
-  {
-    case GizmoLines:
-    {
-      glBufferData(GL_ARRAY_BUFFER, mesh.mVertices.size() * sizeof(VertexGizmoLine), nullptr, GL_STATIC_DRAW);
-      glEnableVertexAttribArray(0);
-      glEnableVertexAttribArray(1);
-      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexGizmoLine), (void*)(0));
-      glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexGizmoLine), (void*)(sizeof(r32v4)));
-      break;
-    }
-    case Lambert:
-    {
-      glBufferData(GL_ARRAY_BUFFER, mesh.mVertices.size() * sizeof(VertexLambert), nullptr, GL_STATIC_DRAW);
-      glEnableVertexAttribArray(0);
-      glEnableVertexAttribArray(1);
-      glEnableVertexAttribArray(2);
-      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexLambert), (void*)(0));
-      glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexLambert), (void*)(sizeof(r32v3) + sizeof(r32v3)));
-      glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(VertexLambert), (void*)(sizeof(r32v3) + sizeof(r32v3) + sizeof(r32v4)));
-      break;
-    }
-  }
-
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.mEbo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.mIndices.size() * sizeof(u32), nullptr, GL_STATIC_DRAW);
-
-  glBindVertexArray(0);
-}
-void MeshBind(Mesh const& mesh)
-{
-  glBindVertexArray(mesh.mVao);
-}
-void MeshRender(Mesh const& mesh)
-{
-  DrawTriangles(mesh);
-}
-void MeshDestroy(Mesh const& mesh)
-{
-  glDeleteBuffers(1, &mesh.mVbo);
-  glDeleteBuffers(1, &mesh.mEbo);
-  glDeleteVertexArrays(1, &mesh.mVao);
-}
 void ModelCreate(Model& model, std::string const& fileName)
 {
   Assimp::Importer importer{};
@@ -543,49 +487,37 @@ void ModelCreate(Model& model, std::string const& fileName)
     if (!(pMesh->mPrimitiveTypes & aiPrimitiveType_TRIANGLE))
       continue;
 
-    Mesh mesh{};
-    mesh.mVertices.resize(pMesh->mNumVertices);
-    mesh.mIndices.resize(pMesh->mNumFaces * 3);
+    MeshLambert meshLambert{};
 
-    glGenVertexArrays(1, &mesh.mVao);
-    glGenBuffers(1, &mesh.mVbo);
-    glGenBuffers(1, &mesh.mEbo);
+    std::vector<VertexLambert> verticesLambert{};
+    std::vector<u32> indicesLambert{};
 
-    glBindVertexArray(mesh.mVao);
+    verticesLambert.resize(pMesh->mNumVertices);
+    indicesLambert.resize(pMesh->mNumFaces * 3);
+
+    MeshLayoutCreate(meshLambert, pMesh->mNumVertices, pMesh->mNumFaces * 3);    
 
     for (u32 j{}; j < pMesh->mNumVertices; j++)
     {
-      mesh.mVertices[j] =
+      verticesLambert[j] =
       {
         .mPosition{ pMesh->mVertices[j].x, pMesh->mVertices[j].y, pMesh->mVertices[j].z },
         .mNormal  { pMesh->mNormals[j].x, pMesh->mNormals[j].y, pMesh->mNormals[j].z },
         .mColor   { 0.f, 0.f, 0.f, 1.f },
       };
     }
-
-    glBindBuffer(GL_ARRAY_BUFFER, mesh.mVbo);
-    glBufferData(GL_ARRAY_BUFFER, mesh.mVertices.size() * sizeof(Vertex), mesh.mVertices.data(), GL_STATIC_DRAW);
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(r32v3)));
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(2 * sizeof(r32v3)));
-
     for (u32 j{}, k{}; j < pMesh->mNumFaces; j++, k += 3)
     {
-      mesh.mIndices[k + 0] = { pMesh->mFaces[j].mIndices[0] };
-      mesh.mIndices[k + 1] = { pMesh->mFaces[j].mIndices[1] };
-      mesh.mIndices[k + 2] = { pMesh->mFaces[j].mIndices[2] };
+      indicesLambert[k + 0] = { pMesh->mFaces[j].mIndices[0] };
+      indicesLambert[k + 1] = { pMesh->mFaces[j].mIndices[1] };
+      indicesLambert[k + 2] = { pMesh->mFaces[j].mIndices[2] };
     }
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.mEbo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.mIndices.size() * sizeof(u32), mesh.mIndices.data(), GL_STATIC_DRAW);
+    MeshLayoutBind(meshLambert);
+    MeshLayoutData(meshLambert, verticesLambert.data(), indicesLambert.data(), (u32)verticesLambert.size(), (u32)indicesLambert.size());
+    MeshLayoutUnbind(meshLambert);
 
-    glBindVertexArray(0);
-
-    model.mMeshes.emplace_back(mesh);
+    model.mModel.mMeshes.emplace_back(meshLambert);
   }
 
   for (u32 i{}; i < pScene->mNumMaterials; i++)
@@ -607,29 +539,17 @@ void ModelCreate(Model& model, std::string const& fileName)
 }
 void ModelRender(Model const& model)
 {
-  for (auto const& mesh : model.mMeshes)
+  for (auto const& mesh : model.mModel.mMeshes)
   {
-    MeshBind(mesh);
-    MeshRender(mesh);
+    MeshLayoutBind(mesh);
+    MeshLayoutRender(mesh, RenderMode::Triangles);
+    MeshLayoutUnbind(mesh);
   }
 }
 void ModelDestroy(Model const& model)
 {
-  for (auto const& mesh : model.mMeshes)
-    MeshDestroy(mesh);
-}
-
-/*
-* Drawing methods.
-*/
-
-void DrawLines(Mesh const& mesh)
-{
-  glDrawElements(GL_LINES, (s32)mesh.mIndices.size(), GL_UNSIGNED_INT, nullptr);
-}
-void DrawTriangles(Mesh const& mesh)
-{
-  glDrawElements(GL_TRIANGLES, (s32)mesh.mIndices.size(), GL_UNSIGNED_INT, nullptr);
+  for (auto const& mesh : model.mModel.mMeshes)
+    MeshLayoutDestroy(mesh);
 }
 
 /*
@@ -639,32 +559,32 @@ void DrawTriangles(Mesh const& mesh)
 void GizmoLineBatchCreate(u32 vertexBufferSize)
 {
   ShaderCreate(sGizmoLineBatchShader, sVertexShaderSourceGizmoLine, sFragmentShaderSourceGizmoLine);
-  MeshCreate(sGizmoLineBatchMesh, VertexLayout::GizmoLines, vertexBufferSize, vertexBufferSize * 2);
+  MeshLayoutCreate(sGizmoLineBatchMesh, vertexBufferSize, vertexBufferSize * 2);
 }
 void GizmoLineBatchBind()
 {
-  MeshBind(sGizmoLineBatchMesh);
+  MeshLayoutBind(sGizmoLineBatchMesh);
 }
 void GizmoLineBatchPushLine(r32v3 const& p0, r32v3 const& p1, r32v4 const& color)
 {
   VertexGizmoLine vertices[2]{ { p0, color }, { p1, color } };
   u32 indices[2]{ sGizmoLineBatchOffsetIndex + 0, sGizmoLineBatchOffsetIndex + 1 };
 
-  glBindBuffer(GL_ARRAY_BUFFER, sGizmoLineBatchMesh.mVbo);
-  glBufferSubData(GL_ARRAY_BUFFER, sGizmoLineBatchOffsetVertex * sizeof(VertexGizmoLine), 2 * sizeof(VertexGizmoLine), vertices);
-
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sGizmoLineBatchMesh.mEbo);
-  glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, sGizmoLineBatchOffsetIndex * sizeof(u32), 2 * sizeof(u32), indices);
+  MeshLayoutDataSub(sGizmoLineBatchMesh, vertices, indices, sGizmoLineBatchOffsetVertex, sGizmoLineBatchOffsetIndex, 2, 2);
   
   sGizmoLineBatchOffsetVertex += 2;
   sGizmoLineBatchOffsetIndex += 2;
+}
+void GizmoLineBatchUnbind()
+{
+  MeshLayoutUnbind(sGizmoLineBatchMesh);
 }
 void GizmoLineBatchRender()
 {
   ShaderBind(sGizmoLineBatchShader);
   ShaderUniformMat4(sGizmoLineBatchShader, "uProjection", spSceneActive->mCamera.mProjection);
   ShaderUniformMat4(sGizmoLineBatchShader, "uView", spSceneActive->mCamera.mView);
-  MeshRender(sGizmoLineBatchMesh);
+  MeshLayoutRender(sGizmoLineBatchMesh, RenderMode::Lines);
 
   sGizmoLineBatchOffsetVertex = 0;
   sGizmoLineBatchOffsetIndex = 0;
