@@ -2,7 +2,7 @@
 
 #include <Types.h>
 #include <Core.h>
-#include <Geometry.h>
+#include <VertexLayouts.h>
 
 struct SANDBOX_ENGINE_API Material
 {
@@ -65,11 +65,16 @@ struct SANDBOX_ENGINE_API Texture
 {
   u32 mTid{};
 };
-struct SANDBOX_ENGINE_API Shader
+struct SANDBOX_ENGINE_API ShaderRender
 {
   u32 mPid{};
   u32 mVid{};
   u32 mFid{};
+};
+struct SANDBOX_ENGINE_API ShaderCompute
+{
+  u32 mPid{};
+  u32 mCid{};
 };
 struct SANDBOX_ENGINE_API Scene
 {

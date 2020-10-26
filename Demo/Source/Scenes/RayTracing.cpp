@@ -8,27 +8,22 @@ void SceneRayTracing::OnEnable()
 {
   CameraCreate(mCamera, { 0.f, 0.f, 0.f }, 45.f, 0.001f, 1000.f);
 }
-
 void SceneRayTracing::OnDisable()
 {
 
 }
-
 void SceneRayTracing::OnUpdate(r32 timeDelta)
 {
   CameraUpdateControllerInputOrbit(mCamera, mCameraController, timeDelta);
 }
-
 void SceneRayTracing::OnUpdateFixed(r32 timeDelta)
 {
   CameraUpdateControllerPhysicsOrbit(mCamera, mCameraController);
 }
-
 void SceneRayTracing::OnRender() const
 {
 
 }
-
 void SceneRayTracing::OnGizmos(r32 timeDelta)
 {
   u32 size{ 32 };

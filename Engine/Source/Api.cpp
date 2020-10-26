@@ -18,10 +18,51 @@ r32v2 sMouseScroll  {};
 Event sMouseKeyStates[GLFW_MOUSE_BUTTON_LAST]{};
 Event sKeyboardKeyStates[GLFW_KEY_LAST]      {};
 
-Shader    sGizmoLineBatchShader      {};
-MeshGizmo sGizmoLineBatchMesh        {};
-u32       sGizmoLineBatchOffsetVertex{};
-u32       sGizmoLineBatchOffsetIndex {};
+std::string const sRenderShaderVertexGizmo
+{
+R"glsl(
+#version 460 core
+
+layout (location = 0) in vec3 lPosition;
+layout (location = 1) in vec4 lColor;
+
+uniform mat4 uProjection;
+uniform mat4 uView;
+
+out vec3 fPosition;
+out vec4 fColor;
+
+void main()
+{
+  fPosition = lPosition;
+  fColor = lColor;
+
+  gl_Position = uProjection * uView * vec4(fPosition, 1.0f);
+}
+)glsl"
+};
+std::string const sRenderShaderFragmentGizmo
+{
+R"glsl(
+#version 460 core
+
+in vec3 fPosition;
+in vec4 fColor;
+
+out vec4 color;
+
+void main()
+{
+  color = fColor;
+}
+)glsl"
+};
+
+u32          sGizmoLineBatchVertexBufferSize{ 65535 };
+ShaderRender sGizmoLineBatchShader          {};
+MeshGizmo    sGizmoLineBatchMesh            {};
+u32          sGizmoLineBatchOffsetVertex    {};
+u32          sGizmoLineBatchOffsetIndex     {};
 
 /*
 * Debug utilities.
@@ -246,6 +287,8 @@ void   SceneCreate(Scene* pScene)
 }
 void   SceneSwitch(u32 index)
 {
+  GizmoLineBatchClear();
+
   spSceneActive->OnDisable();
   spSceneActive = sScenes[index];
   spSceneActive->OnEnable();
@@ -425,49 +468,70 @@ void CameraUpdateControllerPhysicsOrbit(Camera& camera, CameraControllerOrbit& c
 * Shader management.
 */
 
-void ShaderCreate(Shader& shader, std::string const& vertexShaderSource, std::string const& fragmentShaderSource)
+void ShaderCreateCompute(ShaderCompute& shaderCompute, std::string const& shaderComputeSource)
 {
-  shader.mPid = glCreateProgram();
-  shader.mVid = glCreateShader(GL_VERTEX_SHADER);
-  shader.mFid = glCreateShader(GL_FRAGMENT_SHADER);
+  shaderCompute.mPid = glCreateProgram();
+  shaderCompute.mCid = glCreateShader(GL_COMPUTE_SHADER);
 
-  char const* vertexShaderSourcePtr{ vertexShaderSource.data() };
-  char const* fragmentShaderSourcePtr{ fragmentShaderSource.data() };
+  char const* shaderComputeSourcePtr{ shaderComputeSource.data() };
 
-  glShaderSource(shader.mVid, 1, &vertexShaderSourcePtr, nullptr);
-  glShaderSource(shader.mFid, 1, &fragmentShaderSourcePtr, nullptr);
+  glShaderSource(shaderCompute.mCid, 1, &shaderComputeSourcePtr, nullptr);
+
+  std::string log{};
+
+  glCompileShader(shaderCompute.mCid);
+  if (CheckShaderStatus(shaderCompute.mCid, GL_COMPILE_STATUS, log))
+    std::printf("%s\n", log.data());
+
+  glAttachShader(shaderCompute.mPid, shaderCompute.mCid);
+
+  glLinkProgram(shaderCompute.mPid);
+  if (CheckShaderStatus(shaderCompute.mPid, GL_LINK_STATUS, log))
+    std::printf("%s\n", log.data());
+}
+void ShaderCreateRender(ShaderRender& shaderRender, std::string const& renderShaderVertexcSource, std::string const& renderShaderFragmentSource)
+{
+  shaderRender.mPid = glCreateProgram();
+  shaderRender.mVid = glCreateShader(GL_VERTEX_SHADER);
+  shaderRender.mFid = glCreateShader(GL_FRAGMENT_SHADER);
+
+  char const* shaderVertexSourcePtr{ renderShaderVertexcSource.data() };
+  char const* shaderFragmentSourcePtr{ renderShaderFragmentSource.data() };
+
+  glShaderSource(shaderRender.mVid, 1, &shaderVertexSourcePtr, nullptr);
+  glShaderSource(shaderRender.mFid, 1, &shaderFragmentSourcePtr, nullptr);
   
   std::string log{};
 
-  glCompileShader(shader.mVid);
-  if (CheckShaderStatus(shader.mVid, GL_COMPILE_STATUS, log))
+  glCompileShader(shaderRender.mVid);
+  if (CheckShaderStatus(shaderRender.mVid, GL_COMPILE_STATUS, log))
     std::printf("%s\n", log.data());
 
-  glCompileShader(shader.mFid);
-  if (CheckShaderStatus(shader.mFid, GL_COMPILE_STATUS, log))
+  glCompileShader(shaderRender.mFid);
+  if (CheckShaderStatus(shaderRender.mFid, GL_COMPILE_STATUS, log))
     std::printf("%s\n", log.data());
 
-  glAttachShader(shader.mPid, shader.mVid);
-  glAttachShader(shader.mPid, shader.mFid);
+  glAttachShader(shaderRender.mPid, shaderRender.mVid);
+  glAttachShader(shaderRender.mPid, shaderRender.mFid);
 
-  glLinkProgram(shader.mPid);
-  if (CheckShaderStatus(shader.mFid, GL_LINK_STATUS, log))
+  glLinkProgram(shaderRender.mPid);
+  if (CheckShaderStatus(shaderRender.mPid, GL_LINK_STATUS, log))
     std::printf("%s\n", log.data());
 }
-void ShaderBind(Shader const& shader)
+void ShaderDestroyCompute(ShaderCompute const& shaderCompute)
 {
-  glUseProgram(shader.mPid);
+  glDeleteShader(shaderCompute.mCid);
+  glDeleteProgram(shaderCompute.mPid);
 }
-void ShaderDestroy(Shader const& shader)
+void ShaderDestroyRender(ShaderRender const& shaderRender)
 {
-  glDeleteShader(shader.mVid);
-  glDeleteShader(shader.mFid);
-  glDeleteProgram(shader.mPid);
+  glDeleteShader(shaderRender.mVid);
+  glDeleteShader(shaderRender.mFid);
+  glDeleteProgram(shaderRender.mPid);
 }
-void ShaderUniformMat4(Shader const& shader, std::string const& name, r32m4 const& matrix)
+void ShaderExecuteCompute(ShaderCompute const& shaderCompute, u32 numThreadsX, u32 numThreadsY, u32 numThreadsZ)
 {
-  u32 id{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
-  glUniformMatrix4fv(id, 1, GL_FALSE, &matrix[0][0]);
+
 }
 
 /*
@@ -487,15 +551,11 @@ void ModelCreate(Model& model, std::string const& fileName)
     if (!(pMesh->mPrimitiveTypes & aiPrimitiveType_TRIANGLE))
       continue;
 
-    MeshLambert meshLambert{};
-
     std::vector<VertexLambert> verticesLambert{};
     std::vector<u32> indicesLambert{};
 
     verticesLambert.resize(pMesh->mNumVertices);
     indicesLambert.resize(pMesh->mNumFaces * 3);
-
-    MeshLayoutCreate(meshLambert, pMesh->mNumVertices, pMesh->mNumFaces * 3);    
 
     for (u32 j{}; j < pMesh->mNumVertices; j++)
     {
@@ -513,13 +573,15 @@ void ModelCreate(Model& model, std::string const& fileName)
       indicesLambert[k + 2] = { pMesh->mFaces[j].mIndices[2] };
     }
 
+    MeshLambert meshLambert{};
+
+    MeshLayoutCreate(meshLambert, (u32)verticesLambert.size(), (u32)indicesLambert.size());
     MeshLayoutBind(meshLambert);
     MeshLayoutData(meshLambert, verticesLambert.data(), indicesLambert.data(), (u32)verticesLambert.size(), (u32)indicesLambert.size());
     MeshLayoutUnbind(meshLambert);
 
     model.mModel.mMeshes.emplace_back(meshLambert);
   }
-
   for (u32 i{}; i < pScene->mNumMaterials; i++)
   {
     aiMaterial const* pMaterial{ pScene->mMaterials[i] };
@@ -529,7 +591,6 @@ void ModelCreate(Model& model, std::string const& fileName)
       //std::printf("%s\n", pMaterial->mProperties[j]->mKey.data);
     }
   }
-
   for (u32 i{}; i < pScene->mNumTextures; i++)
   {
     aiTexture const* pTexture{ pScene->mTextures[i] };
@@ -556,10 +617,18 @@ void ModelDestroy(Model const& model)
 * 3D debug utilities.
 */
 
-void GizmoLineBatchCreate(u32 vertexBufferSize)
+void GizmoLineBatchCreate()
 {
-  ShaderCreate(sGizmoLineBatchShader, sVertexShaderSourceGizmoLine, sFragmentShaderSourceGizmoLine);
-  MeshLayoutCreate(sGizmoLineBatchMesh, vertexBufferSize, vertexBufferSize * 2);
+  ShaderCreateRender(sGizmoLineBatchShader, sRenderShaderVertexGizmo, sRenderShaderFragmentGizmo);
+  MeshLayoutCreate(sGizmoLineBatchMesh, sGizmoLineBatchVertexBufferSize, sGizmoLineBatchVertexBufferSize * 2);
+}
+void GizmoLineBatchClear()
+{
+  MeshLayoutBind(sGizmoLineBatchMesh);
+  MeshLayoutClear(sGizmoLineBatchMesh);
+
+  sGizmoLineBatchOffsetVertex = 0;
+  sGizmoLineBatchOffsetIndex = 0;
 }
 void GizmoLineBatchBind()
 {
@@ -568,12 +637,78 @@ void GizmoLineBatchBind()
 void GizmoLineBatchPushLine(r32v3 const& p0, r32v3 const& p1, r32v4 const& color)
 {
   VertexGizmoLine vertices[2]{ { p0, color }, { p1, color } };
-  u32 indices[2]{ sGizmoLineBatchOffsetIndex + 0, sGizmoLineBatchOffsetIndex + 1 };
+  u32 indices[2]{ sGizmoLineBatchOffsetVertex + 0, sGizmoLineBatchOffsetVertex + 1 };
 
   MeshLayoutDataSub(sGizmoLineBatchMesh, vertices, indices, sGizmoLineBatchOffsetVertex, sGizmoLineBatchOffsetIndex, 2, 2);
   
   sGizmoLineBatchOffsetVertex += 2;
   sGizmoLineBatchOffsetIndex += 2;
+}
+void GizmoLineBatchPushBox(r32v3 const& position, r32v3 const& size, r32v4 const& color)
+{
+  r32v3 half{ size / 2.f };
+
+  r32v3 blf{ -half.x, -half.y, -half.z };
+  r32v3 brf{  half.x, -half.y, -half.z };
+  r32v3 tlf{ -half.x,  half.y, -half.z };
+  r32v3 trf{  half.x,  half.y, -half.z };
+
+  r32v3 blb{ -half.x, -half.y,  half.z };
+  r32v3 brb{  half.x, -half.y,  half.z };
+  r32v3 tlb{ -half.x,  half.y,  half.z };
+  r32v3 trb{  half.x,  half.y,  half.z };
+
+  VertexGizmoLine vertices[8]
+  {
+    // front
+    { position + blf, color },
+    { position + brf, color },
+    { position + tlf, color },
+    { position + trf, color },
+
+    // back
+    { position + blb, color },
+    { position + brb, color },
+    { position + tlb, color },
+    { position + trb, color },
+  };
+  u32 indices[24]
+  {
+    // front
+    sGizmoLineBatchOffsetVertex + 0,
+    sGizmoLineBatchOffsetVertex + 1,
+    sGizmoLineBatchOffsetVertex + 0,
+    sGizmoLineBatchOffsetVertex + 2,
+    sGizmoLineBatchOffsetVertex + 2,
+    sGizmoLineBatchOffsetVertex + 3,
+    sGizmoLineBatchOffsetVertex + 3,
+    sGizmoLineBatchOffsetVertex + 1,
+
+    // back
+    sGizmoLineBatchOffsetVertex + 4,
+    sGizmoLineBatchOffsetVertex + 5,
+    sGizmoLineBatchOffsetVertex + 4,
+    sGizmoLineBatchOffsetVertex + 6,
+    sGizmoLineBatchOffsetVertex + 6,
+    sGizmoLineBatchOffsetVertex + 7,
+    sGizmoLineBatchOffsetVertex + 7,
+    sGizmoLineBatchOffsetVertex + 5,
+
+    // connections
+    sGizmoLineBatchOffsetVertex + 0,
+    sGizmoLineBatchOffsetVertex + 4,
+    sGizmoLineBatchOffsetVertex + 1,
+    sGizmoLineBatchOffsetVertex + 5,
+    sGizmoLineBatchOffsetVertex + 2,
+    sGizmoLineBatchOffsetVertex + 6,
+    sGizmoLineBatchOffsetVertex + 3,
+    sGizmoLineBatchOffsetVertex + 7,
+  };
+
+  MeshLayoutDataSub(sGizmoLineBatchMesh, vertices, indices, sGizmoLineBatchOffsetVertex, sGizmoLineBatchOffsetIndex, 8, 24);
+
+  sGizmoLineBatchOffsetVertex += 8;
+  sGizmoLineBatchOffsetIndex += 24;
 }
 void GizmoLineBatchUnbind()
 {
@@ -582,8 +717,8 @@ void GizmoLineBatchUnbind()
 void GizmoLineBatchRender()
 {
   ShaderBind(sGizmoLineBatchShader);
-  ShaderUniformMat4(sGizmoLineBatchShader, "uProjection", spSceneActive->mCamera.mProjection);
-  ShaderUniformMat4(sGizmoLineBatchShader, "uView", spSceneActive->mCamera.mView);
+  ShaderUniformMat4(sGizmoLineBatchShader, "uProjection", SceneActive()->mCamera.mProjection);
+  ShaderUniformMat4(sGizmoLineBatchShader, "uView", SceneActive()->mCamera.mView);
   MeshLayoutRender(sGizmoLineBatchMesh, RenderMode::Lines);
 
   sGizmoLineBatchOffsetVertex = 0;

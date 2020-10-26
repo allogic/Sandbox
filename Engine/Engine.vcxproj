@@ -157,9 +157,9 @@
     <ClInclude Include="Include\Core.h" />
     <ClInclude Include="Include\Events.h" />
     <ClInclude Include="Include\Primitives.h" />
-    <ClInclude Include="Include\Shaders.h" />
+    <ClInclude Include="Include\StorageLayouts.h" />
     <ClInclude Include="Include\Types.h" />
-    <ClInclude Include="Include\Geometry.h" />
+    <ClInclude Include="Include\VertexLayouts.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

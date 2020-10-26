@@ -8,33 +8,28 @@ void SceneModelLoading::OnEnable()
 {
   CameraCreate(mCamera, { 0.f, 0.f, 0.f }, 45.f, 0.001f, 1000.f);
   ModelCreate(mModel, "C:\\Users\\Michael\\Downloads\\Sandbox\\Models\\teapot.fbx");
-  ShaderCreate(mShader, sVertexShaderSourceLambert, sFragmentShaderSourceLambert);
+  ShaderCreateRender(mShaderRender, mShaderRenderVertexLambert, mShaderRenderFragmentLambert);
 }
-
 void SceneModelLoading::OnDisable()
 {
   ModelDestroy(mModel);
-  ShaderDestroy(mShader);
+  ShaderDestroyRender(mShaderRender);
 }
-
 void SceneModelLoading::OnUpdate(r32 timeDelta)
 {
-  CameraUpdateControllerInputSpace(mCamera, mCameraController, timeDelta);
+  CameraUpdateControllerInputOrbit(mCamera, mCameraController, timeDelta);
 }
-
 void SceneModelLoading::OnUpdateFixed(r32 timeDelta)
 {
-  CameraUpdateControllerPhysicsSpace(mCamera, mCameraController);
+  CameraUpdateControllerPhysicsOrbit(mCamera, mCameraController);
 }
-
 void SceneModelLoading::OnRender() const
 {
-  ShaderBind(mShader);
-  ShaderUniformMat4(mShader, "uProjection", mCamera.mProjection);
-  ShaderUniformMat4(mShader, "uView", mCamera.mView);
+  ShaderBind(mShaderRender);
+  ShaderUniformMat4(mShaderRender, "uProjection", mCamera.mProjection);
+  ShaderUniformMat4(mShaderRender, "uView", mCamera.mView);
   ModelRender(mModel);
 }
-
 void SceneModelLoading::OnGizmos(r32 timeDelta)
 {
   u32 size{ 32 };

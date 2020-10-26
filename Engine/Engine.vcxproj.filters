@@ -30,13 +30,13 @@
     <ClInclude Include="Include\Primitives.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Include\Shaders.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Include\Events.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Include\Geometry.h">
+    <ClInclude Include="Include\VertexLayouts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\StorageLayouts.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

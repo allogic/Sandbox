@@ -4,7 +4,9 @@
 #include <Core.h>
 #include <Events.h>
 #include <Common.h>
-#include <Shaders.h>
+
+#include <VertexLayouts.h>
+#include <StorageLayouts.h>
 
 #ifdef SANDBOX_ENGINE_INCLUDE_DEPENDENCIES
 #include <GLFW/glfw3.h>
@@ -76,10 +78,21 @@ extern "C" SANDBOX_ENGINE_API void CameraUpdateControllerPhysicsOrbit(Camera& ca
 * Shader management.
 */
 
-extern "C" SANDBOX_ENGINE_API void ShaderCreate(Shader& shader, std::string const& vertexShaderSource, std::string const& fragmentShaderSource);
-extern "C" SANDBOX_ENGINE_API void ShaderBind(Shader const& shader);
-extern "C" SANDBOX_ENGINE_API void ShaderDestroy(Shader const& shader);
-extern "C" SANDBOX_ENGINE_API void ShaderUniformMat4(Shader const& shader, std::string const& name, r32m4 const& matrix);
+extern "C" SANDBOX_ENGINE_API void ShaderCreateCompute(ShaderCompute& shaderCompute, std::string const& computeShaderSource);
+extern "C" SANDBOX_ENGINE_API void ShaderCreateRender(ShaderRender& shaderRender, std::string const& renderShaderVertexcSource, std::string const& renderShaderFragmentSource);
+extern "C" SANDBOX_ENGINE_API void ShaderDestroyCompute(ShaderCompute const& shaderCompute);
+extern "C" SANDBOX_ENGINE_API void ShaderDestroyRender(ShaderRender const& shaderRender);
+extern "C" SANDBOX_ENGINE_API void ShaderExecuteCompute(ShaderCompute const& shaderCompute, u32 numThreadsX, u32 numThreadsY, u32 numThreadsZ);
+
+template<typename Shader>     void ShaderBind(Shader const& shader)
+{
+  glUseProgram(shader.mPid);
+}
+template<typename Shader>     void ShaderUniformMat4(Shader const& shader, std::string const& name, r32m4 const& matrix)
+{
+  u32 id{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
+  glUniformMatrix4fv(id, 1, GL_FALSE, &matrix[0][0]);
+}
 
 /*
 * Model management.
@@ -93,8 +106,10 @@ extern "C" SANDBOX_ENGINE_API void ModelDestroy(Model const& model);
 * 3D debug utilities.
 */
 
-extern "C" SANDBOX_ENGINE_API void GizmoLineBatchCreate(u32 vertexBufferSize);
+extern "C" SANDBOX_ENGINE_API void GizmoLineBatchCreate();
+extern "C" SANDBOX_ENGINE_API void GizmoLineBatchClear();
 extern "C" SANDBOX_ENGINE_API void GizmoLineBatchBind();
 extern "C" SANDBOX_ENGINE_API void GizmoLineBatchPushLine(r32v3 const& p0, r32v3 const& p1, r32v4 const& color);
+extern "C" SANDBOX_ENGINE_API void GizmoLineBatchPushBox(r32v3 const& center, r32v3 const& size, r32v4 const& color);
 extern "C" SANDBOX_ENGINE_API void GizmoLineBatchUnbind();
 extern "C" SANDBOX_ENGINE_API void GizmoLineBatchRender();

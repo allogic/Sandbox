@@ -4,7 +4,7 @@
 #include <Types.h>
 
 /*
-* Vertex types.
+* Vertex layouts.
 */
 
 struct VertexGizmoLine
@@ -20,7 +20,7 @@ struct VertexLambert
 };
 
 /*
-* Mesh types.
+* Mesh layouts.
 */
 
 template<typename Vertex, typename Index>
@@ -28,7 +28,6 @@ struct MeshLayout
 {
   using VertexType = Vertex;
   using IndexType  = Index;
-  using TMeshType  = typename MeshLayout<Vertex, Index>;
 
   constexpr static u32 sVertexSizeBytes{ sizeof(Vertex) };
   constexpr static u32 sIndexSizeBytes { sizeof(Index) };
@@ -44,7 +43,7 @@ using MeshGizmo   = MeshLayout<VertexGizmoLine, u32>;
 using MeshLambert = MeshLayout<VertexLambert, u32>;
 
 /*
-* Model types.
+* Model layouts.
 */
 
 template<typename MeshLayout>
@@ -57,7 +56,7 @@ struct ModelLayout
 using ModelLambert = ModelLayout<MeshLambert>;
 
 /*
-* Vertex layout drawing methods.
+* VAO drawing methods.
 */
 
 enum RenderMode : u32
@@ -90,7 +89,7 @@ template<typename MeshLayout> void DrawLayoutTriangles(MeshLayout const& meshLay
 }
 
 /*
-* Vertex layout management.
+* VAO management.
 */
 
 template<typename MeshLayout>                                      void MeshLayoutCreate(MeshLayout& meshLayout, u32 vertexBufferSize, u32 indexBufferSize)
@@ -114,7 +113,7 @@ template<typename MeshLayout>                                      void MeshLayo
       glEnableVertexAttribArray(0);
       glEnableVertexAttribArray(1);
       glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexGizmoLine), (void*)(0));
-      glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexGizmoLine), (void*)(sizeof(r32v4)));
+      glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexGizmoLine), (void*)(sizeof(r32v3)));
       break;
     }
     case sizeof(VertexLambert):
@@ -125,7 +124,7 @@ template<typename MeshLayout>                                      void MeshLayo
       glEnableVertexAttribArray(2);
       glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexLambert), (void*)(0));
       glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexLambert), (void*)(sizeof(r32v3)));
-      glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(VertexLambert), (void*)(sizeof(r32v3) + sizeof(r32v4)));
+      glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(VertexLambert), (void*)(sizeof(r32v3) + sizeof(r32v3)));
       break;
     }
   }
@@ -142,6 +141,14 @@ template<typename MeshLayout>                                      void MeshLayo
 template<typename MeshLayout>                                      void MeshLayoutUnbind(MeshLayout const& meshLayout)
 {
   glBindVertexArray(0);
+}
+template<typename MeshLayout>                                      void MeshLayoutClear(MeshLayout const& meshLayout)
+{
+  glBindBuffer(GL_ARRAY_BUFFER, meshLayout.mVbo);
+  glBufferData(GL_ARRAY_BUFFER, meshLayout.mVertexBufferSize * MeshLayout::sVertexSizeBytes, nullptr, GL_STATIC_DRAW);
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshLayout.mEbo);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshLayout.mIndexBufferSize * MeshLayout::sIndexSizeBytes, nullptr, GL_STATIC_DRAW);
 }
 template<typename MeshLayout, typename Vertices, typename Indices> void MeshLayoutData(MeshLayout const& meshLayout, Vertices* pVertexData, Indices* pIndexData, u32 vertexBufferSize, u32 indexBufferSize)
 {

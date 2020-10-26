@@ -153,12 +153,12 @@
     <ClCompile Include="Source\Main.cpp" />
     <ClCompile Include="Source\Scenes\ModelLoading.cpp" />
     <ClCompile Include="Source\Scenes\RayTracing.cpp" />
-    <ClCompile Include="Source\Scenes\DebugUtilities.cpp" />
+    <ClCompile Include="Source\Scenes\Instancing.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\Scenes\ModelLoading.h" />
     <ClInclude Include="Include\Scenes\RayTracing.h" />
-    <ClInclude Include="Include\Scenes\DebugUtilities.h" />
+    <ClInclude Include="Include\Scenes\Instancing.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
