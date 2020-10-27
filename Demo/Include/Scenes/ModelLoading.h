@@ -56,6 +56,6 @@ struct SceneModelLoading : Scene
   void OnDisable() override;
   void OnUpdate(r32 deltaTime) override;
   void OnUpdateFixed(r32 deltaTime) override;
-  void OnRender() const override;
+  void OnRender(r32 timeDelta) const override;
   void OnGizmos(r32 timeDelta) override;
 };

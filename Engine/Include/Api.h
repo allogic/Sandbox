@@ -6,7 +6,7 @@
 #include <Common.h>
 
 #include <VertexLayouts.h>
-#include <StorageLayouts.h>
+#include <BufferLayouts.h>
 
 #ifdef SANDBOX_ENGINE_INCLUDE_DEPENDENCIES
 #include <GLFW/glfw3.h>
@@ -88,7 +88,17 @@ template<typename Shader>     void ShaderBind(Shader const& shader)
 {
   glUseProgram(shader.mPid);
 }
-template<typename Shader>     void ShaderUniformMat4(Shader const& shader, std::string const& name, r32m4 const& matrix)
+template<typename Shader>     void ShaderUniformU32(Shader const& shader, std::string const& name, u32 value)
+{
+  u32 id{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
+  glUniform1ui(id, value);
+}
+template<typename Shader>     void ShaderUniformR32(Shader const& shader, std::string const& name, r32 value)
+{
+  u32 id{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
+  glUniform1f(id, value);
+}
+template<typename Shader>     void ShaderUniformR32M4(Shader const& shader, std::string const& name, r32m4 const& matrix)
 {
   u32 id{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
   glUniformMatrix4fv(id, 1, GL_FALSE, &matrix[0][0]);

@@ -531,7 +531,7 @@ void ShaderDestroyRender(ShaderRender const& shaderRender)
 }
 void ShaderExecuteCompute(ShaderCompute const& shaderCompute, u32 numThreadsX, u32 numThreadsY, u32 numThreadsZ)
 {
-
+  glDispatchCompute(numThreadsX, numThreadsY, numThreadsZ);
 }
 
 /*
@@ -717,8 +717,8 @@ void GizmoLineBatchUnbind()
 void GizmoLineBatchRender()
 {
   ShaderBind(sGizmoLineBatchShader);
-  ShaderUniformMat4(sGizmoLineBatchShader, "uProjection", SceneActive()->mCamera.mProjection);
-  ShaderUniformMat4(sGizmoLineBatchShader, "uView", SceneActive()->mCamera.mView);
+  ShaderUniformR32M4(sGizmoLineBatchShader, "uProjection", SceneActive()->mCamera.mProjection);
+  ShaderUniformR32M4(sGizmoLineBatchShader, "uView", SceneActive()->mCamera.mView);
   MeshLayoutRender(sGizmoLineBatchMesh, RenderMode::Lines);
 
   sGizmoLineBatchOffsetVertex = 0;

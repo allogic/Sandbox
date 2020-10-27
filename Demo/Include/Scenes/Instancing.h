@@ -2,7 +2,7 @@
 
 #include <Api.h>
 
-struct Velocity
+struct Steering
 {
   r32v3 mPosition {};
   r32v3 mDirection{};
@@ -11,24 +11,32 @@ struct Velocity
 
 struct SceneInstancing : Scene
 {
-  std::string const mShaderComputeVelocity
+  std::string const mShaderComputeSteering
   {
   R"glsl(
   #version 460 core
   
-  layout (local_size_x = 16, local_size_y = 16) in;
-  
-  layout (std430, binding = 0) buffer anotherLayoutName
+  layout (local_size_x = 16, local_size_y = 1, local_size_y = 1) in;
+
+  struct Steering
   {
     vec3 position;
     vec3 direction;
     vec3 accel;
   };
+
+  layout (std430, binding = 0) buffer BufferSteering
+  {
+    Steering steerings[];
+  } bufferSteering;
   
+  uniform float uTimeDelta;
+
   void main()
   {
-    ivec2 gid = ivec2(gl_GlobalInvocationID.xy);
-    ivec2 lid = ivec2(gl_LocalInvocationID.xy);
+    uint idx = gl_LocalInvocationIndex.x;
+
+    bufferSteering.steerings[idx].position += sin(uTimeDelta * 10.f) * 10.f;
   }
   )glsl"
   };
@@ -37,10 +45,23 @@ struct SceneInstancing : Scene
   R"glsl(
   #version 460 core
   
+  struct Steering
+  {
+    vec3 position;
+    vec3 direction;
+    vec3 accel;
+  };
+
+  layout (std430, binding = 0) buffer BufferSteering
+  {
+    Steering steerings[];
+  } bufferSteering;
+
   layout (location = 0) in vec3 lPosition;
   layout (location = 1) in vec3 lNormal;
   layout (location = 2) in vec4 lColor;
   
+  uniform uint uObjectIndex;
   uniform mat4 uProjection;
   uniform mat4 uView;
   
@@ -50,11 +71,11 @@ struct SceneInstancing : Scene
   
   void main()
   {
-    fPosition = lPosition;
+    fPosition = lPosition + bufferSteering.steerings[uObjectIndex].position;
     fNormal = lNormal;
     fColor = lColor;
   
-    gl_Position = uProjection * uView * vec4(lPosition, 1.0f);
+    gl_Position = uProjection * uView * vec4(fPosition, 1.0f);
   }
   )glsl"
   };
@@ -76,21 +97,21 @@ struct SceneInstancing : Scene
   )glsl"
   };
 
-  constexpr static u32 sVelocitySize{ 2048 };
+  constexpr static u32 sObjectSize{ 2048 };
 
-  CameraControllerSpace  mCameraController         {};
-  Model                  mModel                    {};
-  Velocity               mVelocities[sVelocitySize]{};
-  BufferLayout<Velocity> mBufferVelocity           {};
-  ShaderCompute          mShaderCompute            {};
-  ShaderRender           mShaderRender             {};
+  CameraControllerSpace  mCameraController      {};
+  Model                  mModel                 {};
+  Steering               mSteerings[sObjectSize]{};
+  BufferLayout<Steering> mBufferSteering        {};
+  ShaderCompute          mShaderCompute         {};
+  ShaderRender           mShaderRender          {};
 
   void OnEnable() override;
   void OnDisable() override;
   void OnUpdate(r32 timeDelta) override;
   void OnUpdateFixed(r32 timeDelta) override;
-  void OnRender() const override;
+  void OnRender(r32 timeDelta) const override;
   void OnGizmos(r32 timeDelta) override;
 
-  void RandomizeVelocities();
+  void RandomizeSteerings();
 };

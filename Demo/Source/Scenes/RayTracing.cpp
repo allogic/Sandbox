@@ -20,7 +20,7 @@ void SceneRayTracing::OnUpdateFixed(r32 timeDelta)
 {
   CameraUpdateControllerPhysicsOrbit(mCamera, mCameraController);
 }
-void SceneRayTracing::OnRender() const
+void SceneRayTracing::OnRender(r32 timeDelta) const
 {
 
 }

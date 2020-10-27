@@ -36,7 +36,7 @@
     <ClInclude Include="Include\VertexLayouts.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Include\StorageLayouts.h">
+    <ClInclude Include="Include\BufferLayouts.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -8,16 +8,16 @@ void SceneInstancing::OnEnable()
 {
   CameraCreate(mCamera, { 0.f, 0.f, 0.f }, 45.f, 0.001f, 1000.f);
   ModelCreate(mModel, "C:\\Users\\Michael\\Downloads\\Sandbox\\Models\\teapot.fbx");
-  StorageLayoutCreate(mBufferVelocity, 0, sVelocitySize);
-  RandomizeVelocities();
-  StorageLayoutData(mBufferVelocity, mVelocities, sVelocitySize);
-  ShaderCreateCompute(mShaderCompute, mShaderComputeVelocity);
+  BufferLayoutCreate(mBufferSteering, sObjectSize);
+  RandomizeSteerings();
+  BufferLayoutData(mBufferSteering, mSteerings, sObjectSize);
+  ShaderCreateCompute(mShaderCompute, mShaderComputeSteering);
   ShaderCreateRender(mShaderRender, mShaderRenderVertexLambert, mShaderRenderFragmentLambert);
 }
 void SceneInstancing::OnDisable()
 {
   ModelDestroy(mModel);
-  StorageLayoutDestroy(mBufferVelocity);
+  BufferLayoutDestroy(mBufferSteering);
   ShaderDestroyRender(mShaderRender);
   ShaderDestroyCompute(mShaderCompute);
 }
@@ -29,33 +29,41 @@ void SceneInstancing::OnUpdateFixed(r32 timeDelta)
 {
   CameraUpdateControllerPhysicsSpace(mCamera, mCameraController);
 }
-void SceneInstancing::OnRender() const
+void SceneInstancing::OnRender(r32 timeDelta) const
 {
-  ShaderBind(mShaderCompute);
-  ShaderExecuteCompute(mShaderCompute, sVelocitySize, 1, 1);
+  BufferLayoutBind(mBufferSteering, 0);
+
+  //ShaderBind(mShaderCompute);
+  //ShaderUniformR32(mShaderCompute, "uTimeDelta", timeDelta);
+  //ShaderExecuteCompute(mShaderCompute, 16, 1, 1);
+
   ShaderBind(mShaderRender);
-  ShaderUniformMat4(mShaderRender, "uProjection", mCamera.mProjection);
-  ShaderUniformMat4(mShaderRender, "uView", mCamera.mView);
-  ModelRender(mModel);
+  ShaderUniformR32M4(mShaderRender, "uProjection", mCamera.mProjection);
+  ShaderUniformR32M4(mShaderRender, "uView", mCamera.mView);
+  for (u32 i{}; i < sObjectSize; i++)
+  {
+    ShaderUniformU32(mShaderRender, "uObjectIndex", i);
+    ModelRender(mModel);
+  }
 }
 void SceneInstancing::OnGizmos(r32 timeDelta)
 {
-  for (u32 i{}; i < sVelocitySize; i++)
+  for (u32 i{}; i < sObjectSize; i++)
   {
-    Velocity const& velocity{ mVelocities[i] };
+    Steering const& steering{ mSteerings[i] };
 
-    GizmoLineBatchPushLine(velocity.mPosition, velocity.mPosition + velocity.mDirection, { 1.f, 1.f, 1.f, 1.f });
-    GizmoLineBatchPushBox(velocity.mPosition, { 1.f, 1.f, 1.f }, { 1.f, 0.f, 1.f, 1.f });
+    GizmoLineBatchPushLine(steering.mPosition, steering.mPosition + steering.mDirection, { 1.f, 1.f, 1.f, 1.f });
+    GizmoLineBatchPushBox(steering.mPosition, { 1.f, 1.f, 1.f }, { 1.f, 0.f, 1.f, 1.f });
   }
 }
 
-void SceneInstancing::RandomizeVelocities()
+void SceneInstancing::RandomizeSteerings()
 {
-  for (u32 i{}; i < sVelocitySize; i++)
+  for (u32 i{}; i < sObjectSize; i++)
   {
-    mVelocities[i] =
+    mSteerings[i] =
     {
-      .mPosition { glm::ballRand(100.f) },
+      .mPosition { glm::ballRand(500.f) },
       .mDirection{ glm::sphericalRand(1.f) },
       .mAccel    {},
     };

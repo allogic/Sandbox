@@ -23,11 +23,11 @@ void SceneModelLoading::OnUpdateFixed(r32 timeDelta)
 {
   CameraUpdateControllerPhysicsOrbit(mCamera, mCameraController);
 }
-void SceneModelLoading::OnRender() const
+void SceneModelLoading::OnRender(r32 timeDelta) const
 {
   ShaderBind(mShaderRender);
-  ShaderUniformMat4(mShaderRender, "uProjection", mCamera.mProjection);
-  ShaderUniformMat4(mShaderRender, "uView", mCamera.mView);
+  ShaderUniformR32M4(mShaderRender, "uProjection", mCamera.mProjection);
+  ShaderUniformR32M4(mShaderRender, "uView", mCamera.mView);
   ModelRender(mModel);
 }
 void SceneModelLoading::OnGizmos(r32 timeDelta)

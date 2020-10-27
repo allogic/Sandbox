@@ -86,6 +86,6 @@ struct SANDBOX_ENGINE_API Scene
   virtual void OnDisable() = 0;
   virtual void OnUpdate(r32 timeDelta) = 0;
   virtual void OnUpdateFixed(r32 timeDelta) {}
-  virtual void OnRender() const = 0;
+  virtual void OnRender(r32 timeDelta) const = 0;
   virtual void OnGizmos(r32 timeDelta) {}
 };
