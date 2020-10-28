@@ -11,7 +11,7 @@ struct Steering
 
 struct SceneInstancing : Scene
 {
-  std::string const mShaderComputeSteering
+  std::string const mShaderComputeSpaceShipSteering
   {
   R"glsl(
   #version 460 core
@@ -40,7 +40,7 @@ struct SceneInstancing : Scene
   }
   )glsl"
   };
-  std::string const mShaderRenderVertexLambert
+  std::string const mShaderRenderSpaceShipVertex
   {
   R"glsl(
   #version 460 core
@@ -60,8 +60,8 @@ struct SceneInstancing : Scene
   layout (location = 0) in vec3 lPosition;
   layout (location = 1) in vec3 lNormal;
   layout (location = 2) in vec4 lColor;
-  
-  uniform uint uObjectIndex;
+  layout (location = 3) in mat4 lTransform;  
+
   uniform mat4 uProjection;
   uniform mat4 uView;
   
@@ -71,15 +71,15 @@ struct SceneInstancing : Scene
   
   void main()
   {
-    fPosition = lPosition + bufferSteering.steerings[uObjectIndex].position;
+    fPosition = lPosition;
     fNormal = lNormal;
     fColor = lColor;
   
-    gl_Position = uProjection * uView * vec4(fPosition, 1.0f);
+    gl_Position = uProjection * uView * lTransform * vec4(fPosition, 1.0f);
   }
   )glsl"
   };
-  std::string const mShaderRenderFragmentLambert
+  std::string const mShaderRenderSpaceShipFragment
   {
   R"glsl(
   #version 460 core
@@ -97,14 +97,14 @@ struct SceneInstancing : Scene
   )glsl"
   };
 
-  constexpr static u32 sObjectSize{ 2048 };
+  constexpr static u32 sNumSpaceShips{ 100000 };
 
-  CameraControllerSpace  mCameraController      {};
-  Model                  mModel                 {};
-  Steering               mSteerings[sObjectSize]{};
-  BufferLayout<Steering> mBufferSteering        {};
-  ShaderCompute          mShaderCompute         {};
-  ShaderRender           mShaderRender          {};
+  CameraControllerOrbit  mCameraController{};
+  ModelInstanced         mSpaceShip       {};
+  std::vector<Steering>  mSteerings       {};
+  BufferLayout<Steering> mBufferSteering  {};
+  ShaderCompute          mShaderCompute   {};
+  ShaderRender           mShaderRender    {};
 
   void OnEnable() override;
   void OnDisable() override;

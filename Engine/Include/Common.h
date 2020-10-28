@@ -10,8 +10,11 @@ struct SANDBOX_ENGINE_API Material
 };
 struct SANDBOX_ENGINE_API Model
 {
-  ModelLambert mModel{};
-  r32m4        mTransform{};
+  ModelLambert mModelLambert{};
+};
+struct SANDBOX_ENGINE_API ModelInstanced
+{
+  ModelLambertInstanced mModelLambertInstanced{};
 };
 struct SANDBOX_ENGINE_API Camera
 {
@@ -76,7 +79,7 @@ struct SANDBOX_ENGINE_API ShaderCompute
   u32 mPid{};
   u32 mCid{};
 };
-struct SANDBOX_ENGINE_API Scene
+struct Scene
 {
   Camera mCamera{};
 

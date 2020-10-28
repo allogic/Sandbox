@@ -12,7 +12,6 @@ r32 sTimeDelta{};
 
 r32 sTimeRenderFixed     { 1.f / 60 };
 r32 sTimeRenderFixedPrev {};
-r32 sTimeRenderFixedDelta{};
 
 s32 main()
 {
@@ -39,18 +38,17 @@ s32 main()
 
     if ((sTime - sTimeRenderFixedPrev) >= sTimeRenderFixed)
     {
-      sTimeRenderFixedDelta = sTime - sTimeRenderFixedPrev;
-
+      glEnable(GL_DEPTH_TEST);
+      glDepthFunc(GL_LESS);
       glClearColor(0.f, 0.f, 0.f, 0.f);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      SceneActive()->OnUpdateFixed(sTimeRenderFixedDelta);
-      SceneActive()->OnRender(sTimeRenderFixedDelta);
+      SceneActive()->OnUpdateFixed(sTimeDelta);
+      SceneActive()->OnRender(sTimeDelta);
 
       GizmoLineBatchBind();
-      SceneActive()->OnGizmos(sTimeRenderFixedDelta);
+      SceneActive()->OnGizmos(sTimeDelta);
       GizmoLineBatchRender();
-      GizmoLineBatchUnbind();
 
       glfwSwapBuffers(ContextHandle());
 

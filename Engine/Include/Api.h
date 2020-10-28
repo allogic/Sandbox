@@ -111,6 +111,10 @@ template<typename Shader>     void ShaderUniformR32M4(Shader const& shader, std:
 extern "C" SANDBOX_ENGINE_API void ModelCreate(Model& model, std::string const& fileName);
 extern "C" SANDBOX_ENGINE_API void ModelRender(Model const& model);
 extern "C" SANDBOX_ENGINE_API void ModelDestroy(Model const& model);
+extern "C" SANDBOX_ENGINE_API void ModelCreateInstanced(ModelInstanced& modelInstanced, std::string const& fileName);
+extern "C" SANDBOX_ENGINE_API void ModelRenderInstanced(ModelInstanced const& modelInstanced, u32 numInstances);
+extern "C" SANDBOX_ENGINE_API void ModelDestroyInstanced(ModelInstanced const& modelInstanced);
+
 
 /*
 * 3D debug utilities.
@@ -121,5 +125,4 @@ extern "C" SANDBOX_ENGINE_API void GizmoLineBatchClear();
 extern "C" SANDBOX_ENGINE_API void GizmoLineBatchBind();
 extern "C" SANDBOX_ENGINE_API void GizmoLineBatchPushLine(r32v3 const& p0, r32v3 const& p1, r32v4 const& color);
 extern "C" SANDBOX_ENGINE_API void GizmoLineBatchPushBox(r32v3 const& center, r32v3 const& size, r32v4 const& color);
-extern "C" SANDBOX_ENGINE_API void GizmoLineBatchUnbind();
 extern "C" SANDBOX_ENGINE_API void GizmoLineBatchRender();

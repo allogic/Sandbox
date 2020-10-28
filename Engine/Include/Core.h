@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <cstring>
 #include <functional>
 #include <cstdio>
 #include <limits>

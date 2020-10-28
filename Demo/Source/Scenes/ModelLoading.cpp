@@ -6,7 +6,7 @@
 
 void SceneModelLoading::OnEnable()
 {
-  CameraCreate(mCamera, { 0.f, 0.f, 0.f }, 45.f, 0.001f, 1000.f);
+  CameraCreate(mCamera, { 0.f, 0.f, 0.f }, 45.f, 0.001f, 10000.f);
   ModelCreate(mModel, "C:\\Users\\Michael\\Downloads\\Sandbox\\Models\\teapot.fbx");
   ShaderCreateRender(mShaderRender, mShaderRenderVertexLambert, mShaderRenderFragmentLambert);
 }

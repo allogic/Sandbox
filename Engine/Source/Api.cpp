@@ -96,13 +96,6 @@ void        ContextCreate(u32 width, u32 height, std::string const& title)
 
   glfwInit();
 
-  GLFWmonitor* pMonitor{ glfwGetPrimaryMonitor() };
-  GLFWvidmode const* pMode{ glfwGetVideoMode(pMonitor) };
-
-  //glfwWindowHint(GLFW_REFRESH_RATE, pMode->refreshRate);
-  glfwWindowHint(GLFW_RED_BITS, pMode->redBits);
-  glfwWindowHint(GLFW_GREEN_BITS, pMode->greenBits);
-  glfwWindowHint(GLFW_BLUE_BITS, pMode->blueBits);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -113,6 +106,14 @@ void        ContextCreate(u32 width, u32 height, std::string const& title)
   glfwSetWindowCloseCallback(spWindow, [](GLFWwindow*)
     {
       sStatus = 1;
+    });
+  glfwSetWindowSizeCallback(spWindow, [](GLFWwindow*, s32 width, s32 height)
+    {
+      sWidth = (u32)width;
+      sHeight = (u32)height;
+      sAspect = (r32)width / height;
+
+      glViewport(0, 0, width, height);
     });
   glfwSetCursorPosCallback(spWindow, [](GLFWwindow*, r64 x, r64 y)
     {
@@ -544,22 +545,36 @@ void ModelCreate(Model& model, std::string const& fileName)
 
   aiScene const* pScene{ importer.ReadFile(fileName, aiProcess_Triangulate | aiProcess_SortByPType) };
 
-  for (u32 i{}; i < pScene->mNumMeshes; i++)
+  u32 const numMeshes{ pScene->mNumMeshes };
+  u32 const numMaterials{ pScene->mNumMaterials };
+  u32 const numTextures{ pScene->mNumTextures };
+
+  std::vector<u32> vertexBufferSizes{};
+  std::vector<u32> indexBufferSizes{};
+  std::vector<std::vector<VertexLambert>> vertexBuffers{};
+  std::vector<std::vector<u32>> indexBuffers{};
+
+  vertexBufferSizes.resize(numMeshes);
+  indexBufferSizes.resize(numMeshes);
+  vertexBuffers.resize(numMeshes);
+  indexBuffers.resize(numMeshes);
+
+  for (u32 i{}; i < numMeshes; i++)
   {
     aiMesh const* pMesh{ pScene->mMeshes[i] };
 
     if (!(pMesh->mPrimitiveTypes & aiPrimitiveType_TRIANGLE))
       continue;
 
-    std::vector<VertexLambert> verticesLambert{};
-    std::vector<u32> indicesLambert{};
+    vertexBufferSizes[i] = pMesh->mNumVertices;
+    indexBufferSizes[i] = pMesh->mNumFaces * 3;
 
-    verticesLambert.resize(pMesh->mNumVertices);
-    indicesLambert.resize(pMesh->mNumFaces * 3);
+    vertexBuffers[i].resize(pMesh->mNumVertices);
+    indexBuffers[i].resize(pMesh->mNumFaces * 3);
 
     for (u32 j{}; j < pMesh->mNumVertices; j++)
     {
-      verticesLambert[j] =
+      vertexBuffers[i][j] =
       {
         .mPosition{ pMesh->mVertices[j].x, pMesh->mVertices[j].y, pMesh->mVertices[j].z },
         .mNormal  { pMesh->mNormals[j].x, pMesh->mNormals[j].y, pMesh->mNormals[j].z },
@@ -568,21 +583,12 @@ void ModelCreate(Model& model, std::string const& fileName)
     }
     for (u32 j{}, k{}; j < pMesh->mNumFaces; j++, k += 3)
     {
-      indicesLambert[k + 0] = { pMesh->mFaces[j].mIndices[0] };
-      indicesLambert[k + 1] = { pMesh->mFaces[j].mIndices[1] };
-      indicesLambert[k + 2] = { pMesh->mFaces[j].mIndices[2] };
+      indexBuffers[i][k + 0] = { pMesh->mFaces[j].mIndices[0] };
+      indexBuffers[i][k + 1] = { pMesh->mFaces[j].mIndices[1] };
+      indexBuffers[i][k + 2] = { pMesh->mFaces[j].mIndices[2] };
     }
-
-    MeshLambert meshLambert{};
-
-    MeshLayoutCreate(meshLambert, (u32)verticesLambert.size(), (u32)indicesLambert.size());
-    MeshLayoutBind(meshLambert);
-    MeshLayoutData(meshLambert, verticesLambert.data(), indicesLambert.data(), (u32)verticesLambert.size(), (u32)indicesLambert.size());
-    MeshLayoutUnbind(meshLambert);
-
-    model.mModel.mMeshes.emplace_back(meshLambert);
   }
-  for (u32 i{}; i < pScene->mNumMaterials; i++)
+  for (u32 i{}; i < numMaterials; i++)
   {
     aiMaterial const* pMaterial{ pScene->mMaterials[i] };
 
@@ -591,26 +597,121 @@ void ModelCreate(Model& model, std::string const& fileName)
       //std::printf("%s\n", pMaterial->mProperties[j]->mKey.data);
     }
   }
-  for (u32 i{}; i < pScene->mNumTextures; i++)
+  for (u32 i{}; i < numTextures; i++)
   {
     aiTexture const* pTexture{ pScene->mTextures[i] };
   }
 
-  model.mTransform = glm::identity<r32m4>();
+  ModelLayoutCreate(model.mModelLambert, numMeshes, vertexBufferSizes.data(), indexBufferSizes.data());
+  
+  for (u32 i{}; i < numMeshes; i++)
+  {
+    ModelLayoutBind(model.mModelLambert, i);
+    ModelLayoutData(model.mModelLambert, i, vertexBuffers[i].data(), indexBuffers[i].data());
+  }
 }
 void ModelRender(Model const& model)
 {
-  for (auto const& mesh : model.mModel.mMeshes)
+  for (u32 i{}; i < model.mModelLambert.mNumSubMeshes; i++)
   {
-    MeshLayoutBind(mesh);
-    MeshLayoutRender(mesh, RenderMode::Triangles);
-    MeshLayoutUnbind(mesh);
+    ModelLayoutBind(model.mModelLambert, i);
+    ModelLayoutRender(model.mModelLambert, i, RenderMode::Triangle);
   }
 }
 void ModelDestroy(Model const& model)
 {
-  for (auto const& mesh : model.mModel.mMeshes)
-    MeshLayoutDestroy(mesh);
+  ModelLayoutDestroy(model.mModelLambert);
+}
+void ModelCreateInstanced(ModelInstanced& modelInstanced, std::string const& fileName)
+{
+  Assimp::Importer importer{};
+
+  aiScene const* pScene{ importer.ReadFile(fileName, aiProcess_Triangulate | aiProcess_SortByPType) };
+
+  u32 const numMeshes{ pScene->mNumMeshes };
+  u32 const numMaterials{ pScene->mNumMaterials };
+  u32 const numTextures{ pScene->mNumTextures };
+
+  std::vector<u32> vertexBufferSizes{};
+  std::vector<u32> indexBufferSizes{};
+  std::vector<std::vector<VertexLambertInstanced>> vertexBuffers{};
+  std::vector<std::vector<u32>> indexBuffers{};
+
+  vertexBufferSizes.resize(numMeshes);
+  indexBufferSizes.resize(numMeshes);
+  vertexBuffers.resize(numMeshes);
+  indexBuffers.resize(numMeshes);
+
+  for (u32 i{}; i < numMeshes; i++)
+  {
+    aiMesh const* pMesh{ pScene->mMeshes[i] };
+
+    if (!(pMesh->mPrimitiveTypes & aiPrimitiveType_TRIANGLE))
+      continue;
+
+    vertexBufferSizes[i] = pMesh->mNumVertices;
+    indexBufferSizes[i] = pMesh->mNumFaces * 3;
+
+    vertexBuffers[i].resize(pMesh->mNumVertices);
+    indexBuffers[i].resize(pMesh->mNumFaces * 3);
+
+    for (u32 j{}; j < pMesh->mNumVertices; j++)
+    {
+      r32m4 transform{ glm::mat4(1.f) };
+      r32v2 diskRandom{ glm::circularRand(500.f) };
+
+      transform = glm::translate(transform, { diskRandom.x, glm::linearRand(-100.f, 100.f), diskRandom.y });
+      transform = glm::rotate(transform, glm::linearRand(-180.f, 180.f), glm::sphericalRand(1.f));
+      transform = glm::scale(transform, { 1.f, 1.f, 1.f });
+
+      vertexBuffers[i][j] =
+      {
+        .mPosition { pMesh->mVertices[j].x, pMesh->mVertices[j].y, pMesh->mVertices[j].z },
+        .mNormal   { pMesh->mNormals[j].x, pMesh->mNormals[j].y, pMesh->mNormals[j].z },
+        .mColor    { 0.f, 0.f, 0.f, 1.f },
+        .mTransform{ transform },
+      };
+    }
+    for (u32 j{}, k{}; j < pMesh->mNumFaces; j++, k += 3)
+    {
+      indexBuffers[i][k + 0] = { pMesh->mFaces[j].mIndices[0] };
+      indexBuffers[i][k + 1] = { pMesh->mFaces[j].mIndices[1] };
+      indexBuffers[i][k + 2] = { pMesh->mFaces[j].mIndices[2] };
+    }
+  }
+  for (u32 i{}; i < numMaterials; i++)
+  {
+    aiMaterial const* pMaterial{ pScene->mMaterials[i] };
+
+    for (u32 j{}; j < pMaterial->mNumProperties; j++)
+    {
+      //std::printf("%s\n", pMaterial->mProperties[j]->mKey.data);
+    }
+  }
+  for (u32 i{}; i < numTextures; i++)
+  {
+    aiTexture const* pTexture{ pScene->mTextures[i] };
+  }
+
+  ModelLayoutCreate(modelInstanced.mModelLambertInstanced, numMeshes, vertexBufferSizes.data(), indexBufferSizes.data());
+
+  for (u32 i{}; i < numMeshes; i++)
+  {
+    ModelLayoutBind(modelInstanced.mModelLambertInstanced, i);
+    ModelLayoutData(modelInstanced.mModelLambertInstanced, i, vertexBuffers[i].data(), indexBuffers[i].data());
+  }
+}
+void ModelRenderInstanced(ModelInstanced const& modelInstanced, u32 numInstances)
+{
+  for (u32 i{}; i < modelInstanced.mModelLambertInstanced.mNumSubMeshes; i++)
+  {
+    ModelLayoutBind(modelInstanced.mModelLambertInstanced, i);
+    ModelLayoutRenderInstanced(modelInstanced.mModelLambertInstanced, i, RenderMode::Triangle, numInstances);
+  }
+}
+void ModelDestroyInstanced(ModelInstanced const& modelInstanced)
+{
+  ModelLayoutDestroy(modelInstanced.mModelLambertInstanced);
 }
 
 /*
@@ -710,16 +811,12 @@ void GizmoLineBatchPushBox(r32v3 const& position, r32v3 const& size, r32v4 const
   sGizmoLineBatchOffsetVertex += 8;
   sGizmoLineBatchOffsetIndex += 24;
 }
-void GizmoLineBatchUnbind()
-{
-  MeshLayoutUnbind(sGizmoLineBatchMesh);
-}
 void GizmoLineBatchRender()
 {
   ShaderBind(sGizmoLineBatchShader);
   ShaderUniformR32M4(sGizmoLineBatchShader, "uProjection", SceneActive()->mCamera.mProjection);
   ShaderUniformR32M4(sGizmoLineBatchShader, "uView", SceneActive()->mCamera.mView);
-  MeshLayoutRender(sGizmoLineBatchMesh, RenderMode::Lines);
+  MeshLayoutRender(sGizmoLineBatchMesh, RenderMode::Line);
 
   sGizmoLineBatchOffsetVertex = 0;
   sGizmoLineBatchOffsetIndex = 0;
