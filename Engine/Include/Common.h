@@ -12,10 +12,6 @@ struct SANDBOX_ENGINE_API Model
 {
   ModelLambert mModelLambert{};
 };
-struct SANDBOX_ENGINE_API ModelInstanced
-{
-  ModelLambertInstanced mModelLambertInstanced{};
-};
 struct SANDBOX_ENGINE_API Camera
 {
   r32v3 mPosition  {};

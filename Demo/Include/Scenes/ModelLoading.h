@@ -26,7 +26,7 @@ struct SceneModelLoading : Scene
     fNormal = lNormal;
     fColor = lColor;
   
-    gl_Position = uProjection * uView * vec4(lPosition, 1.0f);
+    gl_Position = uProjection * uView * vec4(lPosition, 1.f);
   }
   )glsl"
   };
@@ -43,7 +43,7 @@ struct SceneModelLoading : Scene
   
   void main()
   {
-    color = vec4(fNormal, 1.0f);
+    color = vec4(fNormal, 1.f);
   }
   )glsl"
   };

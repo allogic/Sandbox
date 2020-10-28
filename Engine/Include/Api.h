@@ -84,24 +84,29 @@ extern "C" SANDBOX_ENGINE_API void ShaderDestroyCompute(ShaderCompute const& sha
 extern "C" SANDBOX_ENGINE_API void ShaderDestroyRender(ShaderRender const& shaderRender);
 extern "C" SANDBOX_ENGINE_API void ShaderExecuteCompute(ShaderCompute const& shaderCompute, u32 numThreadsX, u32 numThreadsY, u32 numThreadsZ);
 
-template<typename Shader>     void ShaderBind(Shader const& shader)
+template<typename Shader> void ShaderBind(Shader const& shader)
 {
   glUseProgram(shader.mPid);
 }
-template<typename Shader>     void ShaderUniformU32(Shader const& shader, std::string const& name, u32 value)
+template<typename Shader> void ShaderStorageBuffer(Shader const& shader, std::string const& name, u32 storageBufferIndex)
 {
-  u32 id{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
-  glUniform1ui(id, value);
+  u32 blockIndex{ glGetProgramResourceIndex(shader.mPid, GL_SHADER_STORAGE_BLOCK, name.data()) };
+  glShaderStorageBlockBinding(shader.mPid, blockIndex, storageBufferIndex);
 }
-template<typename Shader>     void ShaderUniformR32(Shader const& shader, std::string const& name, r32 value)
+template<typename Shader> void ShaderUniformU32(Shader const& shader, std::string const& name, u32 value)
 {
-  u32 id{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
-  glUniform1f(id, value);
+  u32 uniformIndex{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
+  glUniform1ui(uniformIndex, value);
 }
-template<typename Shader>     void ShaderUniformR32M4(Shader const& shader, std::string const& name, r32m4 const& matrix)
+template<typename Shader> void ShaderUniformR32(Shader const& shader, std::string const& name, r32 value)
 {
-  u32 id{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
-  glUniformMatrix4fv(id, 1, GL_FALSE, &matrix[0][0]);
+  u32 uniformIndex{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
+  glUniform1f(uniformIndex, value);
+}
+template<typename Shader> void ShaderUniformR32M4(Shader const& shader, std::string const& name, r32m4 const& matrix)
+{
+  u32 uniformIndex{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
+  glUniformMatrix4fv(uniformIndex, 1, GL_FALSE, &matrix[0][0]);
 }
 
 /*
@@ -111,10 +116,9 @@ template<typename Shader>     void ShaderUniformR32M4(Shader const& shader, std:
 extern "C" SANDBOX_ENGINE_API void ModelCreate(Model& model, std::string const& fileName);
 extern "C" SANDBOX_ENGINE_API void ModelRender(Model const& model);
 extern "C" SANDBOX_ENGINE_API void ModelDestroy(Model const& model);
-extern "C" SANDBOX_ENGINE_API void ModelCreateInstanced(ModelInstanced& modelInstanced, std::string const& fileName);
-extern "C" SANDBOX_ENGINE_API void ModelRenderInstanced(ModelInstanced const& modelInstanced, u32 numInstances);
-extern "C" SANDBOX_ENGINE_API void ModelDestroyInstanced(ModelInstanced const& modelInstanced);
-
+extern "C" SANDBOX_ENGINE_API void ModelCreateInstanced(Model& model, std::string const& fileName, u32 numInstances);
+extern "C" SANDBOX_ENGINE_API void ModelRenderInstanced(Model const& model);
+extern "C" SANDBOX_ENGINE_API void ModelDestroyInstanced(Model const& model);
 
 /*
 * 3D debug utilities.

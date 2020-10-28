@@ -11,7 +11,6 @@ enum VertexType : u32
 {
   Gizmo,
   Lambert,
-  LambertInstanced,
 };
 
 struct VertexGizmoLine
@@ -28,15 +27,6 @@ struct VertexLambert
   r32v3 mPosition{};
   r32v3 mNormal  {};
   r32v4 mColor   {};
-};
-struct VertexLambertInstanced
-{
-  constexpr static VertexType sType{ LambertInstanced };
-
-  r32v3 mPosition {};
-  r32v3 mNormal   {};
-  r32v4 mColor    {};
-  r32m4 mTransform{};
 };
 
 /*
@@ -69,15 +59,17 @@ struct ModelLayout
   using IndexType  = Index;
 
   u32  mNumSubMeshes      {};
+  u32  mNumInstances      {};
   u32* mpVaos             {};
   u32* mpVertexBufferSizes{};
   u32* mpIndexBufferSizes {};
   u32* mpVbos             {};
   u32* mpEbos             {};
+  u32* mpIbos             {};
 };
 
-using ModelLambert          = ModelLayout<VertexLambert, u32>;
-using ModelLambertInstanced = ModelLayout<VertexLambertInstanced, u32>;
+using ModelLambert = ModelLayout<VertexLambert, u32>;
+
 /*
 * Drawing methodes.
 */
@@ -302,23 +294,93 @@ template<typename ModelLayout>                                      void ModelLa
         glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(VertexLambert), (void*)(sizeof(r32v3) + sizeof(r32v3)));
         break;
       }
-      case VertexType::LambertInstanced:
+    }
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modelLayout.mpEbos[i]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, modelLayout.mpIndexBufferSizes[i] * sizeof(ModelLayout::IndexType), nullptr, GL_STATIC_DRAW);
+  }
+
+  glBindVertexArray(0);
+}
+template<typename ModelLayout>                                      void ModelLayoutCreateInstanced(ModelLayout& modelLayout, u32 numSubMeshes, u32* pVertexBufferSizes, u32* pIndexBufferSizes, u32 numInstances)
+{
+  modelLayout.mNumSubMeshes = numSubMeshes;
+  modelLayout.mNumInstances = numInstances;
+  modelLayout.mpVaos = new u32[numSubMeshes];
+  modelLayout.mpVertexBufferSizes = new u32[numSubMeshes];
+  modelLayout.mpIndexBufferSizes = new u32[numSubMeshes];
+  modelLayout.mpVbos = new u32[numSubMeshes];
+  modelLayout.mpEbos = new u32[numSubMeshes];
+  modelLayout.mpIbos = new u32[numSubMeshes];
+
+  std::memcpy(modelLayout.mpVertexBufferSizes, pVertexBufferSizes, numSubMeshes * sizeof(u32));
+  std::memcpy(modelLayout.mpIndexBufferSizes, pIndexBufferSizes, numSubMeshes * sizeof(u32));
+
+  glGenVertexArrays(numSubMeshes, modelLayout.mpVaos);
+  glGenBuffers(numSubMeshes, modelLayout.mpVbos);
+  glGenBuffers(numSubMeshes, modelLayout.mpEbos);
+  glGenBuffers(numSubMeshes, modelLayout.mpIbos);
+
+  for (u32 i{}; i < numSubMeshes; i++)
+  {
+    glBindVertexArray(modelLayout.mpVaos[i]);
+
+    glBindBuffer(GL_ARRAY_BUFFER, modelLayout.mpVbos[i]);
+    glBufferData(GL_ARRAY_BUFFER, modelLayout.mpVertexBufferSizes[i] * sizeof(VertexGizmoLine), nullptr, GL_STATIC_DRAW);
+
+    switch (ModelLayout::VertexType::sType)
+    {
+      case VertexType::Gizmo:
       {
-        glBufferData(GL_ARRAY_BUFFER, modelLayout.mpVertexBufferSizes[i] * sizeof(VertexLambertInstanced), nullptr, GL_STATIC_DRAW);
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexGizmoLine), (void*)(0));
+        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexGizmoLine), (void*)(sizeof(r32v3)));
+        break;
+      }
+      case VertexType::Lambert:
+      {
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexLambert), (void*)(0));
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexLambert), (void*)(sizeof(r32v3)));
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(VertexLambert), (void*)(sizeof(r32v3) + sizeof(r32v3)));
+        break;
+      }
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, modelLayout.mpIbos[i]);
+    glBufferData(GL_ARRAY_BUFFER, modelLayout.mNumInstances * sizeof(r32m4), nullptr, GL_STATIC_DRAW);
+
+    switch (ModelLayout::VertexType::sType)
+    {
+      case VertexType::Gizmo:
+      {
         glEnableVertexAttribArray(2);
         glEnableVertexAttribArray(3);
         glEnableVertexAttribArray(4);
         glEnableVertexAttribArray(5);
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(r32m4), (void*)(0));
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(r32m4), (void*)(sizeof(r32m4)));
+        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(r32m4), (void*)(sizeof(r32m4) + sizeof(r32m4)));
+        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(r32m4), (void*)(sizeof(r32m4) + sizeof(r32m4) + sizeof(r32m4)));
+        glVertexAttribDivisor(2, 1);
+        glVertexAttribDivisor(3, 1);
+        glVertexAttribDivisor(4, 1);
+        glVertexAttribDivisor(5, 1);
+        break;
+      }
+      case VertexType::Lambert:
+      {
+        glEnableVertexAttribArray(3);
+        glEnableVertexAttribArray(4);
+        glEnableVertexAttribArray(5);
         glEnableVertexAttribArray(6);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexLambertInstanced), (void*)(0));
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexLambertInstanced), (void*)(sizeof(r32v3)));
-        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(VertexLambertInstanced), (void*)(sizeof(r32v3) + sizeof(r32v3)));
-        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(VertexLambertInstanced), (void*)(sizeof(r32v3) + sizeof(r32v3) + sizeof(r32v4)));
-        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(VertexLambertInstanced), (void*)(sizeof(r32v3) + sizeof(r32v3) + sizeof(r32v4) + sizeof(r32v4)));
-        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(VertexLambertInstanced), (void*)(sizeof(r32v3) + sizeof(r32v3) + sizeof(r32v4) + sizeof(r32v4) + sizeof(r32v4)));
-        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(VertexLambertInstanced), (void*)(sizeof(r32v3) + sizeof(r32v3) + sizeof(r32v4) + sizeof(r32v4) + sizeof(r32v4) + sizeof(r32v4)));
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(r32m4), (void*)(0));
+        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(r32m4), (void*)(sizeof(r32m4)));
+        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(r32m4), (void*)(sizeof(r32m4) + sizeof(r32m4)));
+        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(r32m4), (void*)(sizeof(r32m4) + sizeof(r32m4) + sizeof(r32m4)));
         glVertexAttribDivisor(3, 1);
         glVertexAttribDivisor(4, 1);
         glVertexAttribDivisor(5, 1);
@@ -353,6 +415,17 @@ template<typename ModelLayout, typename Vertices, typename Indices> void ModelLa
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modelLayout.mpEbos[subMeshIndex]);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, modelLayout.mpIndexBufferSizes[subMeshIndex] * sizeof(ModelLayout::IndexType), pIndexData, GL_STATIC_DRAW);
 }
+template<typename ModelLayout, typename Vertices, typename Indices> void ModelLayoutDataInstanced(ModelLayout const& modelLayout, u32 subMeshIndex, Vertices* pVertexData, Indices* pIndexData, r32m4* pProjectionData)
+{
+  glBindBuffer(GL_ARRAY_BUFFER, modelLayout.mpVbos[subMeshIndex]);
+  glBufferData(GL_ARRAY_BUFFER, modelLayout.mpVertexBufferSizes[subMeshIndex] * sizeof(ModelLayout::VertexType), pVertexData, GL_STATIC_DRAW);
+
+  glBindBuffer(GL_ARRAY_BUFFER, modelLayout.mpIbos[subMeshIndex]);
+  glBufferData(GL_ARRAY_BUFFER, modelLayout.mNumInstances * sizeof(r32m4), pProjectionData, GL_STATIC_DRAW);
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modelLayout.mpEbos[subMeshIndex]);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, modelLayout.mpIndexBufferSizes[subMeshIndex] * sizeof(ModelLayout::IndexType), pIndexData, GL_STATIC_DRAW);
+}
 template<typename ModelLayout>                                      void ModelLayoutRender(ModelLayout const& modelLayout, u32 subMeshIndex, RenderMode renderMode)
 {
   switch (renderMode)
@@ -369,18 +442,18 @@ template<typename ModelLayout>                                      void ModelLa
     }
   }
 }
-template<typename ModelLayout>                                      void ModelLayoutRenderInstanced(ModelLayout const& modelLayout, u32 subMeshIndex, RenderMode renderMode, u32 numInstances)
+template<typename ModelLayout>                                      void ModelLayoutRenderInstanced(ModelLayout const& modelLayout, u32 subMeshIndex, RenderMode renderMode)
 {
   switch (renderMode)
   {
     case Line:
     {
-      DrawModelLayoutLinesInstanced(modelLayout, subMeshIndex, numInstances);
+      DrawModelLayoutLinesInstanced(modelLayout, subMeshIndex, modelLayout.mNumInstances);
       break;
     }
     case Triangle:
     {
-      DrawModelLayoutTrianglesInstanced(modelLayout, subMeshIndex, numInstances);
+      DrawModelLayoutTrianglesInstanced(modelLayout, subMeshIndex, modelLayout.mNumInstances);
       break;
     }
   }
@@ -396,4 +469,18 @@ template<typename ModelLayout>                                      void ModelLa
   delete[] modelLayout.mpIndexBufferSizes;
   delete[] modelLayout.mpVbos;
   delete[] modelLayout.mpEbos;
+}
+template<typename ModelLayout>                                      void ModelLayoutDestroyInstanced(ModelLayout const& modelLayout)
+{
+  glDeleteBuffers(modelLayout.mNumSubMeshes, modelLayout.mpVbos);
+  glDeleteBuffers(modelLayout.mNumSubMeshes, modelLayout.mpEbos);
+  glDeleteBuffers(modelLayout.mNumSubMeshes, modelLayout.mpIbos);
+  glDeleteVertexArrays(modelLayout.mNumSubMeshes, modelLayout.mpVaos);
+
+  delete[] modelLayout.mpVaos;
+  delete[] modelLayout.mpVertexBufferSizes;
+  delete[] modelLayout.mpIndexBufferSizes;
+  delete[] modelLayout.mpVbos;
+  delete[] modelLayout.mpEbos;
+  delete[] modelLayout.mpIbos;
 }

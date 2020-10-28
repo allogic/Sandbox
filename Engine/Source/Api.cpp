@@ -610,19 +610,7 @@ void ModelCreate(Model& model, std::string const& fileName)
     ModelLayoutData(model.mModelLambert, i, vertexBuffers[i].data(), indexBuffers[i].data());
   }
 }
-void ModelRender(Model const& model)
-{
-  for (u32 i{}; i < model.mModelLambert.mNumSubMeshes; i++)
-  {
-    ModelLayoutBind(model.mModelLambert, i);
-    ModelLayoutRender(model.mModelLambert, i, RenderMode::Triangle);
-  }
-}
-void ModelDestroy(Model const& model)
-{
-  ModelLayoutDestroy(model.mModelLambert);
-}
-void ModelCreateInstanced(ModelInstanced& modelInstanced, std::string const& fileName)
+void ModelCreateInstanced(Model& model, std::string const& fileName, u32 numInstances)
 {
   Assimp::Importer importer{};
 
@@ -634,13 +622,15 @@ void ModelCreateInstanced(ModelInstanced& modelInstanced, std::string const& fil
 
   std::vector<u32> vertexBufferSizes{};
   std::vector<u32> indexBufferSizes{};
-  std::vector<std::vector<VertexLambertInstanced>> vertexBuffers{};
+  std::vector<std::vector<VertexLambert>> vertexBuffers{};
   std::vector<std::vector<u32>> indexBuffers{};
+  std::vector<std::vector<r32m4>> projectionBuffer{};
 
   vertexBufferSizes.resize(numMeshes);
   indexBufferSizes.resize(numMeshes);
   vertexBuffers.resize(numMeshes);
   indexBuffers.resize(numMeshes);
+  projectionBuffer.resize(numMeshes);
 
   for (u32 i{}; i < numMeshes; i++)
   {
@@ -654,22 +644,15 @@ void ModelCreateInstanced(ModelInstanced& modelInstanced, std::string const& fil
 
     vertexBuffers[i].resize(pMesh->mNumVertices);
     indexBuffers[i].resize(pMesh->mNumFaces * 3);
+    projectionBuffer[i].resize(numInstances);
 
     for (u32 j{}; j < pMesh->mNumVertices; j++)
     {
-      r32m4 transform{ glm::mat4(1.f) };
-      r32v2 diskRandom{ glm::circularRand(500.f) };
-
-      transform = glm::translate(transform, { diskRandom.x, glm::linearRand(-100.f, 100.f), diskRandom.y });
-      transform = glm::rotate(transform, glm::linearRand(-180.f, 180.f), glm::sphericalRand(1.f));
-      transform = glm::scale(transform, { 1.f, 1.f, 1.f });
-
       vertexBuffers[i][j] =
       {
-        .mPosition { pMesh->mVertices[j].x, pMesh->mVertices[j].y, pMesh->mVertices[j].z },
-        .mNormal   { pMesh->mNormals[j].x, pMesh->mNormals[j].y, pMesh->mNormals[j].z },
-        .mColor    { 0.f, 0.f, 0.f, 1.f },
-        .mTransform{ transform },
+        .mPosition{ pMesh->mVertices[j].x, pMesh->mVertices[j].y, pMesh->mVertices[j].z },
+        .mNormal  { pMesh->mNormals[j].x, pMesh->mNormals[j].y, pMesh->mNormals[j].z },
+        .mColor   { 0.f, 0.f, 0.f, 1.f },
       };
     }
     for (u32 j{}, k{}; j < pMesh->mNumFaces; j++, k += 3)
@@ -677,6 +660,14 @@ void ModelCreateInstanced(ModelInstanced& modelInstanced, std::string const& fil
       indexBuffers[i][k + 0] = { pMesh->mFaces[j].mIndices[0] };
       indexBuffers[i][k + 1] = { pMesh->mFaces[j].mIndices[1] };
       indexBuffers[i][k + 2] = { pMesh->mFaces[j].mIndices[2] };
+    }
+    for (u32 j{}; j < numInstances; j++)
+    {
+      //projectionBuffer[i][j] =
+      //{
+      //  // refactor to only use u32 instead of r32m4
+      //  // duo to SSBO holding our transformations so this is only the index buffer
+      //};
     }
   }
   for (u32 i{}; i < numMaterials; i++)
@@ -693,25 +684,37 @@ void ModelCreateInstanced(ModelInstanced& modelInstanced, std::string const& fil
     aiTexture const* pTexture{ pScene->mTextures[i] };
   }
 
-  ModelLayoutCreate(modelInstanced.mModelLambertInstanced, numMeshes, vertexBufferSizes.data(), indexBufferSizes.data());
+  ModelLayoutCreateInstanced(model.mModelLambert, numMeshes, vertexBufferSizes.data(), indexBufferSizes.data(), numInstances);
 
   for (u32 i{}; i < numMeshes; i++)
   {
-    ModelLayoutBind(modelInstanced.mModelLambertInstanced, i);
-    ModelLayoutData(modelInstanced.mModelLambertInstanced, i, vertexBuffers[i].data(), indexBuffers[i].data());
+    ModelLayoutBind(model.mModelLambert, i);
+    ModelLayoutDataInstanced(model.mModelLambert, i, vertexBuffers[i].data(), indexBuffers[i].data(), projectionBuffer[i].data());
   }
 }
-void ModelRenderInstanced(ModelInstanced const& modelInstanced, u32 numInstances)
+void ModelRender(Model const& model)
 {
-  for (u32 i{}; i < modelInstanced.mModelLambertInstanced.mNumSubMeshes; i++)
+  for (u32 i{}; i < model.mModelLambert.mNumSubMeshes; i++)
   {
-    ModelLayoutBind(modelInstanced.mModelLambertInstanced, i);
-    ModelLayoutRenderInstanced(modelInstanced.mModelLambertInstanced, i, RenderMode::Triangle, numInstances);
+    ModelLayoutBind(model.mModelLambert, i);
+    ModelLayoutRender(model.mModelLambert, i, RenderMode::Triangle);
   }
 }
-void ModelDestroyInstanced(ModelInstanced const& modelInstanced)
+void ModelRenderInstanced(Model const& model)
 {
-  ModelLayoutDestroy(modelInstanced.mModelLambertInstanced);
+  for (u32 i{}; i < model.mModelLambert.mNumSubMeshes; i++)
+  {
+    ModelLayoutBind(model.mModelLambert, i);
+    ModelLayoutRenderInstanced(model.mModelLambert, i, RenderMode::Triangle);
+  }
+}
+void ModelDestroy(Model const& model)
+{
+  ModelLayoutDestroy(model.mModelLambert);
+}
+void ModelDestroyInstanced(Model const& model)
+{
+  ModelLayoutDestroyInstanced(model.mModelLambert);
 }
 
 /*
