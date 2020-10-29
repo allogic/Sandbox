@@ -7,7 +7,7 @@
 void SceneInstancing::OnEnable()
 {
   CameraCreate(mCamera, { 0.f, 0.f, 0.f }, 45.f, 0.001f, 10000.f);
-  ModelCreateInstanced(mModelSpaceShip, "C:\\Users\\Burmi\\Downloads\\Sandbox\\Models\\cube.fbx", sNumSpaceShips);
+  ModelCreateInstanced(mModelSpaceShip, "C:\\Users\\Michael\\Downloads\\Sandbox\\Models\\teapot.fbx", sNumSpaceShips);
   RandomizeTransforms();
   RandomizeSteerings();
   BufferLayoutCreate(mBufferTransforms, sNumSpaceShips, 0);
@@ -52,6 +52,8 @@ void SceneInstancing::OnRender(r32 timeDelta) const
 }
 void SceneInstancing::OnGizmos(r32 timeDelta)
 {
+  return;
+
   for (u32 i{}; i < sNumSpaceShips; i++)
   {
     Transform const& transform{ mTransforms[i] };

@@ -7,10 +7,10 @@ GLFWwindow* spWindow{};
 std::vector<Scene*> sScenes      {};
 Scene*              spSceneActive{};
 
-s32   sStatus       {};
-u32   sWidth        {};
-u32   sHeight       {};
-r32   sAspect       {};
+s32   sStatus{};
+u32   sWidth {};
+u32   sHeight{};
+r32   sAspect{};
 
 r32v2 sMousePosition{};
 r32v2 sMouseScroll  {};
@@ -624,13 +624,13 @@ void ModelCreateInstanced(Model& model, std::string const& fileName, u32 numInst
   std::vector<u32> indexBufferSizes{};
   std::vector<std::vector<VertexLambert>> vertexBuffers{};
   std::vector<std::vector<u32>> indexBuffers{};
-  std::vector<std::vector<r32m4>> projectionBuffer{};
+  std::vector<std::vector<u32>> instanceBuffer{};
 
   vertexBufferSizes.resize(numMeshes);
   indexBufferSizes.resize(numMeshes);
   vertexBuffers.resize(numMeshes);
   indexBuffers.resize(numMeshes);
-  projectionBuffer.resize(numMeshes);
+  instanceBuffer.resize(numMeshes);
 
   for (u32 i{}; i < numMeshes; i++)
   {
@@ -644,7 +644,7 @@ void ModelCreateInstanced(Model& model, std::string const& fileName, u32 numInst
 
     vertexBuffers[i].resize(pMesh->mNumVertices);
     indexBuffers[i].resize(pMesh->mNumFaces * 3);
-    projectionBuffer[i].resize(numInstances);
+    instanceBuffer[i].resize(numInstances);
 
     for (u32 j{}; j < pMesh->mNumVertices; j++)
     {
@@ -663,11 +663,7 @@ void ModelCreateInstanced(Model& model, std::string const& fileName, u32 numInst
     }
     for (u32 j{}; j < numInstances; j++)
     {
-      //projectionBuffer[i][j] =
-      //{
-      //  // refactor to only use u32 instead of r32m4
-      //  // duo to SSBO holding our transformations so this is only the index buffer
-      //};
+      instanceBuffer[i][j] = j;
     }
   }
   for (u32 i{}; i < numMaterials; i++)
@@ -689,7 +685,7 @@ void ModelCreateInstanced(Model& model, std::string const& fileName, u32 numInst
   for (u32 i{}; i < numMeshes; i++)
   {
     ModelLayoutBind(model.mModelLambert, i);
-    ModelLayoutDataInstanced(model.mModelLambert, i, vertexBuffers[i].data(), indexBuffers[i].data(), projectionBuffer[i].data());
+    ModelLayoutDataInstanced(model.mModelLambert, i, vertexBuffers[i].data(), indexBuffers[i].data(), instanceBuffer[i].data());
   }
 }
 void ModelRender(Model const& model)

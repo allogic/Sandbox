@@ -351,40 +351,22 @@ template<typename ModelLayout>                                      void ModelLa
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, modelLayout.mpIbos[i]);
-    glBufferData(GL_ARRAY_BUFFER, modelLayout.mNumInstances * sizeof(r32m4), nullptr, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, modelLayout.mNumInstances * sizeof(u32), nullptr, GL_STATIC_DRAW);
 
     switch (ModelLayout::VertexType::sType)
     {
       case VertexType::Gizmo:
       {
         glEnableVertexAttribArray(2);
-        glEnableVertexAttribArray(3);
-        glEnableVertexAttribArray(4);
-        glEnableVertexAttribArray(5);
-        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(r32m4), (void*)(0));
-        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(r32m4), (void*)(sizeof(r32m4)));
-        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(r32m4), (void*)(sizeof(r32m4) + sizeof(r32m4)));
-        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(r32m4), (void*)(sizeof(r32m4) + sizeof(r32m4) + sizeof(r32m4)));
+        glVertexAttribPointer(2, 1, GL_UNSIGNED_INT, GL_FALSE, 0, (void*)(0));
         glVertexAttribDivisor(2, 1);
-        glVertexAttribDivisor(3, 1);
-        glVertexAttribDivisor(4, 1);
-        glVertexAttribDivisor(5, 1);
         break;
       }
       case VertexType::Lambert:
       {
         glEnableVertexAttribArray(3);
-        glEnableVertexAttribArray(4);
-        glEnableVertexAttribArray(5);
-        glEnableVertexAttribArray(6);
-        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(r32m4), (void*)(0));
-        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(r32m4), (void*)(sizeof(r32m4)));
-        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(r32m4), (void*)(sizeof(r32m4) + sizeof(r32m4)));
-        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(r32m4), (void*)(sizeof(r32m4) + sizeof(r32m4) + sizeof(r32m4)));
+        glVertexAttribPointer(3, 1, GL_UNSIGNED_INT, GL_FALSE, sizeof(u32), (void*)(0));
         glVertexAttribDivisor(3, 1);
-        glVertexAttribDivisor(4, 1);
-        glVertexAttribDivisor(5, 1);
-        glVertexAttribDivisor(6, 1);
         break;
       }
     }
@@ -415,13 +397,13 @@ template<typename ModelLayout, typename Vertices, typename Indices> void ModelLa
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modelLayout.mpEbos[subMeshIndex]);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, modelLayout.mpIndexBufferSizes[subMeshIndex] * sizeof(ModelLayout::IndexType), pIndexData, GL_STATIC_DRAW);
 }
-template<typename ModelLayout, typename Vertices, typename Indices> void ModelLayoutDataInstanced(ModelLayout const& modelLayout, u32 subMeshIndex, Vertices* pVertexData, Indices* pIndexData, r32m4* pProjectionData)
+template<typename ModelLayout, typename Vertices, typename Indices> void ModelLayoutDataInstanced(ModelLayout const& modelLayout, u32 subMeshIndex, Vertices* pVertexData, Indices* pIndexData, u32* pInstanceData)
 {
   glBindBuffer(GL_ARRAY_BUFFER, modelLayout.mpVbos[subMeshIndex]);
   glBufferData(GL_ARRAY_BUFFER, modelLayout.mpVertexBufferSizes[subMeshIndex] * sizeof(ModelLayout::VertexType), pVertexData, GL_STATIC_DRAW);
 
   glBindBuffer(GL_ARRAY_BUFFER, modelLayout.mpIbos[subMeshIndex]);
-  glBufferData(GL_ARRAY_BUFFER, modelLayout.mNumInstances * sizeof(r32m4), pProjectionData, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, modelLayout.mNumInstances * sizeof(u32), pInstanceData, GL_STATIC_DRAW);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modelLayout.mpEbos[subMeshIndex]);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, modelLayout.mpIndexBufferSizes[subMeshIndex] * sizeof(ModelLayout::IndexType), pIndexData, GL_STATIC_DRAW);

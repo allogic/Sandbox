@@ -86,7 +86,7 @@ struct SceneInstancing : Scene
   layout (location = 0) in vec3 lPosition;
   layout (location = 1) in vec3 lNormal;
   layout (location = 2) in vec4 lColor;
-  layout (location = 3) in mat4 lInstanceId; // refactor me to u32
+  layout (location = 3) in uint lInstanceId;
 
   uniform mat4 uProjection;
   uniform mat4 uView;
@@ -99,7 +99,7 @@ struct SceneInstancing : Scene
     fNormal = lNormal;
     fColor = lColor;
 
-    gl_Position = uProjection * uView * vec4(lPosition + transforms[0].position, 1.f);
+    gl_Position = uProjection * uView * vec4(lPosition + transforms[lInstanceId].position, 1.f);
   }
   )glsl"
   };
