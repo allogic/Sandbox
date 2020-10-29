@@ -4,10 +4,7 @@
 
 struct Transform
 {
-  r32v3 mPosition {};
-  r32v3 mRotation {};
-  r32v3 mScale    {};
-  r32m4 mTransform{};
+  r32v3 mPosition{};
 };
 struct Steering
 {
@@ -22,19 +19,16 @@ struct SceneInstancing : Scene
   R"glsl(
   #version 460 core
   
-  layout (local_size_x = 16, local_size_y = 1, local_size_y = 1) in;
+  layout (local_size_x = 16) in;
 
   struct Transform
   {
-    vec3 position;
-    vec3 rotation;
-    vec3 scale;
-    mat4 transform;
+    float position[3];
   };
   struct Steering
   {
-    vec3 acceleration;
-    vec3 steering;
+    float acceleration[3];
+    float velocity[3];
   };
 
   layout (std430, binding = 0) buffer TransformBuffer
@@ -47,12 +41,30 @@ struct SceneInstancing : Scene
   };
 
   uniform float uTimeDelta;
+  uniform float uVelocityDecay;
 
   void main()
   {
-    uint idx = gl_LocalInvocationIndex.x;
+    uint idx = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
 
-    //bufferSteering.steerings[idx].position += sin(uTimeDelta * 10.f) * 10.f;
+    vec3 acceleration = vec3(steerings[idx].acceleration[0], steerings[idx].acceleration[1], steerings[idx].acceleration[2]);
+    vec3 velocity = vec3(steerings[idx].velocity[0], steerings[idx].velocity[1], steerings[idx].velocity[2]);
+
+    steerings[idx].velocity[0] += -velocity.x * uVelocityDecay * uTimeDelta;
+    steerings[idx].velocity[1] += -velocity.y * uVelocityDecay * uTimeDelta;
+    steerings[idx].velocity[2] += -velocity.z * uVelocityDecay * uTimeDelta;
+
+    steerings[idx].velocity[0] += acceleration.x;
+    steerings[idx].velocity[1] += acceleration.y;
+    steerings[idx].velocity[2] += acceleration.z;
+
+    //steerings[idx].acceleration[0] = 0.f;
+    //steerings[idx].acceleration[1] = 0.f;
+    //steerings[idx].acceleration[2] = 0.f;
+
+    transforms[idx].position[0] += velocity.x;
+    transforms[idx].position[1] += velocity.y;
+    transforms[idx].position[2] += velocity.z;
   }
   )glsl"
   };
@@ -63,43 +75,34 @@ struct SceneInstancing : Scene
   
   struct Transform
   {
-    vec3 position;
-    vec3 rotation;
-    vec3 scale;
-    mat4 transform;
-  };
-  struct Steering
-  {
-    vec3 acceleration;
-    vec3 steering;
+    float position[3];
   };
 
   layout (std430, binding = 0) buffer TransformBuffer
   {
     Transform transforms[];
   };
-  layout (std430, binding = 1) buffer SteeringBuffer
-  {
-    Steering steerings[];
-  };
 
   layout (location = 0) in vec3 lPosition;
   layout (location = 1) in vec3 lNormal;
   layout (location = 2) in vec4 lColor;
-  layout (location = 3) in uint lInstanceId;
 
   uniform mat4 uProjection;
   uniform mat4 uView;
   
   out vec3 fNormal;
   out vec4 fColor;
-  
+
   void main()
   {
+    uint idx = gl_InstanceID;
+
     fNormal = lNormal;
     fColor = lColor;
 
-    gl_Position = uProjection * uView * vec4(lPosition + transforms[lInstanceId].position, 1.f);
+    vec3 position = vec3(transforms[idx].position[0], transforms[idx].position[1], transforms[idx].position[2]);
+
+    gl_Position = uProjection * uView * vec4(lPosition + position, 1.f);
   }
   )glsl"
   };
@@ -120,7 +123,7 @@ struct SceneInstancing : Scene
   )glsl"
   };
 
-  constexpr static u32 sNumSpaceShips{ 1000 };
+  constexpr static u32 sNumSpaceShips{ 131072 };
 
   CameraControllerOrbit   mCameraController{};
   Model                   mModelSpaceShip  {};

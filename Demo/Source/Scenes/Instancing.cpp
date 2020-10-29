@@ -6,8 +6,8 @@
 
 void SceneInstancing::OnEnable()
 {
-  CameraCreate(mCamera, { 0.f, 0.f, 0.f }, 45.f, 0.001f, 10000.f);
-  ModelCreateInstanced(mModelSpaceShip, "C:\\Users\\Michael\\Downloads\\Sandbox\\Models\\teapot.fbx", sNumSpaceShips);
+  CameraCreate(mCamera, { 0.f, 0.f, 1000.f }, 45.f, 0.001f, 10000.f);
+  ModelCreate(mModelSpaceShip, "C:\\Users\\Burmi\\Downloads\\Sandbox\\Models\\cube.fbx");
   RandomizeTransforms();
   RandomizeSteerings();
   BufferLayoutCreate(mBufferTransforms, sNumSpaceShips, 0);
@@ -19,7 +19,7 @@ void SceneInstancing::OnEnable()
 }
 void SceneInstancing::OnDisable()
 {
-  ModelDestroyInstanced(mModelSpaceShip);
+  ModelDestroy(mModelSpaceShip);
   BufferLayoutDestroy(mBufferTransforms);
   BufferLayoutDestroy(mBufferSteerings);
   ShaderDestroyRender(mShaderRender);
@@ -29,13 +29,7 @@ void SceneInstancing::OnUpdate(r32 timeDelta)
 {
   CameraUpdateControllerInputOrbit(mCamera, mCameraController, timeDelta);
 
-  //ShaderBind(mShaderCompute);
-  //BufferLayoutBind(mBufferTransforms, 0);
-  //BufferLayoutBind(mBufferSteerings, 1);
-  //ShaderStorageBuffer(mShaderCompute, "TransformBuffer", 0);
-  //ShaderStorageBuffer(mShaderCompute, "SteeringBuffer", 1);
-  //ShaderUniformR32(mShaderCompute, "uTimeDelta", timeDelta);
-  //ShaderExecuteCompute(mShaderCompute, 16, 1, 1);
+  
 }
 void SceneInstancing::OnUpdateFixed(r32 timeDelta)
 {
@@ -43,12 +37,15 @@ void SceneInstancing::OnUpdateFixed(r32 timeDelta)
 }
 void SceneInstancing::OnRender(r32 timeDelta) const
 {
+  ShaderBind(mShaderCompute);
+  ShaderUniformR32(mShaderCompute, "uTimeDelta", timeDelta);
+  ShaderUniformR32(mShaderCompute, "uVelocityDecay", 1.f);
+  ShaderExecuteCompute(mShaderCompute, glm::ceil(sNumSpaceShips / 16), 1, 1);
+
   ShaderBind(mShaderRender);
-  ShaderStorageBuffer(mShaderRender, "TransformBuffer", 0);
-  ShaderStorageBuffer(mShaderRender, "SteeringBuffer", 1);
   ShaderUniformR32M4(mShaderRender, "uProjection", mCamera.mProjection);
   ShaderUniformR32M4(mShaderRender, "uView", mCamera.mView);
-  ModelRenderInstanced(mModelSpaceShip);
+  ModelRenderInstanced(mModelSpaceShip, sNumSpaceShips);
 }
 void SceneInstancing::OnGizmos(r32 timeDelta)
 {
@@ -59,8 +56,8 @@ void SceneInstancing::OnGizmos(r32 timeDelta)
     Transform const& transform{ mTransforms[i] };
     Steering const& steering{ mSteerings[i] };
 
-    GizmoLineBatchPushBox(transform.mPosition, transform.mScale, { 1.f, 0.f, 1.f, 1.f });
-    GizmoLineBatchPushLine(transform.mPosition, transform.mPosition + steering.mVelocity, { 1.f, 1.f, 1.f, 1.f });
+    //GizmoLineBatchPushBox(transform.mPosition, transform.mScale, { 1.f, 0.f, 1.f, 1.f });
+    //GizmoLineBatchPushLine(transform.mPosition, transform.mPosition + steering.mVelocity, { 1.f, 1.f, 1.f, 1.f });
   }
 }
 
@@ -71,26 +68,13 @@ void SceneInstancing::RandomizeTransforms()
   for (u32 i{}; i < sNumSpaceShips; i++)
   {
     r32v3 position{ glm::ballRand(500.f) };
-    r32v3 rotation{ glm::sphericalRand(1.f) };
-    r32v3 scale{ 1.f, 1.f, 1.f };
-    r32m4 transform{ glm::identity<r32m4>() };
-
-    //transform = glm::translate(transform, position);
-    //transform = glm::rotate(transform, rotation.x, { 1.f, 0.f, 0.f });
-    //transform = glm::rotate(transform, rotation.y, { 0.f, 1.f, 0.f });
-    //transform = glm::rotate(transform, rotation.z, { 0.f, 0.f, 1.f });
-    //transform = glm::scale(transform, scale);
 
     mTransforms[i] =
     {
-      .mPosition { position },
-      .mRotation { rotation },
-      .mScale    { scale },
-      .mTransform{ transform },
+      .mPosition{ position },
     };
   }
 }
-
 void SceneInstancing::RandomizeSteerings()
 {
   mSteerings.resize(sNumSpaceShips);
@@ -99,7 +83,7 @@ void SceneInstancing::RandomizeSteerings()
   {
     mSteerings[i] =
     {
-      .mAcceleration{ 0.f, 0.f, 0.f },
+      .mAcceleration{ glm::sphericalRand(0.001f) },
       .mVelocity    { 0.f, 0.f, 0.f },
     };
   }

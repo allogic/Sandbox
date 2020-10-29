@@ -610,84 +610,6 @@ void ModelCreate(Model& model, std::string const& fileName)
     ModelLayoutData(model.mModelLambert, i, vertexBuffers[i].data(), indexBuffers[i].data());
   }
 }
-void ModelCreateInstanced(Model& model, std::string const& fileName, u32 numInstances)
-{
-  Assimp::Importer importer{};
-
-  aiScene const* pScene{ importer.ReadFile(fileName, aiProcess_Triangulate | aiProcess_SortByPType) };
-
-  u32 const numMeshes{ pScene->mNumMeshes };
-  u32 const numMaterials{ pScene->mNumMaterials };
-  u32 const numTextures{ pScene->mNumTextures };
-
-  std::vector<u32> vertexBufferSizes{};
-  std::vector<u32> indexBufferSizes{};
-  std::vector<std::vector<VertexLambert>> vertexBuffers{};
-  std::vector<std::vector<u32>> indexBuffers{};
-  std::vector<std::vector<u32>> instanceBuffer{};
-
-  vertexBufferSizes.resize(numMeshes);
-  indexBufferSizes.resize(numMeshes);
-  vertexBuffers.resize(numMeshes);
-  indexBuffers.resize(numMeshes);
-  instanceBuffer.resize(numMeshes);
-
-  for (u32 i{}; i < numMeshes; i++)
-  {
-    aiMesh const* pMesh{ pScene->mMeshes[i] };
-
-    if (!(pMesh->mPrimitiveTypes & aiPrimitiveType_TRIANGLE))
-      continue;
-
-    vertexBufferSizes[i] = pMesh->mNumVertices;
-    indexBufferSizes[i] = pMesh->mNumFaces * 3;
-
-    vertexBuffers[i].resize(pMesh->mNumVertices);
-    indexBuffers[i].resize(pMesh->mNumFaces * 3);
-    instanceBuffer[i].resize(numInstances);
-
-    for (u32 j{}; j < pMesh->mNumVertices; j++)
-    {
-      vertexBuffers[i][j] =
-      {
-        .mPosition{ pMesh->mVertices[j].x, pMesh->mVertices[j].y, pMesh->mVertices[j].z },
-        .mNormal  { pMesh->mNormals[j].x, pMesh->mNormals[j].y, pMesh->mNormals[j].z },
-        .mColor   { 0.f, 0.f, 0.f, 1.f },
-      };
-    }
-    for (u32 j{}, k{}; j < pMesh->mNumFaces; j++, k += 3)
-    {
-      indexBuffers[i][k + 0] = { pMesh->mFaces[j].mIndices[0] };
-      indexBuffers[i][k + 1] = { pMesh->mFaces[j].mIndices[1] };
-      indexBuffers[i][k + 2] = { pMesh->mFaces[j].mIndices[2] };
-    }
-    for (u32 j{}; j < numInstances; j++)
-    {
-      instanceBuffer[i][j] = j;
-    }
-  }
-  for (u32 i{}; i < numMaterials; i++)
-  {
-    aiMaterial const* pMaterial{ pScene->mMaterials[i] };
-
-    for (u32 j{}; j < pMaterial->mNumProperties; j++)
-    {
-      //std::printf("%s\n", pMaterial->mProperties[j]->mKey.data);
-    }
-  }
-  for (u32 i{}; i < numTextures; i++)
-  {
-    aiTexture const* pTexture{ pScene->mTextures[i] };
-  }
-
-  ModelLayoutCreateInstanced(model.mModelLambert, numMeshes, vertexBufferSizes.data(), indexBufferSizes.data(), numInstances);
-
-  for (u32 i{}; i < numMeshes; i++)
-  {
-    ModelLayoutBind(model.mModelLambert, i);
-    ModelLayoutDataInstanced(model.mModelLambert, i, vertexBuffers[i].data(), indexBuffers[i].data(), instanceBuffer[i].data());
-  }
-}
 void ModelRender(Model const& model)
 {
   for (u32 i{}; i < model.mModelLambert.mNumSubMeshes; i++)
@@ -696,21 +618,17 @@ void ModelRender(Model const& model)
     ModelLayoutRender(model.mModelLambert, i, RenderMode::Triangle);
   }
 }
-void ModelRenderInstanced(Model const& model)
+void ModelRenderInstanced(Model const& model, u32 numInstances)
 {
   for (u32 i{}; i < model.mModelLambert.mNumSubMeshes; i++)
   {
     ModelLayoutBind(model.mModelLambert, i);
-    ModelLayoutRenderInstanced(model.mModelLambert, i, RenderMode::Triangle);
+    ModelLayoutRenderInstanced(model.mModelLambert, i, RenderMode::Triangle, numInstances);
   }
 }
 void ModelDestroy(Model const& model)
 {
   ModelLayoutDestroy(model.mModelLambert);
-}
-void ModelDestroyInstanced(Model const& model)
-{
-  ModelLayoutDestroyInstanced(model.mModelLambert);
 }
 
 /*
