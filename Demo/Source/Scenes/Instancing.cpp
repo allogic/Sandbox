@@ -6,8 +6,8 @@
 
 void SceneInstancing::OnEnable()
 {
-  CameraCreate(mCamera, { 0.f, 0.f, 0.f }, 45.f, 0.001f, 10000.f);
-  ModelCreate(mModelShip, "C:\\Users\\Michael\\Downloads\\Sandbox\\Models\\cube.fbx");
+  CameraCreate(mCamera, { 0.f, 0.f, 1500.f }, 45.f, 0.001f, 10000.f);
+  ModelCreate(mModelShip, "C:\\Users\\Burmi\\Downloads\\Sandbox\\Models\\cube.fbx");
 
   RandomizeTransforms();
   RandomizeSteerings();
@@ -45,8 +45,8 @@ void SceneInstancing::OnUpdate(r32 timeDelta)
 
   ShaderBind(mShaderComputeShipSteerings);
   ShaderUniformR32(mShaderComputeShipSteerings, "uTimeDelta", timeDelta);
-  ShaderUniformR32(mShaderComputeShipSteerings, "uSpeed", 10.f);
-  ShaderUniformR32(mShaderComputeShipSteerings, "uDecay", 10.f);
+  ShaderUniformR32(mShaderComputeShipSteerings, "uAccelerationSpeed", 2000.f);
+  //ShaderUniformR32(mShaderComputeShipSteerings, "uVelocityDecay", 100.f);
   ShaderUniformU32(mShaderComputeShipSteerings, "uMaxWaypoints", mNumWaypoints);
 
   u32 numThreadsX{ (u32)glm::ceil(mNumShips / 32) };
@@ -70,14 +70,42 @@ void SceneInstancing::OnRender(r32 timeDelta) const
 }
 void SceneInstancing::OnGizmos(r32 timeDelta)
 {
-  return;
-
   for (u32 i{}; i < mNumWaypoints; i++)
   {
     Waypoint const& waypoint{ mWaypoints[i] };
 
-    GizmoLineBatchPushLine(waypoint.mPosition, waypoint.mPositionNext, { 1.f, 1.f, 1.f, 1.f });
+    r32v3 positionStart{ mWaypoints[i].mPosition };
+    r32v3 positionEnd{ mWaypoints[(i + 1) % mNumWaypoints].mPosition };
+
+    GizmoLineBatchPushLine(positionStart, positionEnd, { 1.f, 1.f, 1.f, 1.f });
   }
+
+  u32 size{ 32 };
+
+  for (u32 i{}; i <= size; i++)
+    for (u32 j{}; j <= size; j++)
+    {
+      r32v3 spacing{ 100.f, 100.f, 100.f };
+      r32v3 half{ size / 2, 0.f, size / 2 };
+      r32v3 startP0{ i, 0, 0 };
+      r32v3 startP1{ 0, 0, j };
+      r32v3 endP0{ i, 0, size };
+      r32v3 endP1{ size, 0, j };
+      r32v4 color{ (i / (r32)size), (j / (r32)size), 0.f, 1.f };
+
+      startP0 *= spacing;
+      startP1 *= spacing;
+      startP0 += -half * spacing;
+      startP1 += -half * spacing;
+
+      endP0 *= spacing;
+      endP1 *= spacing;
+      endP0 += -half * spacing;
+      endP1 += -half * spacing;
+
+      GizmoLineBatchPushLine(startP0, endP0, color);
+      GizmoLineBatchPushLine(startP1, endP1, color);
+    }
 }
 
 void SceneInstancing::RandomizeTransforms()
@@ -107,7 +135,8 @@ void SceneInstancing::RandomizeSteerings()
     {
       .mAcceleration { 0.f, 0.f, 0.f },
       .mVelocity     { 0.f, 0.f, 0.f },
-      .mWaypointIndex{ (u32)glm::linearRand(0.f, (r32)mNumWaypoints) },
+      //.mWaypointIndex{ (u32)glm::floor(glm::linearRand(0.f, (r32)mNumWaypoints)) },
+      .mWaypointIndex{ 0 },
     };
   }
 }
@@ -119,14 +148,7 @@ void SceneInstancing::RandomizeWaypoints()
   {
     mWaypoints[i] =
     {
-      .mPosition    { glm::ballRand(1500.f) },
-      .mPositionNext{ 0.f, 0.f, 0.f },
+      .mPosition{ glm::sphericalRand(500.f) },
     };
   }
-  for (u32 i{ 1 }; i < mNumWaypoints; i++)
-  {
-    mWaypoints[i - 1].mPositionNext = { mWaypoints[i % mNumWaypoints].mPosition };
-  }
-
-  mWaypoints[mNumWaypoints - 1].mPositionNext = { mWaypoints[0].mPosition };
 }

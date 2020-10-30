@@ -17,8 +17,7 @@ struct Steering
 };
 struct Waypoint
 {
-  r32v3 mPosition    {};
-  r32v3 mPositionNext{};
+  r32v3 mPosition{};
 };
 
 struct SceneInstancing : Scene
@@ -46,33 +45,51 @@ struct SceneInstancing : Scene
   struct Waypoint
   {
     float position[3];
-    float positionNext[3];
   };
 
-  layout (std430, binding = 0) buffer TransformBuffer{ Transform transforms[]; };
-  layout (std430, binding = 1) buffer SteeringBuffer { Steering steerings[]; };
-  layout (std430, binding = 2) buffer WaypointBuffer { Waypoint waypoints[]; };
+  layout (std430, binding = 0) volatile restrict buffer TransformBuffer
+  {
+    Transform transforms[];
+  };
+  layout (std430, binding = 1) volatile restrict buffer SteeringBuffer
+  {
+    Steering steerings[];
+  };
+  layout (std430, binding = 2) volatile restrict buffer WaypointBuffer
+  {
+    Waypoint waypoints[];
+  };
 
   uniform float uTimeDelta;
-  uniform float uSpeed;
-  uniform float uDecay;
+  uniform float uAccelerationSpeed;
+  uniform float uVelocityDecay;
   uniform uint  uMaxWaypoints;
 
-  vec3 ToVec3(in float arr[3])
+  void AddTo(inout float a[3], in vec3 b)
   {
-    return vec3(arr[0], arr[1], arr[2]);
+    a[0] += b.x;
+    a[1] += b.y;
+    a[2] += b.z;
   }
-  void AddTo(inout float arr[3], in vec3 value)
+  void AddTo(inout float a[3], in float b[3])
   {
-    arr[0] += value.x;
-    arr[1] += value.y;
-    arr[2] += value.z;
+    a[0] += b[0];
+    a[1] += b[1];
+    a[2] += b[2];
   }
-  void AddTo(inout float arr[3], in float value[3])
+  vec3 Sub(in float a[3], in float b[3])
   {
-    arr[0] += value[0];
-    arr[1] += value[1];
-    arr[2] += value[2];
+    return vec3(
+      a[0] - b[0],
+      a[1] - b[1],
+      a[2] - b[2]
+    );
+  }
+  void Clamp(inout float a[3], in float min, in float max)
+  {
+    a[0] = clamp(a[0], min, max);
+    a[1] = clamp(a[1], min, max);
+    a[2] = clamp(a[2], min, max);
   }
 
   void main()
@@ -80,26 +97,27 @@ struct SceneInstancing : Scene
     // Compute linear object index
     uint objIndex = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
 
-    // Compute current waypoint position
+    // Current waypoint index
     uint waypointIndex = steerings[objIndex].waypointIndex;
-    vec3 waypointPosition = ToVec3(waypoints[waypointIndex].position);
     
-    // Add boids coheasion/seperation/alignment behaviour
+    // Add boids cohesion/seperation/alignment behaviour
 
     // Compute steering direction
-    vec3 transformPosition = ToVec3(transforms[objIndex].position);
-    vec3 steeringDirection = waypointPosition - transformPosition;
+    vec3 steeringDirection = Sub(waypoints[waypointIndex].position, transforms[objIndex].position);
     vec3 steeringDirectionNorm = normalize(steeringDirection);
 
     // Add steering direction to acceleration
-    AddTo(steerings[objIndex].acceleration, steeringDirectionNorm * uSpeed * uTimeDelta);
+    AddTo(steerings[objIndex].acceleration, steeringDirectionNorm * uAccelerationSpeed * uTimeDelta);
 
     // Add negative steering velocity to itself
-    AddTo(steerings[objIndex].velocity, -ToVec3(steerings[objIndex].velocity) * uDecay * uTimeDelta);
+    //AddTo(steerings[objIndex].velocity, -steerings[objIndex].velocity * uVelocityDecay * uTimeDelta);
 
-    // Loop waypoints steering
-    if (length(transformPosition - waypointPosition) < 500.f)
-      steerings[objIndex].waypointIndex = waypointIndex + 1 % uMaxWaypoints;
+    // Limit velocity
+    Clamp(steerings[objIndex].velocity, -1, 1);
+
+    // Loop waypoints
+    if (length(steeringDirection) < 100.f)
+      steerings[objIndex].waypointIndex = (waypointIndex + 1) % uMaxWaypoints;
   }
   )glsl"
   };
@@ -124,15 +142,21 @@ struct SceneInstancing : Scene
     uint  waypointIndex;
   };
 
-  layout (std430, binding = 0) buffer TransformBuffer{ Transform transforms[]; };
-  layout (std430, binding = 1) buffer SteeringBuffer { Steering steerings[]; };
+  layout (std430, binding = 0) volatile restrict buffer TransformBuffer
+  {
+    Transform transforms[];
+  };
+  layout (std430, binding = 1) volatile restrict buffer SteeringBuffer
+  {
+    Steering steerings[];
+  };
 
   mat4 Rotate3D(vec3 axis, in float angle)
   {
     axis = normalize(axis);
     float s = sin(angle);
     float c = cos(angle);
-    float oc = 1.0 - c;
+    float oc = 1.0f - c;
 
     return mat4(
 		  oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
@@ -141,27 +165,23 @@ struct SceneInstancing : Scene
 		  0.0,                                0.0,                                0.0,                                1.0
 	  );
   }
-  vec3 ToVec3(in float arr[3])
+  void AddTo(inout float a[3], in vec3 b)
   {
-    return vec3(arr[0], arr[1], arr[2]);
+    a[0] += b.x;
+    a[1] += b.y;
+    a[2] += b.z;
   }
-  void AddTo(inout float arr[3], in vec3 value)
+  void AddTo(inout float a[3], in float b[3])
   {
-    arr[0] += value.x;
-    arr[1] += value.y;
-    arr[2] += value.z;
+    a[0] += b[0];
+    a[1] += b[1];
+    a[2] += b[2];
   }
-  void AddTo(inout float arr[3], in float value[3])
+  void SetTo(inout float a[3], in float b)
   {
-    arr[0] += value[0];
-    arr[1] += value[1];
-    arr[2] += value[2];
-  }
-  void SetTo(inout float arr[3], in float value)
-  {
-    arr[0] = value;
-    arr[1] = value;
-    arr[2] = value;
+    a[0] = b;
+    a[1] = b;
+    a[2] = b;
   }
 
   void main()
@@ -174,10 +194,10 @@ struct SceneInstancing : Scene
     //transforms[idx].rotationLocalUp = rotationMatrix * vec4(transforms[idx].rotationLocalUp, 1.f);
     //transforms[idx].rotationLocalFront = rotationMatrix * vec4(transforms[idx].rotationLocalFront, 1.f);
 
-    // Add velocity to acceleration
+    // Add acceleration to velocity
     AddTo(steerings[objIndex].velocity, steerings[objIndex].acceleration);
 
-    // Clear velocity
+    // Clear acceleration
     SetTo(steerings[objIndex].acceleration, 0.f);
 
     // Add velocity to position
@@ -198,7 +218,7 @@ struct SceneInstancing : Scene
     float rotationLocalFront[3];
   };
 
-  layout (std430, binding = 0) buffer TransformBuffer
+  layout (std430, binding = 0) volatile restrict buffer TransformBuffer
   {
     Transform transforms[];
   };
@@ -213,9 +233,9 @@ struct SceneInstancing : Scene
   out vec3 fNormal;
   out vec4 fColor;
 
-  vec3 ToVec3(in float arr[3])
+  vec3 ToVec3(in float a[3])
   {
-    return vec3(arr[0], arr[1], arr[2]);
+    return vec3(a[0], a[1], a[2]);
   }
 
   void main()
@@ -246,12 +266,13 @@ struct SceneInstancing : Scene
   
   void main()
   {
+    // Compute fragment color
     color = vec4(fNormal, 1.f);
   }
   )glsl"
   };
 
-  u32                     mNumShips                  { 4096 * 32 };
+  u32                     mNumShips                  { 2048 * 32 };
   u32                     mNumWaypoints              { 32 };
                                                      
   CameraControllerOrbit   mCameraController          {};
