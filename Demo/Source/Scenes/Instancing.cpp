@@ -6,52 +6,72 @@
 
 void SceneInstancing::OnEnable()
 {
-  CameraCreate(mCamera, { 0.f, 0.f, 500.f }, 45.f, 0.001f, 10000.f);
-  ModelCreate(mModelSpaceShip, "C:\\Users\\Burmi\\Downloads\\Sandbox\\Models\\cube.fbx");
+  CameraCreate(mCamera, { 0.f, 0.f, 0.f }, 45.f, 0.001f, 10000.f);
+  ModelCreate(mModelShip, "C:\\Users\\Michael\\Downloads\\Sandbox\\Models\\cube.fbx");
+
   RandomizeTransforms();
   RandomizeSteerings();
   RandomizeWaypoints();
-  BufferLayoutCreate(mBufferTransforms, mNumSpaceShips, 0);
-  BufferLayoutCreate(mBufferSteerings, mNumSpaceShips, 1);
+
+  BufferLayoutCreate(mBufferTransforms, mNumShips, 0);
+  BufferLayoutCreate(mBufferSteerings, mNumShips, 1);
   BufferLayoutCreate(mBufferWaypoints, mNumWaypoints, 2);
-  BufferLayoutData(mBufferTransforms, mTransforms.data(), mNumSpaceShips);
-  BufferLayoutData(mBufferSteerings, mSteerings.data(), mNumSpaceShips);
+
+  BufferLayoutData(mBufferTransforms, mTransforms.data(), mNumShips);
+  BufferLayoutData(mBufferSteerings, mSteerings.data(), mNumShips);
   BufferLayoutData(mBufferWaypoints, mWaypoints.data(), mNumWaypoints);
-  ShaderCreateCompute(mShaderCompute, mShaderComputeSpaceShipUpdate);
-  ShaderCreateRender(mShaderRender, mShaderRenderSpaceShipVertex, mShaderRenderSpaceShipFragment);
+
+  ShaderCreateCompute(mShaderComputeShipSteerings, mShaderComputeShipSteeringsSource);
+  ShaderCreateCompute(mShaderComputeShipPhysics, mShaderComputeShipPhysicsSource);
+  
+  ShaderCreateRender(mShaderRenderShips, mShaderRenderShipVertexSource, mShaderRenderShipFragmentSource);
 }
 void SceneInstancing::OnDisable()
 {
-  ModelDestroy(mModelSpaceShip);
+  ModelDestroy(mModelShip);
+
   BufferLayoutDestroy(mBufferTransforms);
   BufferLayoutDestroy(mBufferSteerings);
-  ShaderDestroyRender(mShaderRender);
-  ShaderDestroyCompute(mShaderCompute);
+  BufferLayoutDestroy(mBufferWaypoints);
+
+  ShaderDestroyCompute(mShaderComputeShipSteerings);
+  ShaderDestroyCompute(mShaderComputeShipPhysics);
+
+  ShaderDestroyRender(mShaderRenderShips);
 }
 void SceneInstancing::OnUpdate(r32 timeDelta)
 {
   CameraUpdateControllerInputOrbit(mCamera, mCameraController, timeDelta);
 
-  ShaderBind(mShaderCompute);
-  ShaderUniformR32(mShaderCompute, "uTimeDelta", timeDelta);
-  ShaderUniformR32(mShaderCompute, "uAccelerationSpeed", 0.02f);
-  ShaderUniformR32(mShaderCompute, "uVelocityDecay", 1.f);
-  ShaderUniformU32(mShaderCompute, "uMaxWaypoints", mNumWaypoints);
-  ShaderExecuteCompute(mShaderCompute, (u32)glm::ceil(mNumSpaceShips / 32), 1, 1);
+  ShaderBind(mShaderComputeShipSteerings);
+  ShaderUniformR32(mShaderComputeShipSteerings, "uTimeDelta", timeDelta);
+  ShaderUniformR32(mShaderComputeShipSteerings, "uSpeed", 10.f);
+  ShaderUniformR32(mShaderComputeShipSteerings, "uDecay", 10.f);
+  ShaderUniformU32(mShaderComputeShipSteerings, "uMaxWaypoints", mNumWaypoints);
+
+  u32 numThreadsX{ (u32)glm::ceil(mNumShips / 32) };
+  ShaderExecuteCompute(mShaderComputeShipSteerings, numThreadsX, 1, 1);
 }
 void SceneInstancing::OnUpdateFixed(r32 timeDelta)
 {
   CameraUpdateControllerPhysicsOrbit(mCamera, mCameraController);
+
+  ShaderBind(mShaderComputeShipPhysics);
+
+  u32 numThreadsX{ (u32)glm::ceil(mNumShips / 32) };
+  ShaderExecuteCompute(mShaderComputeShipPhysics, numThreadsX, 1, 1);
 }
 void SceneInstancing::OnRender(r32 timeDelta) const
 {
-  ShaderBind(mShaderRender);
-  ShaderUniformR32M4(mShaderRender, "uProjection", mCamera.mProjection);
-  ShaderUniformR32M4(mShaderRender, "uView", mCamera.mView);
-  ModelRenderInstanced(mModelSpaceShip, mNumSpaceShips);
+  ShaderBind(mShaderRenderShips);
+  ShaderUniformR32M4(mShaderRenderShips, "uProjection", mCamera.mProjection);
+  ShaderUniformR32M4(mShaderRenderShips, "uView", mCamera.mView);
+  ModelRenderInstanced(mModelShip, mNumShips);
 }
 void SceneInstancing::OnGizmos(r32 timeDelta)
 {
+  return;
+
   for (u32 i{}; i < mNumWaypoints; i++)
   {
     Waypoint const& waypoint{ mWaypoints[i] };
@@ -62,9 +82,9 @@ void SceneInstancing::OnGizmos(r32 timeDelta)
 
 void SceneInstancing::RandomizeTransforms()
 {
-  mTransforms.resize(mNumSpaceShips);
+  mTransforms.resize(mNumShips);
 
-  for (u32 i{}; i < mNumSpaceShips; i++)
+  for (u32 i{}; i < mNumShips; i++)
   {
     r32v3 position{ glm::ballRand(500.f) };
 
@@ -79,15 +99,15 @@ void SceneInstancing::RandomizeTransforms()
 }
 void SceneInstancing::RandomizeSteerings()
 {
-  mSteerings.resize(mNumSpaceShips);
+  mSteerings.resize(mNumShips);
 
-  for (u32 i{}; i < mNumSpaceShips; i++)
+  for (u32 i{}; i < mNumShips; i++)
   {
     mSteerings[i] =
     {
       .mAcceleration { 0.f, 0.f, 0.f },
       .mVelocity     { 0.f, 0.f, 0.f },
-      .mWaypointIndex{ 1 },
+      .mWaypointIndex{ (u32)glm::linearRand(0.f, (r32)mNumWaypoints) },
     };
   }
 }
@@ -99,7 +119,7 @@ void SceneInstancing::RandomizeWaypoints()
   {
     mWaypoints[i] =
     {
-      .mPosition    { glm::ballRand(500.f) },
+      .mPosition    { glm::ballRand(1500.f) },
       .mPositionNext{ 0.f, 0.f, 0.f },
     };
   }

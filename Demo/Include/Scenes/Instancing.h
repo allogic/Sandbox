@@ -23,12 +23,12 @@ struct Waypoint
 
 struct SceneInstancing : Scene
 {
-  std::string const mShaderComputeSpaceShipUpdate
+  std::string const mShaderComputeShipSteeringsSource
   {
   R"glsl(
   #version 460 core
-  
-  layout (local_size_x = 32) in;
+
+  layout (local_size_x = 64) in;
 
   struct Transform
   {
@@ -49,25 +49,85 @@ struct SceneInstancing : Scene
     float positionNext[3];
   };
 
-  layout (std430, binding = 0) buffer TransformBuffer
-  {
-    Transform transforms[];
-  };
-  layout (std430, binding = 1) buffer SteeringBuffer
-  {
-    Steering steerings[];
-  };
-  layout (std430, binding = 2) buffer WaypointBuffer
-  {
-    Waypoint waypoints[];
-  };
+  layout (std430, binding = 0) buffer TransformBuffer{ Transform transforms[]; };
+  layout (std430, binding = 1) buffer SteeringBuffer { Steering steerings[]; };
+  layout (std430, binding = 2) buffer WaypointBuffer { Waypoint waypoints[]; };
 
   uniform float uTimeDelta;
-  uniform float uAccelerationSpeed;
-  uniform float uVelocityDecay;
+  uniform float uSpeed;
+  uniform float uDecay;
   uniform uint  uMaxWaypoints;
 
-  mat4 Rotate3D(vec3 axis, float angle)
+  vec3 ToVec3(in float arr[3])
+  {
+    return vec3(arr[0], arr[1], arr[2]);
+  }
+  void AddTo(inout float arr[3], in vec3 value)
+  {
+    arr[0] += value.x;
+    arr[1] += value.y;
+    arr[2] += value.z;
+  }
+  void AddTo(inout float arr[3], in float value[3])
+  {
+    arr[0] += value[0];
+    arr[1] += value[1];
+    arr[2] += value[2];
+  }
+
+  void main()
+  {
+    // Compute linear object index
+    uint objIndex = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
+
+    // Compute current waypoint position
+    uint waypointIndex = steerings[objIndex].waypointIndex;
+    vec3 waypointPosition = ToVec3(waypoints[waypointIndex].position);
+    
+    // Add boids coheasion/seperation/alignment behaviour
+
+    // Compute steering direction
+    vec3 transformPosition = ToVec3(transforms[objIndex].position);
+    vec3 steeringDirection = waypointPosition - transformPosition;
+    vec3 steeringDirectionNorm = normalize(steeringDirection);
+
+    // Add steering direction to acceleration
+    AddTo(steerings[objIndex].acceleration, steeringDirectionNorm * uSpeed * uTimeDelta);
+
+    // Add negative steering velocity to itself
+    AddTo(steerings[objIndex].velocity, -ToVec3(steerings[objIndex].velocity) * uDecay * uTimeDelta);
+
+    // Loop waypoints steering
+    if (length(transformPosition - waypointPosition) < 500.f)
+      steerings[objIndex].waypointIndex = waypointIndex + 1 % uMaxWaypoints;
+  }
+  )glsl"
+  };
+  std::string const mShaderComputeShipPhysicsSource
+  {
+  R"glsl(
+  #version 460 core
+  
+  layout (local_size_x = 64) in;
+
+  struct Transform
+  {
+    float position[3];
+    float rotationLocalRight[3];
+    float rotationLocalUp[3];
+    float rotationLocalFront[3];
+  };
+  struct Steering
+  {
+    float acceleration[3];
+    float velocity[3];
+    uint  waypointIndex;
+  };
+
+  layout (std430, binding = 0) buffer TransformBuffer{ Transform transforms[]; };
+  layout (std430, binding = 1) buffer SteeringBuffer { Steering steerings[]; };
+
+  mat4 Rotate3D(vec3 axis, in float angle)
   {
     axis = normalize(axis);
     float s = sin(angle);
@@ -81,64 +141,51 @@ struct SceneInstancing : Scene
 		  0.0,                                0.0,                                0.0,                                1.0
 	  );
   }
+  vec3 ToVec3(in float arr[3])
+  {
+    return vec3(arr[0], arr[1], arr[2]);
+  }
+  void AddTo(inout float arr[3], in vec3 value)
+  {
+    arr[0] += value.x;
+    arr[1] += value.y;
+    arr[2] += value.z;
+  }
+  void AddTo(inout float arr[3], in float value[3])
+  {
+    arr[0] += value[0];
+    arr[1] += value[1];
+    arr[2] += value[2];
+  }
+  void SetTo(inout float arr[3], in float value)
+  {
+    arr[0] = value;
+    arr[1] = value;
+    arr[2] = value;
+  }
 
   void main()
   {
-    uint idx = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
+    // Compute linear object index
+    uint objIndex = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
 
-    vec3 spaceShipPosition = vec3(transforms[idx].position[0], transforms[idx].position[1], transforms[idx].position[2]);
-    uint waypointIndex = steerings[idx].waypointIndex;
-    vec3 waypointPosition = vec3(waypoints[waypointIndex].position[0], waypoints[waypointIndex].position[1], waypoints[waypointIndex].position[2]);
-
-    //mat4 roationMatrix = Rotate3D();
-
+    // Transform rotation
     //transforms[idx].rotationLocalRight = rotationMatrix * vec4(transforms[idx].rotationLocalRight, 1.f);
     //transforms[idx].rotationLocalUp = rotationMatrix * vec4(transforms[idx].rotationLocalUp, 1.f);
     //transforms[idx].rotationLocalFront = rotationMatrix * vec4(transforms[idx].rotationLocalFront, 1.f);
 
-    vec3 direction = normalize(vec3(
-      waypoints[waypointIndex].position[0] - transforms[idx].position[0],
-      waypoints[waypointIndex].position[1] - transforms[idx].position[1],
-      waypoints[waypointIndex].position[2] - transforms[idx].position[2]
-    ));
+    // Add velocity to acceleration
+    AddTo(steerings[objIndex].velocity, steerings[objIndex].acceleration);
 
-    steerings[idx].acceleration[0] += direction.x * uAccelerationSpeed * uTimeDelta;
-    steerings[idx].acceleration[1] += direction.y * uAccelerationSpeed * uTimeDelta;
-    steerings[idx].acceleration[2] += direction.z * uAccelerationSpeed * uTimeDelta;
+    // Clear velocity
+    SetTo(steerings[objIndex].acceleration, 0.f);
 
-    steerings[idx].velocity[0] += steerings[idx].acceleration[0];
-    steerings[idx].velocity[1] += steerings[idx].acceleration[1];
-    steerings[idx].velocity[2] += steerings[idx].acceleration[2];
-
-    steerings[idx].acceleration[0] = 0.f;
-    steerings[idx].acceleration[1] = 0.f;
-    steerings[idx].acceleration[2] = 0.f;
-
-    transforms[idx].position[0] += steerings[idx].velocity[0];
-    transforms[idx].position[1] += steerings[idx].velocity[1];
-    transforms[idx].position[2] += steerings[idx].velocity[2];
-
-    steerings[idx].velocity[0] += -steerings[idx].velocity[0] * uVelocityDecay * uTimeDelta;
-    steerings[idx].velocity[1] += -steerings[idx].velocity[1] * uVelocityDecay * uTimeDelta;
-    steerings[idx].velocity[2] += -steerings[idx].velocity[2] * uVelocityDecay * uTimeDelta;
-
-    steerings[idx].velocity[0] = clamp(steerings[idx].velocity[0], -1, 1);
-    steerings[idx].velocity[1] = clamp(steerings[idx].velocity[1], -1, 1);
-    steerings[idx].velocity[2] = clamp(steerings[idx].velocity[2], -1, 1);
-
-    if (length(spaceShipPosition - waypointPosition) < 50.f)
-    {
-      steerings[idx].waypointIndex += 1;
-
-      if (steerings[idx].waypointIndex >= uMaxWaypoints)
-      {
-        steerings[idx].waypointIndex = 0;
-      }
-    }
+    // Add velocity to position
+    AddTo(transforms[objIndex].position, steerings[objIndex].velocity);
   }
   )glsl"
   };
-  std::string const mShaderRenderSpaceShipVertex
+  std::string const mShaderRenderShipVertexSource
   {
   R"glsl(
   #version 460 core
@@ -166,20 +213,28 @@ struct SceneInstancing : Scene
   out vec3 fNormal;
   out vec4 fColor;
 
+  vec3 ToVec3(in float arr[3])
+  {
+    return vec3(arr[0], arr[1], arr[2]);
+  }
+
   void main()
   {
-    uint idx = gl_InstanceID;
+    // Object index
+    uint objIndex = gl_InstanceID;
 
+    // Forwarding variables
     fNormal = lNormal;
     fColor = lColor;
 
-    vec3 position = vec3(transforms[idx].position[0], transforms[idx].position[1], transforms[idx].position[2]);
+    vec3 transformPosition = ToVec3(transforms[objIndex].position);
 
-    gl_Position = uProjection * uView * vec4(lPosition + position, 1.f);
+    // Compute screen position
+    gl_Position = uProjection * uView * vec4(lPosition + transformPosition, 1.f);
   }
   )glsl"
   };
-  std::string const mShaderRenderSpaceShipFragment
+  std::string const mShaderRenderShipFragmentSource
   {
   R"glsl(
   #version 460 core
@@ -196,18 +251,24 @@ struct SceneInstancing : Scene
   )glsl"
   };
 
-  u32                     mNumSpaceShips   { 131072 };
-  u32                     mNumWaypoints    { 32 };
-  CameraControllerOrbit   mCameraController{};
-  Model                   mModelSpaceShip  {};
-  std::vector<Transform>  mTransforms      {};
-  std::vector<Steering>   mSteerings       {};
-  std::vector<Waypoint>   mWaypoints       {};
-  BufferLayout<Transform> mBufferTransforms{};
-  BufferLayout<Steering>  mBufferSteerings {};
-  BufferLayout<Waypoint>  mBufferWaypoints {};
-  ShaderCompute           mShaderCompute   {};
-  ShaderRender            mShaderRender    {};
+  u32                     mNumShips                  { 4096 * 32 };
+  u32                     mNumWaypoints              { 32 };
+                                                     
+  CameraControllerOrbit   mCameraController          {};
+  Model                   mModelShip                 {};
+                                                     
+  std::vector<Transform>  mTransforms                {};
+  std::vector<Steering>   mSteerings                 {};
+  std::vector<Waypoint>   mWaypoints                 {};
+                                                     
+  BufferLayout<Transform> mBufferTransforms          {};
+  BufferLayout<Steering>  mBufferSteerings           {};
+  BufferLayout<Waypoint>  mBufferWaypoints           {};
+
+  ShaderCompute           mShaderComputeShipSteerings{};
+  ShaderCompute           mShaderComputeShipPhysics  {};
+
+  ShaderRender            mShaderRenderShips         {};
 
   void OnEnable() override;
   void OnDisable() override;
