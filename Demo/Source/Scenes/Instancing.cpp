@@ -6,24 +6,25 @@
 
 void SceneInstancing::OnEnable()
 {
-  CameraCreate(mCamera, { 0.f, 0.f, 1500.f }, 45.f, 0.001f, 10000.f);
+  CameraCreate(mCamera, { 0.f, 0.f, 0.f }, 45.f, 0.001f, 10000.f);
   ModelCreate(mModelShip, "C:\\Users\\Burmi\\Downloads\\Sandbox\\Models\\cube.fbx");
 
-  RandomizeTransforms();
-  RandomizeSteerings();
-  RandomizeWaypoints();
+  InitializeTransforms();
+  InitializeSteerings();
+  InitializePaths();
 
   BufferLayoutCreate(mBufferTransforms, mNumShips, 0);
   BufferLayoutCreate(mBufferSteerings, mNumShips, 1);
-  BufferLayoutCreate(mBufferWaypoints, mNumWaypoints, 2);
+  BufferLayoutCreate(mBufferPaths, mNumPaths, 2);
 
   BufferLayoutData(mBufferTransforms, mTransforms.data(), mNumShips);
   BufferLayoutData(mBufferSteerings, mSteerings.data(), mNumShips);
-  BufferLayoutData(mBufferWaypoints, mWaypoints.data(), mNumWaypoints);
+  BufferLayoutData(mBufferPaths, mPaths.data(), mNumPaths);
 
   ShaderCreateCompute(mShaderComputeShipSteerings, mShaderComputeShipSteeringsSource);
   ShaderCreateCompute(mShaderComputeShipPhysics, mShaderComputeShipPhysicsSource);
-  
+  ShaderCreateCompute(mShaderComputeMap, mShaderComputeMapSource);
+
   ShaderCreateRender(mShaderRenderShips, mShaderRenderShipVertexSource, mShaderRenderShipFragmentSource);
 }
 void SceneInstancing::OnDisable()
@@ -32,7 +33,7 @@ void SceneInstancing::OnDisable()
 
   BufferLayoutDestroy(mBufferTransforms);
   BufferLayoutDestroy(mBufferSteerings);
-  BufferLayoutDestroy(mBufferWaypoints);
+  BufferLayoutDestroy(mBufferPaths);
 
   ShaderDestroyCompute(mShaderComputeShipSteerings);
   ShaderDestroyCompute(mShaderComputeShipPhysics);
@@ -43,11 +44,20 @@ void SceneInstancing::OnUpdate(r32 timeDelta)
 {
   CameraUpdateControllerInputOrbit(mCamera, mCameraController, timeDelta);
 
+  if (KeyDown(GLFW_KEY_G))
+  {
+    ShaderBind(mShaderComputeMap);
+    ShaderUniformR32(mShaderComputeMap, "uWindowSizeX", WindowSizeX());
+
+    u32 numThreadsX{ (u32)glm::ceil(mNumMapSize / 32) };
+    ShaderExecuteCompute(mShaderComputeMap, numThreadsX, 1, 1);
+  }
+
   ShaderBind(mShaderComputeShipSteerings);
   ShaderUniformR32(mShaderComputeShipSteerings, "uTimeDelta", timeDelta);
   ShaderUniformR32(mShaderComputeShipSteerings, "uAccelerationSpeed", 2000.f);
-  //ShaderUniformR32(mShaderComputeShipSteerings, "uVelocityDecay", 100.f);
-  ShaderUniformU32(mShaderComputeShipSteerings, "uMaxWaypoints", mNumWaypoints);
+  ShaderUniformR32(mShaderComputeShipSteerings, "uVelocityDecay", 100.f);
+  ShaderUniformU32(mShaderComputeShipSteerings, "uMaxPaths", mNumPaths);
 
   u32 numThreadsX{ (u32)glm::ceil(mNumShips / 32) };
   ShaderExecuteCompute(mShaderComputeShipSteerings, numThreadsX, 1, 1);
@@ -70,14 +80,18 @@ void SceneInstancing::OnRender(r32 timeDelta) const
 }
 void SceneInstancing::OnGizmos(r32 timeDelta)
 {
-  for (u32 i{}; i < mNumWaypoints; i++)
+  static Path path{};
+
+  for (u32 i{}; i < mNumPaths; i++)
   {
-    Waypoint const& waypoint{ mWaypoints[i] };
+    BufferLayoutDataSubGet(mBufferPaths, i, 1, &path);
 
-    r32v3 positionStart{ mWaypoints[i].mPosition };
-    r32v3 positionEnd{ mWaypoints[(i + 1) % mNumWaypoints].mPosition };
+    GizmoLineBatchPushLine(path.mPositions[0], path.mPositions[1], { 1.f, 1.f, 1.f, 1.f });
 
-    GizmoLineBatchPushLine(positionStart, positionEnd, { 1.f, 1.f, 1.f, 1.f });
+    //for (u32 j{ 1 }; j < 1; j++)
+    //{
+    //  GizmoLineBatchPushLine(path.mPositions[j - 1], path.mPositions[j], { 1.f, 1.f, 1.f, 1.f });
+    //}
   }
 
   u32 size{ 32 };
@@ -108,7 +122,7 @@ void SceneInstancing::OnGizmos(r32 timeDelta)
     }
 }
 
-void SceneInstancing::RandomizeTransforms()
+void SceneInstancing::InitializeTransforms()
 {
   mTransforms.resize(mNumShips);
 
@@ -125,7 +139,7 @@ void SceneInstancing::RandomizeTransforms()
     };
   }
 }
-void SceneInstancing::RandomizeSteerings()
+void SceneInstancing::InitializeSteerings()
 {
   mSteerings.resize(mNumShips);
 
@@ -133,22 +147,25 @@ void SceneInstancing::RandomizeSteerings()
   {
     mSteerings[i] =
     {
-      .mAcceleration { 0.f, 0.f, 0.f },
-      .mVelocity     { 0.f, 0.f, 0.f },
-      //.mWaypointIndex{ (u32)glm::floor(glm::linearRand(0.f, (r32)mNumWaypoints)) },
-      .mWaypointIndex{ 0 },
+      .mAcceleration{ 0.f, 0.f, 0.f },
+      .mVelocity    { 0.f, 0.f, 0.f },
+      .mPathIndex   { (u32)glm::floor(glm::linearRand(0.f, (r32)mNumPaths)) },
+      .mPathIndexSub{ 0 },
     };
   }
 }
-void SceneInstancing::RandomizeWaypoints()
+void SceneInstancing::InitializePaths()
 {
-  mWaypoints.resize(mNumWaypoints);
+  mPaths.resize(mNumPaths);
 
-  for (u32 i{}; i < mNumWaypoints; i++)
+  for (u32 i{}; i < mNumPaths; i++)
   {
-    mWaypoints[i] =
+    r32v2 circularPosition{ glm::circularRand(500.f) };
+
+    mPaths[i] =
     {
-      .mPosition{ glm::sphericalRand(500.f) },
+      .mPositionStart{ circularPosition.x, 0.f, circularPosition.y },
+      .mPositions    {},
     };
   }
 }
