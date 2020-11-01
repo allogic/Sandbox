@@ -6,8 +6,8 @@
 
 void SceneInstancing::OnEnable()
 {
-  CameraCreate(mCamera, { 0.f, 0.f, 0.f }, 45.f, 0.001f, 10000.f);
-  ModelCreate(mModelShip, "C:\\Users\\Burmi\\Downloads\\Sandbox\\Models\\cube.fbx");
+  CameraCreate(mCamera, { 0.f, 0.f, 500.f }, 45.f, 0.001f, 10000.f);
+  ModelCreate(mModelShip, "C:\\Users\\Michael\\Downloads\\Sandbox\\Models\\cube.fbx");
 
   InitializeTransforms();
   InitializeSteerings();
@@ -48,8 +48,9 @@ void SceneInstancing::OnUpdate(r32 timeDelta)
   {
     ShaderBind(mShaderComputeMap);
     ShaderUniformR32(mShaderComputeMap, "uWindowSizeX", WindowSizeX());
+    ShaderUniformR32V3(mShaderComputeMap, "uOffsetRandom", glm::ballRand(10000.f));
 
-    u32 numThreadsX{ (u32)glm::ceil(mNumMapSize / 32) };
+    u32 numThreadsX{ (u32)glm::ceil(mNumPaths / 32) };
     ShaderExecuteCompute(mShaderComputeMap, numThreadsX, 1, 1);
   }
 
@@ -80,18 +81,20 @@ void SceneInstancing::OnRender(r32 timeDelta) const
 }
 void SceneInstancing::OnGizmos(r32 timeDelta)
 {
-  static Path path{};
+  static std::vector<Path> path{};
 
-  for (u32 i{}; i < mNumPaths; i++)
+  path.resize(1024 * 32);
+  BufferLayoutDataSubGet(mBufferPaths, 0, 1024 * 32, path.data());
+
+  for (u32 i{}; i < 32; i++)
   {
-    BufferLayoutDataSubGet(mBufferPaths, i, 1, &path);
+    for (u32 j{ 1 }; j < 1024; j++)
+    {
+      r32v3 positionPrev{ path[i + j * 32].mPosition };
+      r32v3 positionCurr{ path[i + j * 32].mPosition };
 
-    GizmoLineBatchPushLine(path.mPositions[0], path.mPositions[1], { 1.f, 1.f, 1.f, 1.f });
-
-    //for (u32 j{ 1 }; j < 1; j++)
-    //{
-    //  GizmoLineBatchPushLine(path.mPositions[j - 1], path.mPositions[j], { 1.f, 1.f, 1.f, 1.f });
-    //}
+      GizmoLineBatchPushLine(positionPrev, positionCurr, { 1.f, 0.f, 0.f, 1.f });
+    }
   }
 
   u32 size{ 32 };
@@ -164,8 +167,7 @@ void SceneInstancing::InitializePaths()
 
     mPaths[i] =
     {
-      .mPositionStart{ circularPosition.x, 0.f, circularPosition.y },
-      .mPositions    {},
+      .mPosition{ circularPosition.x, 0.f, circularPosition.y },
     };
   }
 }

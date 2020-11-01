@@ -56,7 +56,7 @@ struct SANDBOX_ENGINE_API CameraControllerOrbit
   r32v3 mPositionAccel          {};
   r32v2 mRotationAccel          {};
   r32   mScrollAccel            {};
-  r32   mScrollDistance         { 1000.f };
+  r32   mScrollDistance         { 100.f };
   r32   mScrollDistanceMin      { 10.f };
   r32   mScrollDistanceMax      { 1000.f };
 };

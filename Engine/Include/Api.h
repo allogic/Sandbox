@@ -98,6 +98,11 @@ template<typename Shader> void ShaderUniformR32(Shader const& shader, std::strin
   u32 uniformIndex{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
   glUniform1f(uniformIndex, value);
 }
+template<typename Shader> void ShaderUniformR32V3(Shader const& shader, std::string const& name, r32v3 value)
+{
+  u32 uniformIndex{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
+  glUniform3fv(uniformIndex, 1, &value[0]);
+}
 template<typename Shader> void ShaderUniformR32M4(Shader const& shader, std::string const& name, r32m4 const& matrix)
 {
   u32 uniformIndex{ (u32)glGetUniformLocation(shader.mPid, name.data()) };

@@ -2,6 +2,7 @@
 
 #define SANDBOX_ENGINE_API
 
+#include <array>
 #include <vector>
 #include <map>
 #include <string>

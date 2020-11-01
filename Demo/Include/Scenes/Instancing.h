@@ -18,8 +18,7 @@ struct Steering
 };
 struct Path
 {
-  r32v3 mPositionStart {};
-  r32v3 mPositions[512]{};
+  r32v3 mPosition{};
 };
 
 struct SceneInstancing : Scene
@@ -28,8 +27,6 @@ struct SceneInstancing : Scene
   {
   R"glsl(
   #version 460 core
-
-  #define NUM_PATHS_SUB 512
 
   layout (local_size_x = 64) in;
 
@@ -49,8 +46,7 @@ struct SceneInstancing : Scene
   };
   struct Path
   {
-    float positionStart[3];
-    float positions[3 * NUM_PATHS_SUB];
+    float position[3];
   };
 
   layout (std430, binding = 0) volatile restrict buffer TransformBuffer
@@ -115,9 +111,9 @@ struct SceneInstancing : Scene
     uint pathIndex = steerings[objIndex].pathIndex;
     uint pathIndexSub = steerings[objIndex].pathIndexSub;
     vec3 pathTargetSub = vec3(
-      paths[pathIndex].positions[pathIndexSub + 0],
-      paths[pathIndex].positions[pathIndexSub + 1],
-      paths[pathIndex].positions[pathIndexSub + 2]
+      paths[pathIndex * pathIndexSub * 3].position[0],
+      paths[pathIndex * pathIndexSub * 3].position[1],
+      paths[pathIndex * pathIndexSub * 3].position[2]
     );
 
     // Add boids cohesion/seperation/alignment behaviour
@@ -232,15 +228,13 @@ struct SceneInstancing : Scene
   #version 460 core
 
   #define PI            3.14159265
-  #define NUM_OCTAVES   5
-  #define NUM_PATHS_SUB 512
+  #define NUM_OCTAVES   2
 
-  layout (local_size_x = 64) in;
+  layout (local_size_x = 32) in;
 
   struct Path
   {
-    float positionStart[3];
-    float positions[3 * NUM_PATHS_SUB];
+    float position[3];
   };
 
   layout (std430, binding = 2) volatile restrict buffer PathBuffer
@@ -249,11 +243,17 @@ struct SceneInstancing : Scene
   };
 
   uniform float uWindowSizeX;
+  uniform vec3  uOffsetRandom;
 
   // Helper functions
   vec3 ToVec3(in float a[3])
   {
     return vec3(a[0], a[1], a[2]);
+  }
+  float atan2(in float y, in float x)
+  {
+      bool s = (abs(x) > abs(y));
+      return mix(PI/2.0 - atan(x,y), atan(y,x), s);
   }
 
   // Generic noise
@@ -288,7 +288,7 @@ struct SceneInstancing : Scene
   }
   float Noise(in vec3 x)
   {
-  	const vec3 step = vec3(110, 241, 171);
+  	const vec3 step = vec3(110, 241, 171) + uOffsetRandom;
   
   	vec3 i = floor(x);
   	vec3 f = fract(x);
@@ -347,51 +347,42 @@ struct SceneInstancing : Scene
     return v;
   }
 
-  // Sample direction from noise map
-  vec3 SampleDirectionFromMap(in vec3 position)
-  {
-    return normalize(position);
-  }
-
   void main()
   {
-    // Compute linear object index
+    // Compute linear path index
     uint pathIndex = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
 
-    // Compute start direction which always points inwards
-    vec3 positionStart = ToVec3(paths[pathIndex].positionStart);
-    vec3 positionStartDirectionNorm = normalize(-positionStart - positionStart);
-
-    // Set first sub path position
-    paths[pathIndex].positions[0] = positionStartDirectionNorm.x * 32.f;
-    paths[pathIndex].positions[1] = positionStartDirectionNorm.y * 32.f;
-    paths[pathIndex].positions[2] = positionStartDirectionNorm.z * 32.f;
-
-    // Get previous sub path position
+    vec3 position = vec3(
+      paths[pathIndex * 3].position[0],
+      paths[pathIndex * 3].position[1],
+      paths[pathIndex * 3].position[2]
+    );
     vec3 positionPrev = vec3(
-      paths[pathIndex].positions[0],
-      paths[pathIndex].positions[1],
-      paths[pathIndex].positions[2]
+      paths[(pathIndex - 1) * 3].position[0],
+      paths[(pathIndex - 1) * 3].position[1],
+      paths[(pathIndex - 1) * 3].position[2]
     );
 
-    // Compute sub paths
-    for (uint i = 1; i < NUM_PATHS_SUB; i++)
-    {
-      // Sample next direction from previous position
-      vec3 directionNext = SampleDirectionFromMap(positionPrev);
+    // Sample next direction from position
+    vec3 direction = positionPrev - position;
+    
+    // Compute gradient steering
+    float angle = atan2(direction.x, direction.z);
+    angle += Fbm(position + direction) * 0.02f;
+    vec3 sampleDirection = vec3(sin(angle), 0.f, cos(angle));
 
-      // Set position
-      paths[pathIndex].positions[i + 0] = positionPrev.x + directionNext.x * 32.f;
-      paths[pathIndex].positions[i + 1] = positionPrev.y + directionNext.y * 32.f;
-      paths[pathIndex].positions[i + 2] = positionPrev.z + directionNext.z * 32.f;
+    vec3 directionNorm = normalize(direction);
 
-      // Save previous position from current position
-      positionPrev = vec3(
-        paths[pathIndex].positions[i + 0],
-        paths[pathIndex].positions[i + 1],
-        paths[pathIndex].positions[i + 2]
-      );
-    }
+    // Set first sub path position
+    paths[pathIndex * 3].position[0] = position.x + directionNorm.x;
+    paths[pathIndex * 3].position[1] = position.y + directionNorm.y;
+    paths[pathIndex * 3].position[2] = position.z + directionNorm.z;
+
+    position = vec3(
+      paths[pathIndex * 3].position[0],
+      paths[pathIndex * 3].position[1],
+      paths[pathIndex * 3].position[2]
+    );
   }
   )glsl"
   };
@@ -463,8 +454,7 @@ struct SceneInstancing : Scene
   };
 
   u32                     mNumShips                  { 2048 * 32 };
-  u32                     mNumPaths                  { 32 };
-  u32                     mNumMapSize                { 128 * 32 };
+  u32                     mNumPaths                  { 1024 * 32 };
 
   CameraControllerOrbit   mCameraController          {};
   Model                   mModelShip                 {};
