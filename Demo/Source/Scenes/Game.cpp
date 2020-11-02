@@ -1,13 +1,19 @@
-#include <Scenes/Instancing.h>
+#include <Scenes/Game.h>
 
 void SceneGame::OnEnable()
 {
   CameraCreate(mCamera, { 0.f, 0.f, 0.f }, 45.f, 0.001f, 10000.f);
 
-  ModelCreate(mModelShip, "C:\\Users\\Michael\\Downloads\\Sandbox\\Models\\Cube.obj");
-  ModelCreate(mModelSky, "C:\\Users\\Michael\\Downloads\\Sandbox\\Models\\Cube.obj");
+  ModelCreate(mModelShip, "C:\\Users\\Burmi\\Downloads\\Sandbox\\Models\\Cube.obj");
+  ModelCreate(mModelSky, "C:\\Users\\Burmi\\Downloads\\Sandbox\\Models\\Sphere.obj");
+  ModelCreate(mModelMap, "C:\\Users\\Burmi\\Downloads\\Sandbox\\Models\\Plane.obj");
 
-  TextureCreate(mTextureSky, "C:\\Users\\Michael\\Downloads\\Sandbox\\Textures\\UV.bmp");
+  ModelLayoutTransform(mModelShip, { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f });
+  ModelLayoutTransform(mModelSky, { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1000.f, 1000.f, 1000.f });
+  ModelLayoutTransform(mModelMap, { 0.f, -10.f, 0.f }, { 0.f, 0.f, 0.f }, { 1000.f, 1.f, 1000.f });
+
+  TextureLayoutCreate(mTextureSky, 4096, 4096);
+  TextureLayoutCreate(mTextureMap, 4096, 4096);
 
   InitializeTransforms();
   InitializeSteerings();
@@ -24,16 +30,20 @@ void SceneGame::OnEnable()
   ShaderCreateCompute(mShaderComputeShipSteerings, mShaderComputeShipSteeringsSource);
   ShaderCreateCompute(mShaderComputeShipPhysics, mShaderComputeShipPhysicsSource);
   ShaderCreateCompute(mShaderComputeShipPaths, mShaderComputeShipPathsSource);
+  ShaderCreateCompute(mShaderComputeMapNoise, mShaderComputeMapNoiseSource);
 
   ShaderCreateRender(mShaderRenderShips, mShaderRenderShipVertexSource, mShaderRenderShipFragmentSource);
   ShaderCreateRender(mShaderRenderSky, mShaderRenderSkyVertexSource, mShaderRenderSkyFragmentSource);
+  ShaderCreateRender(mShaderRenderMap, mShaderRenderMapVertexSource, mShaderRenderMapFragmentSource);
 }
 void SceneGame::OnDisable()
 {
   ModelDestroy(mModelShip);
   ModelDestroy(mModelSky);
+  ModelDestroy(mModelMap);
 
-  TextureDestroy(mTextureSky);
+  TextureLayoutDestroy(mTextureSky);
+  TextureLayoutDestroy(mTextureMap);
 
   BufferLayoutDestroy(mBufferTransforms);
   BufferLayoutDestroy(mBufferSteerings);
@@ -42,20 +52,29 @@ void SceneGame::OnDisable()
   ShaderDestroyCompute(mShaderComputeShipSteerings);
   ShaderDestroyCompute(mShaderComputeShipPhysics);
   ShaderDestroyCompute(mShaderComputeShipPaths);
+  ShaderDestroyCompute(mShaderComputeMapNoise);
 
   ShaderDestroyRender(mShaderRenderShips);
   ShaderDestroyRender(mShaderRenderSky);
+  ShaderDestroyRender(mShaderRenderMap);
 }
 void SceneGame::OnUpdate(r32 timeDelta)
 {
   CameraUpdateControllerInputOrbit(mCamera, mCameraController, timeDelta);
 
-  if (KeyDown(GLFW_KEY_G))
+  if (KeyDown(GLFW_KEY_P))
   {
     ShaderBind(mShaderComputeShipPaths);
-    ShaderUniformR32(mShaderComputeShipPaths, "uWindowSizeX", WindowSizeX());
     ShaderUniformR32V3(mShaderComputeShipPaths, "uOffsetRandom", glm::ballRand(10000.f));
     ShaderExecuteCompute(mShaderComputeShipPaths, mNumPathSub, 1, 1);
+  }
+  if (KeyDown(GLFW_KEY_M))
+  {
+    TextureLayoutBind(mTextureMap);
+    TextureLayoutBindImage(mTextureMap, 1);
+    ShaderBind(mShaderComputeMapNoise);
+    ShaderUniformR32V3(mShaderComputeMapNoise, "uOffsetRandom", glm::ballRand(10000.f));
+    ShaderExecuteCompute(mShaderComputeMapNoise, 4096 / 32, 4096 / 32, 1);
   }
 
   ShaderBind(mShaderComputeShipSteerings);
@@ -83,15 +102,21 @@ void SceneGame::OnRender(r32 timeDelta) const
   ShaderUniformR32M4(mShaderRenderShips, "uView", mCamera.mView);
   //ModelRenderInstanced(mModelShip, mNumShips);
 
-  r32m4 transform{ glm::identity<r32m4>() };
-  transform = glm::scale(transform, r32v3{ 100.f, 100.f, 100.f });
-
+  TextureLayoutBind(mTextureSky);
+  TextureLayoutBindSampler(mTextureSky, 1);
   ShaderBind(mShaderRenderSky);
   ShaderUniformR32M4(mShaderRenderSky, "uProjection", mCamera.mProjection);
   ShaderUniformR32M4(mShaderRenderSky, "uView", mCamera.mView);
-  ShaderUniformR32M4(mShaderRenderSky, "uTransform", transform);
-  ShaderUniformU32(mShaderRenderSky, "uDiffuse", mTextureSky.mTid);
+  ShaderUniformR32M4(mShaderRenderSky, "uTransform", mModelSky.mTransform);
   ModelRender(mModelSky);
+
+  TextureLayoutBind(mTextureMap);
+  TextureLayoutBindSampler(mTextureMap, 1);
+  ShaderBind(mShaderRenderMap);
+  ShaderUniformR32M4(mShaderRenderMap, "uProjection", mCamera.mProjection);
+  ShaderUniformR32M4(mShaderRenderMap, "uView", mCamera.mView);
+  ShaderUniformR32M4(mShaderRenderMap, "uTransform", mModelMap.mTransform);
+  ModelRender(mModelMap);
 }
 void SceneGame::OnGizmos(r32 timeDelta)
 {

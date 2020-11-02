@@ -3,6 +3,7 @@
 #include <Core.h>
 
 using s32 = int;
+using  s8 = char;
 using  u8 = char unsigned;
 using u32 = int unsigned;
 

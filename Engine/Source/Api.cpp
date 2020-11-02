@@ -134,6 +134,14 @@ void        ContextCreate(u32 width, u32 height, std::string const& title)
 
   gladLoadGL();
 }
+void        ContextRegisterDebugHandler()
+{
+  glEnable(GL_DEBUG_OUTPUT);
+  glDebugMessageCallback([](u32 source, u32 type, u32 id, u32 severity, s32 length, s8 const* msg, void const* userParam)
+    {
+      std::printf("GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n", type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "", type, severity, msg);
+    }, 0);
+}
 GLFWwindow* ContextHandle()
 {
   return spWindow;
@@ -635,28 +643,6 @@ void ModelRenderInstanced(ModelLambert const& model, u32 numInstances)
 void ModelDestroy(ModelLambert const& model)
 {
   ModelLayoutDestroy(model);
-}
-
-/*
-* Texture management.
-*/
-
-void TextureCreate(TextureU8RGB& texture, std::string const& fileName)
-{
-  s32 width{};
-  s32 height{};
-  s32 channels{};
-
-  u8* pImageData = stbi_load(fileName.data(), &width, &height, &channels, STBI_rgb);
-
-  TextureLayoutCreate(texture, width, height);
-  TextureLayoutData(texture, pImageData);
-
-  stbi_image_free(pImageData);
-}
-void TextureDestroy(TextureU8RGB const& texture)
-{
-  TextureLayoutDestroy(texture);
 }
 
 /*

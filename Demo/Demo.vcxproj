@@ -151,10 +151,10 @@
   <ItemGroup>
     <ClCompile Include="..\Source\glad.c" />
     <ClCompile Include="Source\Main.cpp" />
-    <ClCompile Include="Source\Scenes\Instancing.cpp" />
+    <ClCompile Include="Source\Scenes\Game.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Include\Scenes\Instancing.h" />
+    <ClInclude Include="Include\Scenes\Game.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

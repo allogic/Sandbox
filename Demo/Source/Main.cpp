@@ -1,17 +1,18 @@
 #include <Api.h>
 
-#include <Scenes/Instancing.h>
+#include <Scenes/Game.h>
 
 r32 sTime     {};
 r32 sTimePrev {};
 r32 sTimeDelta{};
 
-r32 sTimeRenderFixed     { 1.f / 60 };
-r32 sTimeRenderFixedPrev {};
+r32 sTimeRenderFixed    { 1.f / 60 };
+r32 sTimeRenderFixedPrev{};
 
 s32 main()
 {
   ContextCreate(1280, 720, "Sandbox");
+  ContextRegisterDebugHandler();
 
   SceneCreate(new SceneGame);
 

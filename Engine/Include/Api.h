@@ -13,13 +13,14 @@
 * Debug utilities.
 */
 
-u32 CheckShaderStatus(u32 id, u32 type, std::string& log);
+u32  CheckShaderStatus(u32 id, u32 type, std::string& log);
 
 /*
 * OpenGL context specific.
 */
 
 extern "C" SANDBOX_ENGINE_API void        ContextCreate(u32 width, u32 height, std::string const& title);
+extern "C" SANDBOX_ENGINE_API void        ContextRegisterDebugHandler();
 extern "C" SANDBOX_ENGINE_API GLFWwindow* ContextHandle();
 extern "C" SANDBOX_ENGINE_API void        ContextDestroy();
 
@@ -81,6 +82,11 @@ template<typename Shader> void ShaderBind(Shader const& shader)
 {
   glUseProgram(shader.mPid);
 }
+template<typename Shader> void ShaderUniformS32(Shader const& shader, std::string const& name, s32 value)
+{
+  u32 uniformIndex{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
+  glUniform1i(uniformIndex, value);
+}
 template<typename Shader> void ShaderUniformU32(Shader const& shader, std::string const& name, u32 value)
 {
   u32 uniformIndex{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
@@ -110,13 +116,6 @@ extern "C" SANDBOX_ENGINE_API void ModelCreate(ModelLambert& model, std::string 
 extern "C" SANDBOX_ENGINE_API void ModelRender(ModelLambert const& model);
 extern "C" SANDBOX_ENGINE_API void ModelRenderInstanced(ModelLambert const& model, u32 numInstances);
 extern "C" SANDBOX_ENGINE_API void ModelDestroy(ModelLambert const& model);
-
-/*
-* Texture management.
-*/
-
-extern "C" SANDBOX_ENGINE_API void TextureCreate(TextureU8RGB& texture, std::string const& fileName);
-extern "C" SANDBOX_ENGINE_API void TextureDestroy(TextureU8RGB const& texture);
 
 /*
 * 3D debug utilities.

@@ -21,12 +21,12 @@
     <ClCompile Include="..\Source\glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Scenes\Instancing.cpp">
+    <ClCompile Include="Source\Scenes\Game.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Include\Scenes\Instancing.h">
+    <ClInclude Include="Include\Scenes\Game.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

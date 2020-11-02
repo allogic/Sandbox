@@ -2,6 +2,198 @@
 
 #include <Api.h>
 
+std::string const sShaderGlslVersion
+{
+R"glsl(
+#version 460 core
+)glsl"
+};
+std::string const sShaderSsboHelper
+{
+R"glsl(
+vec3 ToVec3(in float a[3])
+{
+  return vec3(a[0], a[1], a[2]);
+}
+
+void AddTo(inout float a[3], in vec3 b)
+{
+  a[0] += b.x;
+  a[1] += b.y;
+  a[2] += b.z;
+}
+
+void AddTo(inout float a[3], in float b[3])
+{
+  a[0] += b[0];
+  a[1] += b[1];
+  a[2] += b[2];
+}
+
+void SetTo(inout float a[3], in float b)
+{
+  a[0] = b;
+  a[1] = b;
+  a[2] = b;
+}
+
+void SetTo(inout float a[3], in vec3 b)
+{
+  a[0] = b.x;
+  a[1] = b.y;
+  a[2] = b.z;
+}
+
+vec3 Sub(in float a[3], in float b[3])
+{
+  return vec3(
+    a[0] - b[0],
+    a[1] - b[1],
+    a[2] - b[2]
+  );
+}
+
+vec3 Sub(in vec3 a, in float b[3])
+{
+  return vec3(
+    a.x - b[0],
+    a.y - b[1],
+    a.z - b[2]
+  );
+}
+
+void Clamp(inout float a[3], in float min, in float max)
+{
+  a[0] = clamp(a[0], min, max);
+  a[1] = clamp(a[1], min, max);
+  a[2] = clamp(a[2], min, max);
+}
+)glsl"
+};
+std::string const sShaderMath
+{
+R"glsl(
+mat4 Rotate3D(vec3 axis, in float angle)
+{
+  axis = normalize(axis);
+  float s = sin(angle);
+  float c = cos(angle);
+  float oc = 1.0f - c;
+
+  return mat4(
+    oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.f,
+    oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.f,
+    oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.f,
+    0.f,                                0.f,                                0.f,                                1.f
+  );
+}
+)glsl"
+};
+std::string const sShaderNoise
+{
+R"glsl(
+#define PI          3.14159265
+#define NUM_OCTAVES 5
+
+uniform vec3 uOffsetRandom;
+
+float Hash(in float n)
+{
+  return fract(sin(n) * 1e4);
+}
+
+float Hash(in vec2 p)
+{
+  return fract(1e4 * sin(17.0 * p.x + p.y * 0.1) * (0.1 + abs(sin(p.y * 13.0 + p.x))));
+}
+
+float Noise(in float x)
+{
+  float i = floor(x);
+  float f = fract(x);
+  float u = f * f * (3.0 - 2.0 * f);
+  return mix(Hash(i), Hash(i + 1.0), u);
+}
+
+float Noise(in vec2 x)
+{
+  vec2 i = floor(x);
+  vec2 f = fract(x);
+
+  // Four corners in 2D of a tile
+  float a = Hash(i);
+  float b = Hash(i + vec2(1.0, 0.0));
+  float c = Hash(i + vec2(0.0, 1.0));
+  float d = Hash(i + vec2(1.0, 1.0));
+
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+}
+
+float Noise(in vec3 x)
+{
+	const vec3 step = vec3(110, 241, 171) + uOffsetRandom;
+
+	vec3 i = floor(x);
+	vec3 f = fract(x);
+ 
+	// For performance, compute the base input to a 1D hash from the integer part of the argument and the 
+	// incremental change to the 1D based on the 3D -> 1D wrapping
+  float n = dot(i, step);
+
+	vec3 u = f * f * (3.0 - 2.0 * f);
+	return mix(mix(mix( Hash(n + dot(step, vec3(0, 0, 0))), Hash(n + dot(step, vec3(1, 0, 0))), u.x),
+                 mix( Hash(n + dot(step, vec3(0, 1, 0))), Hash(n + dot(step, vec3(1, 1, 0))), u.x), u.y),
+             mix(mix( Hash(n + dot(step, vec3(0, 0, 1))), Hash(n + dot(step, vec3(1, 0, 1))), u.x),
+                 mix( Hash(n + dot(step, vec3(0, 1, 1))), Hash(n + dot(step, vec3(1, 1, 1))), u.x), u.y), u.z);
+}
+
+float Fbm(in float x)
+{
+  float v = 0.0;
+  float a = 0.5;
+  float shift = float(100);
+  for (int i = 0; i < NUM_OCTAVES; ++i)
+  {
+    v += a * Noise(x);
+    x = x * 2.0 + shift;
+    a *= 0.5;
+  }
+  return v;
+}
+
+float Fbm(in vec2 x)
+{
+  float v = 0.0;
+  float a = 0.5;
+  vec2 shift = vec2(100);
+  // Rotate to reduce axial bias
+  mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.50));
+  for (int i = 0; i < NUM_OCTAVES; ++i)
+  {
+    v += a * Noise(x);
+    x = rot * x * 2.0 + shift;
+    a *= 0.5;
+  }
+  return v;
+}
+
+float Fbm(in vec3 x)
+{
+  float v = 0.0;
+  float a = 0.5;
+  vec3 shift = vec3(100);
+  for (int i = 0; i < NUM_OCTAVES; ++i)
+  {
+    v += a * Noise(x);
+    x = x * 2.0 + shift;
+    a *= 0.5;
+  }
+  return v;
+}
+)glsl"
+};
+
 struct Transform
 {
   r32v3 mPosition{};
@@ -27,9 +219,9 @@ struct SceneGame : Scene
 {
   std::string const mShaderComputeShipSteeringsSource
   {
+  sShaderGlslVersion +
+  sShaderSsboHelper +
   R"glsl(
-  #version 460 core
-
   layout (local_size_x = 64) in;
 
   struct Transform
@@ -53,15 +245,15 @@ struct SceneGame : Scene
     float rotationLocalFront[3];
   };
 
-  layout (std430, binding = 0) volatile restrict buffer TransformBuffer
+  layout (std430, binding = 0) buffer TransformBuffer
   {
     Transform transforms[];
   };
-  layout (std430, binding = 1) volatile restrict buffer SteeringBuffer
+  layout (std430, binding = 1) buffer SteeringBuffer
   {
     Steering steerings[];
   };
-  layout (std430, binding = 2) volatile restrict buffer PathBuffer
+  layout (std430, binding = 2) buffer PathBuffer
   {
     Waypoint paths[];
   };
@@ -70,45 +262,6 @@ struct SceneGame : Scene
   uniform float uAccelerationSpeed;
   uniform float uVelocityDecay;
   uniform uint  uMaxPaths;
-
-  vec3 ToVec3(in float a[3])
-  {
-    return vec3(a[0], a[1], a[2]);
-  }
-  void AddTo(inout float a[3], in vec3 b)
-  {
-    a[0] += b.x;
-    a[1] += b.y;
-    a[2] += b.z;
-  }
-  void AddTo(inout float a[3], in float b[3])
-  {
-    a[0] += b[0];
-    a[1] += b[1];
-    a[2] += b[2];
-  }
-  vec3 Sub(in float a[3], in float b[3])
-  {
-    return vec3(
-      a[0] - b[0],
-      a[1] - b[1],
-      a[2] - b[2]
-    );
-  }
-  vec3 Sub(in vec3 a, in float b[3])
-  {
-    return vec3(
-      a.x - b[0],
-      a.y - b[1],
-      a.z - b[2]
-    );
-  }
-  void Clamp(inout float a[3], in float min, in float max)
-  {
-    a[0] = clamp(a[0], min, max);
-    a[1] = clamp(a[1], min, max);
-    a[2] = clamp(a[2], min, max);
-  }
 
   void main()
   {
@@ -143,9 +296,10 @@ struct SceneGame : Scene
   };
   std::string const mShaderComputeShipPhysicsSource
   {
+  sShaderGlslVersion +
+  sShaderSsboHelper +
+  sShaderMath +
   R"glsl(
-  #version 460 core
-  
   layout (local_size_x = 32) in;
 
   struct Transform
@@ -163,47 +317,14 @@ struct SceneGame : Scene
     uint  pathIndexSub;
   };
 
-  layout (std430, binding = 0) volatile restrict buffer TransformBuffer
+  layout (std430, binding = 0) buffer TransformBuffer
   {
     Transform transforms[];
   };
-  layout (std430, binding = 1) volatile restrict buffer SteeringBuffer
+  layout (std430, binding = 1) buffer SteeringBuffer
   {
     Steering steerings[];
   };
-
-  mat4 Rotate3D(vec3 axis, in float angle)
-  {
-    axis = normalize(axis);
-    float s = sin(angle);
-    float c = cos(angle);
-    float oc = 1.0f - c;
-
-    return mat4(
-      oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
-      oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
-      oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
-      0.0,                                0.0,                                0.0,                                1.0
-    );
-  }
-  void AddTo(inout float a[3], in vec3 b)
-  {
-    a[0] += b.x;
-    a[1] += b.y;
-    a[2] += b.z;
-  }
-  void AddTo(inout float a[3], in float b[3])
-  {
-    a[0] += b[0];
-    a[1] += b[1];
-    a[2] += b[2];
-  }
-  void SetTo(inout float a[3], in float b)
-  {
-    a[0] = b;
-    a[1] = b;
-    a[2] = b;
-  }
 
   void main()
   {
@@ -228,12 +349,10 @@ struct SceneGame : Scene
   };
   std::string const mShaderComputeShipPathsSource
   {
+  sShaderGlslVersion +
+  sShaderSsboHelper +
+  sShaderNoise +
   R"glsl(
-  #version 460 core
-
-  #define PI            3.14159265
-  #define NUM_OCTAVES   2
-
   layout (local_size_x = 32) in;
 
   struct Waypoint
@@ -243,122 +362,10 @@ struct SceneGame : Scene
     float rotationLocalFront[3];
   };
 
-  layout (std430, binding = 2) volatile restrict buffer PathBuffer
+  layout (std430, binding = 2) buffer PathBuffer
   {
     Waypoint paths[];
   };
-
-  uniform float uWindowSizeX;
-  uniform vec3  uOffsetRandom;
-
-  // Helper functions
-  vec3 ToVec3(in float a[3])
-  {
-    return vec3(a[0], a[1], a[2]);
-  }
-  void AddTo(inout float a[3], in vec3 b)
-  {
-    a[0] += b.x;
-    a[1] += b.y;
-    a[2] += b.z;
-  }
-  void SetTo(inout float a[3], in vec3 b)
-  {
-    a[0] = b.x;
-    a[1] = b.y;
-    a[2] = b.z;
-  }
-
-  // Generic noise
-  float Hash(in float n)
-  {
-    return fract(sin(n) * 1e4);
-  }
-  float Hash(in vec2 p)
-  {
-    return fract(1e4 * sin(17.0 * p.x + p.y * 0.1) * (0.1 + abs(sin(p.y * 13.0 + p.x))));
-  }
-  float Noise(in float x)
-  {
-    float i = floor(x);
-    float f = fract(x);
-    float u = f * f * (3.0 - 2.0 * f);
-    return mix(Hash(i), Hash(i + 1.0), u);
-  }
-  float Noise(in vec2 x)
-  {
-    vec2 i = floor(x);
-    vec2 f = fract(x);
-
-    // Four corners in 2D of a tile
-    float a = Hash(i);
-    float b = Hash(i + vec2(1.0, 0.0));
-    float c = Hash(i + vec2(0.0, 1.0));
-    float d = Hash(i + vec2(1.0, 1.0));
-
-    vec2 u = f * f * (3.0 - 2.0 * f);
-    return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
-  }
-  float Noise(in vec3 x)
-  {
-  	const vec3 step = vec3(110, 241, 171) + uOffsetRandom;
-  
-  	vec3 i = floor(x);
-  	vec3 f = fract(x);
-   
-  	// For performance, compute the base input to a 1D hash from the integer part of the argument and the 
-  	// incremental change to the 1D based on the 3D -> 1D wrapping
-    float n = dot(i, step);
-  
-  	vec3 u = f * f * (3.0 - 2.0 * f);
-  	return mix(mix(mix( Hash(n + dot(step, vec3(0, 0, 0))), Hash(n + dot(step, vec3(1, 0, 0))), u.x),
-                   mix( Hash(n + dot(step, vec3(0, 1, 0))), Hash(n + dot(step, vec3(1, 1, 0))), u.x), u.y),
-               mix(mix( Hash(n + dot(step, vec3(0, 0, 1))), Hash(n + dot(step, vec3(1, 0, 1))), u.x),
-                   mix( Hash(n + dot(step, vec3(0, 1, 1))), Hash(n + dot(step, vec3(1, 1, 1))), u.x), u.y), u.z);
-  }
-
-  // Fractional brownian
-  float Fbm(in float x)
-  {
-    float v = 0.0;
-    float a = 0.5;
-    float shift = float(100);
-    for (int i = 0; i < NUM_OCTAVES; ++i)
-    {
-      v += a * Noise(x);
-      x = x * 2.0 + shift;
-      a *= 0.5;
-    }
-    return v;
-  }
-  float Fbm(in vec2 x)
-  {
-    float v = 0.0;
-    float a = 0.5;
-    vec2 shift = vec2(100);
-    // Rotate to reduce axial bias
-    mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.50));
-    for (int i = 0; i < NUM_OCTAVES; ++i)
-    {
-      v += a * Noise(x);
-      x = rot * x * 2.0 + shift;
-      a *= 0.5;
-    }
-    return v;
-  }
-  float Fbm(in vec3 x)
-  {
-    float v = 0.0;
-    float a = 0.5;
-    vec3 shift = vec3(100);
-    for (int i = 0; i < NUM_OCTAVES; ++i)
-    {
-      v += a * Noise(x);
-      x = x * 2.0 + shift;
-      a *= 0.5;
-    }
-    return v;
-  }
 
   void main()
   {
@@ -391,11 +398,34 @@ struct SceneGame : Scene
   }
   )glsl"
   };
+  std::string const mShaderComputeMapNoiseSource
+  {
+  sShaderGlslVersion +
+  sShaderSsboHelper +
+  sShaderNoise +
+  R"glsl(
+  layout (local_size_x = 32, local_size_y = 32) in;
+
+  layout (binding = 1, rgba32f) uniform image2D uTexture;
+
+  void main()
+  {
+    // Compute local position
+    ivec2 position = ivec2(gl_GlobalInvocationID.xy);
+
+    // Compute brownian noise
+    float density = Fbm(position * 0.02f);
+
+    imageStore(uTexture, position, vec4(density, density, density, 1.f));
+  }
+  )glsl"
+  };
+
   std::string const mShaderRenderShipVertexSource
   {
+  sShaderGlslVersion +
+  sShaderSsboHelper +
   R"glsl(
-  #version 460 core
-  
   struct Transform
   {
     float position[3];
@@ -421,11 +451,6 @@ struct SceneGame : Scene
   out vec2 fUv;
   out vec4 fColor;
 
-  vec3 ToVec3(in float a[3])
-  {
-    return vec3(a[0], a[1], a[2]);
-  }
-
   void main()
   {
     // Object index
@@ -445,9 +470,8 @@ struct SceneGame : Scene
   };
   std::string const mShaderRenderShipFragmentSource
   {
+  sShaderGlslVersion +
   R"glsl(
-  #version 460 core
-  
   in vec3 fNormal;
   in vec2 fUv;
   in vec4 fColor;
@@ -463,9 +487,8 @@ struct SceneGame : Scene
   };
   std::string const mShaderRenderSkyVertexSource
   {
+  sShaderGlslVersion +
   R"glsl(
-  #version 460 core
-
   uniform mat4 uProjection;
   uniform mat4 uView;
   uniform mat4 uTransform;  
@@ -495,10 +518,9 @@ struct SceneGame : Scene
   };
   std::string const mShaderRenderSkyFragmentSource
   {
-  R"glsl(
-  #version 460 core
-  
-  uniform sampler2D uDiffuse;
+  sShaderGlslVersion +
+  R"glsl( 
+  layout (binding = 1, rgba32f) uniform sampler2D uDiffuse;
 
   in vec3 fPosition;
   in vec3 fNormal;
@@ -510,7 +532,58 @@ struct SceneGame : Scene
   void main()
   {
     // Compute fragment color
-    color = vec4(fNormal, 1.f);
+    color = vec4(texture(uDiffuse, fUv).rgb, 1.f);
+  }
+  )glsl"
+  };
+  std::string const mShaderRenderMapVertexSource
+  {
+  sShaderGlslVersion +
+  R"glsl(
+  uniform mat4 uProjection;
+  uniform mat4 uView;
+  uniform mat4 uTransform;  
+
+  layout (location = 0) in vec3 lPosition;
+  layout (location = 1) in vec3 lNormal;
+  layout (location = 2) in vec2 lUv;
+  layout (location = 3) in vec4 lColor;
+  
+  out vec3 fPosition;
+  out vec3 fNormal;
+  out vec2 fUv;
+  out vec4 fColor;
+
+  void main()
+  {
+    // Forwarding variables
+    fPosition = lPosition;
+    fNormal = lNormal;
+    fUv = lUv;
+    fColor = lColor;
+
+    // Compute screen position
+    gl_Position = uProjection * uView * uTransform * vec4(lPosition, 1.f);
+  }
+  )glsl"
+  };
+  std::string const mShaderRenderMapFragmentSource
+  {
+  sShaderGlslVersion +
+  R"glsl(  
+  layout (binding = 1, rgba32f) uniform sampler2D uDiffuse;
+
+  in vec3 fPosition;
+  in vec3 fNormal;
+  in vec2 fUv;
+  in vec4 fColor;
+  
+  out vec4 color;
+  
+  void main()
+  {
+    // Compute fragment color
+    color = vec4(texture(uDiffuse, fUv).rgb, 1.f);
   }
   )glsl"
   };
@@ -523,8 +596,10 @@ struct SceneGame : Scene
 
   ModelLambert            mModelShip                 {};
   ModelLambert            mModelSky                  {};
+  ModelLambert            mModelMap                  {};
 
-  TextureU8RGB            mTextureSky                {};
+  TextureR32RGBA          mTextureSky                {};
+  TextureR32RGBA          mTextureMap                {};
 
   std::vector<Transform>  mTransforms                {};
   std::vector<Steering>   mSteerings                 {};
@@ -537,9 +612,11 @@ struct SceneGame : Scene
   ShaderCompute           mShaderComputeShipSteerings{};
   ShaderCompute           mShaderComputeShipPhysics  {};
   ShaderCompute           mShaderComputeShipPaths    {};
+  ShaderCompute           mShaderComputeMapNoise     {};
 
   ShaderRender            mShaderRenderShips         {};
   ShaderRender            mShaderRenderSky           {};
+  ShaderRender            mShaderRenderMap           {};
 
   void OnEnable() override;
   void OnDisable() override;
