@@ -1,17 +1,13 @@
-#define SANDBOX_ENGINE_INCLUDE_DEPENDENCIES
-#include <Api.h>
-#undef SANDBOX_ENGINE_INCLUDE_DEPENDENCIES
-
 #include <Scenes/Instancing.h>
 
-void SceneInstancing::OnEnable()
+void SceneGame::OnEnable()
 {
   CameraCreate(mCamera, { 0.f, 0.f, 0.f }, 45.f, 0.001f, 10000.f);
 
-  ModelCreate(mModelShip, "C:\\Users\\Michael\\Downloads\\Sandbox\\Models\\Cube.fbx");
-  ModelCreate(mModelGround, "C:\\Users\\Michael\\Downloads\\Sandbox\\Models\\Plane.fbx");
+  ModelCreate(mModelShip, "C:\\Users\\Michael\\Downloads\\Sandbox\\Models\\Cube.obj");
+  ModelCreate(mModelSky, "C:\\Users\\Michael\\Downloads\\Sandbox\\Models\\Cube.obj");
 
-  TextureCreate(mTextureGround, "C:\\Users\\Michael\\Downloads\\Sandbox\\Textures\\Ground.bmp");
+  TextureCreate(mTextureSky, "C:\\Users\\Michael\\Downloads\\Sandbox\\Textures\\UV.bmp");
 
   InitializeTransforms();
   InitializeSteerings();
@@ -30,13 +26,14 @@ void SceneInstancing::OnEnable()
   ShaderCreateCompute(mShaderComputeShipPaths, mShaderComputeShipPathsSource);
 
   ShaderCreateRender(mShaderRenderShips, mShaderRenderShipVertexSource, mShaderRenderShipFragmentSource);
+  ShaderCreateRender(mShaderRenderSky, mShaderRenderSkyVertexSource, mShaderRenderSkyFragmentSource);
 }
-void SceneInstancing::OnDisable()
+void SceneGame::OnDisable()
 {
   ModelDestroy(mModelShip);
-  ModelDestroy(mModelGround);
+  ModelDestroy(mModelSky);
 
-  TextureDestroy(mTextureGround);
+  TextureDestroy(mTextureSky);
 
   BufferLayoutDestroy(mBufferTransforms);
   BufferLayoutDestroy(mBufferSteerings);
@@ -47,8 +44,9 @@ void SceneInstancing::OnDisable()
   ShaderDestroyCompute(mShaderComputeShipPaths);
 
   ShaderDestroyRender(mShaderRenderShips);
+  ShaderDestroyRender(mShaderRenderSky);
 }
-void SceneInstancing::OnUpdate(r32 timeDelta)
+void SceneGame::OnUpdate(r32 timeDelta)
 {
   CameraUpdateControllerInputOrbit(mCamera, mCameraController, timeDelta);
 
@@ -69,7 +67,7 @@ void SceneInstancing::OnUpdate(r32 timeDelta)
   u32 numThreadsX{ (u32)glm::ceil(mNumShips / 32) };
   ShaderExecuteCompute(mShaderComputeShipSteerings, numThreadsX, 1, 1);
 }
-void SceneInstancing::OnUpdateFixed(r32 timeDelta)
+void SceneGame::OnUpdateFixed(r32 timeDelta)
 {
   CameraUpdateControllerPhysicsOrbit(mCamera, mCameraController);
 
@@ -78,14 +76,24 @@ void SceneInstancing::OnUpdateFixed(r32 timeDelta)
   u32 numThreadsX{ (u32)glm::ceil(mNumShips / 32) };
   ShaderExecuteCompute(mShaderComputeShipPhysics, numThreadsX, 1, 1);
 }
-void SceneInstancing::OnRender(r32 timeDelta) const
+void SceneGame::OnRender(r32 timeDelta) const
 {
   ShaderBind(mShaderRenderShips);
   ShaderUniformR32M4(mShaderRenderShips, "uProjection", mCamera.mProjection);
   ShaderUniformR32M4(mShaderRenderShips, "uView", mCamera.mView);
   //ModelRenderInstanced(mModelShip, mNumShips);
+
+  r32m4 transform{ glm::identity<r32m4>() };
+  transform = glm::scale(transform, r32v3{ 100.f, 100.f, 100.f });
+
+  ShaderBind(mShaderRenderSky);
+  ShaderUniformR32M4(mShaderRenderSky, "uProjection", mCamera.mProjection);
+  ShaderUniformR32M4(mShaderRenderSky, "uView", mCamera.mView);
+  ShaderUniformR32M4(mShaderRenderSky, "uTransform", transform);
+  ShaderUniformU32(mShaderRenderSky, "uDiffuse", mTextureSky.mTid);
+  ModelRender(mModelSky);
 }
-void SceneInstancing::OnGizmos(r32 timeDelta)
+void SceneGame::OnGizmos(r32 timeDelta)
 {
   BufferLayoutDataSubGet(mBufferPaths, 0, mNumPaths * mNumPathSub, mPaths.data());
 
@@ -129,7 +137,7 @@ void SceneInstancing::OnGizmos(r32 timeDelta)
     }
 }
 
-void SceneInstancing::InitializeTransforms()
+void SceneGame::InitializeTransforms()
 {
   mTransforms.resize(mNumShips);
 
@@ -146,7 +154,7 @@ void SceneInstancing::InitializeTransforms()
     };
   }
 }
-void SceneInstancing::InitializeSteerings()
+void SceneGame::InitializeSteerings()
 {
   mSteerings.resize(mNumShips);
 
@@ -161,7 +169,7 @@ void SceneInstancing::InitializeSteerings()
     };
   }
 }
-void SceneInstancing::InitializePaths()
+void SceneGame::InitializePaths()
 {
   mPaths.resize(mNumPaths * mNumPathSub);
 

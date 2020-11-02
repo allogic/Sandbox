@@ -1,6 +1,11 @@
-#define SANDBOX_ENGINE_INCLUDE_DEPENDENCIES
 #include <Api.h>
-#undef SANDBOX_ENGINE_INCLUDE_DEPENDENCIES
+
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
 
 GLFWwindow* spWindow{};
 
@@ -578,6 +583,7 @@ void ModelCreate(ModelLambert& model, std::string const& fileName)
       {
         .mPosition{ pMesh->mVertices[j].x, pMesh->mVertices[j].y, pMesh->mVertices[j].z },
         .mNormal  { pMesh->mNormals[j].x, pMesh->mNormals[j].y, pMesh->mNormals[j].z },
+        .mUv      { pMesh->mTextureCoords[0][j].x, pMesh->mTextureCoords[0][j].y },
         .mColor   { 0.f, 0.f, 0.f, 1.f },
       };
     }
@@ -635,20 +641,20 @@ void ModelDestroy(ModelLambert const& model)
 * Texture management.
 */
 
-void TextureCreate(TextureU8RGBA& texture, std::string const& fileName)
+void TextureCreate(TextureU8RGB& texture, std::string const& fileName)
 {
   s32 width{};
   s32 height{};
   s32 channels{};
 
-  u8* pImageData = stbi_load(fileName.data(), &width, &height, &channels, STBI_rgb_alpha);
+  u8* pImageData = stbi_load(fileName.data(), &width, &height, &channels, STBI_rgb);
 
   TextureLayoutCreate(texture, width, height);
   TextureLayoutData(texture, pImageData);
 
   stbi_image_free(pImageData);
 }
-void TextureDestroy(TextureU8RGBA const& texture)
+void TextureDestroy(TextureU8RGB const& texture)
 {
   TextureLayoutDestroy(texture);
 }

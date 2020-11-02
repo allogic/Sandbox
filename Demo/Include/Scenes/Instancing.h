@@ -23,7 +23,7 @@ struct Waypoint
   r32v3 mRotationLocalFront{};
 };
 
-struct SceneInstancing : Scene
+struct SceneGame : Scene
 {
   std::string const mShaderComputeShipSteeringsSource
   {
@@ -409,14 +409,16 @@ struct SceneInstancing : Scene
     Transform transforms[];
   };
 
-  layout (location = 0) in vec3 lPosition;
-  layout (location = 1) in vec3 lNormal;
-  layout (location = 2) in vec4 lColor;
-
   uniform mat4 uProjection;
   uniform mat4 uView;
+
+  layout (location = 0) in vec3 lPosition;
+  layout (location = 1) in vec3 lNormal;
+  layout (location = 2) in vec2 lUv;
+  layout (location = 3) in vec4 lColor;
   
   out vec3 fNormal;
+  out vec2 fUv;
   out vec4 fColor;
 
   vec3 ToVec3(in float a[3])
@@ -431,6 +433,7 @@ struct SceneInstancing : Scene
 
     // Forwarding variables
     fNormal = lNormal;
+    fUv = lUv;
     fColor = lColor;
 
     vec3 transformPosition = ToVec3(transforms[objIndex].position);
@@ -446,6 +449,60 @@ struct SceneInstancing : Scene
   #version 460 core
   
   in vec3 fNormal;
+  in vec2 fUv;
+  in vec4 fColor;
+  
+  out vec4 color;
+  
+  void main()
+  {
+    // Compute fragment color
+    color = vec4(fNormal, 1.f);
+  }
+  )glsl"
+  };
+  std::string const mShaderRenderSkyVertexSource
+  {
+  R"glsl(
+  #version 460 core
+
+  uniform mat4 uProjection;
+  uniform mat4 uView;
+  uniform mat4 uTransform;  
+
+  layout (location = 0) in vec3 lPosition;
+  layout (location = 1) in vec3 lNormal;
+  layout (location = 2) in vec2 lUv;
+  layout (location = 3) in vec4 lColor;
+  
+  out vec3 fPosition;
+  out vec3 fNormal;
+  out vec2 fUv;
+  out vec4 fColor;
+
+  void main()
+  {
+    // Forwarding variables
+    fPosition = lPosition;
+    fNormal = lNormal;
+    fUv = lUv;
+    fColor = lColor;
+
+    // Compute screen position
+    gl_Position = uProjection * uView * uTransform * vec4(lPosition, 1.f);
+  }
+  )glsl"
+  };
+  std::string const mShaderRenderSkyFragmentSource
+  {
+  R"glsl(
+  #version 460 core
+  
+  uniform sampler2D uDiffuse;
+
+  in vec3 fPosition;
+  in vec3 fNormal;
+  in vec2 fUv;
   in vec4 fColor;
   
   out vec4 color;
@@ -465,9 +522,9 @@ struct SceneInstancing : Scene
   CameraControllerOrbit   mCameraController          {};
 
   ModelLambert            mModelShip                 {};
-  ModelLambert            mModelGround               {};
+  ModelLambert            mModelSky                  {};
 
-  TextureU8RGBA           mTextureGround             {};
+  TextureU8RGB            mTextureSky                {};
 
   std::vector<Transform>  mTransforms                {};
   std::vector<Steering>   mSteerings                 {};
@@ -482,6 +539,7 @@ struct SceneInstancing : Scene
   ShaderCompute           mShaderComputeShipPaths    {};
 
   ShaderRender            mShaderRenderShips         {};
+  ShaderRender            mShaderRenderSky           {};
 
   void OnEnable() override;
   void OnDisable() override;

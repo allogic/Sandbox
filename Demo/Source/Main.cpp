@@ -1,10 +1,6 @@
-#define SANDBOX_ENGINE_INCLUDE_DEPENDENCIES
 #include <Api.h>
-#undef SANDBOX_ENGINE_INCLUDE_DEPENDENCIES
 
 #include <Scenes/Instancing.h>
-#include <Scenes/ModelLoading.h>
-#include <Scenes/RayTracing.h>
 
 r32 sTime     {};
 r32 sTimePrev {};
@@ -17,9 +13,7 @@ s32 main()
 {
   ContextCreate(1280, 720, "Sandbox");
 
-  SceneCreate(new SceneInstancing);
-  SceneCreate(new SceneModelLoading);
-  SceneCreate(new SceneRayTracing);
+  SceneCreate(new SceneGame);
 
   GizmoLineBatchCreate();
 
