@@ -16,9 +16,11 @@ struct Steering
   u32   mPathIndex   {};
   u32   mPathIndexSub{};
 };
-struct Path
+struct Waypoint
 {
-  r32v3 mPosition{};
+  r32v3 mPosition {};
+  r32v3 mDirection{};
+  r32v3 mRotationLocalFront{};
 };
 
 struct SceneInstancing : Scene
@@ -44,9 +46,11 @@ struct SceneInstancing : Scene
     uint  pathIndex;
     uint  pathIndexSub;
   };
-  struct Path
+  struct Waypoint
   {
     float position[3];
+    float direction[3];
+    float rotationLocalFront[3];
   };
 
   layout (std430, binding = 0) volatile restrict buffer TransformBuffer
@@ -59,7 +63,7 @@ struct SceneInstancing : Scene
   };
   layout (std430, binding = 2) volatile restrict buffer PathBuffer
   {
-    Path paths[];
+    Waypoint paths[];
   };
 
   uniform float uTimeDelta;
@@ -67,6 +71,10 @@ struct SceneInstancing : Scene
   uniform float uVelocityDecay;
   uniform uint  uMaxPaths;
 
+  vec3 ToVec3(in float a[3])
+  {
+    return vec3(a[0], a[1], a[2]);
+  }
   void AddTo(inout float a[3], in vec3 b)
   {
     a[0] += b.x;
@@ -110,11 +118,7 @@ struct SceneInstancing : Scene
     // Compute current path target
     uint pathIndex = steerings[objIndex].pathIndex;
     uint pathIndexSub = steerings[objIndex].pathIndexSub;
-    vec3 pathTargetSub = vec3(
-      paths[pathIndex * pathIndexSub * 3].position[0],
-      paths[pathIndex * pathIndexSub * 3].position[1],
-      paths[pathIndex * pathIndexSub * 3].position[2]
-    );
+    vec3 pathTargetSub = ToVec3(paths[pathIndex * pathIndexSub * 32].position);
 
     // Add boids cohesion/seperation/alignment behaviour
 
@@ -142,7 +146,7 @@ struct SceneInstancing : Scene
   R"glsl(
   #version 460 core
   
-  layout (local_size_x = 64) in;
+  layout (local_size_x = 32) in;
 
   struct Transform
   {
@@ -222,7 +226,7 @@ struct SceneInstancing : Scene
   }
   )glsl"
   };
-  std::string const mShaderComputeMapSource
+  std::string const mShaderComputeShipPathsSource
   {
   R"glsl(
   #version 460 core
@@ -232,14 +236,16 @@ struct SceneInstancing : Scene
 
   layout (local_size_x = 32) in;
 
-  struct Path
+  struct Waypoint
   {
     float position[3];
+    float direction[3];
+    float rotationLocalFront[3];
   };
 
   layout (std430, binding = 2) volatile restrict buffer PathBuffer
   {
-    Path paths[];
+    Waypoint paths[];
   };
 
   uniform float uWindowSizeX;
@@ -250,10 +256,17 @@ struct SceneInstancing : Scene
   {
     return vec3(a[0], a[1], a[2]);
   }
-  float atan2(in float y, in float x)
+  void AddTo(inout float a[3], in vec3 b)
   {
-      bool s = (abs(x) > abs(y));
-      return mix(PI/2.0 - atan(x,y), atan(y,x), s);
+    a[0] += b.x;
+    a[1] += b.y;
+    a[2] += b.z;
+  }
+  void SetTo(inout float a[3], in vec3 b)
+  {
+    a[0] = b.x;
+    a[1] = b.y;
+    a[2] = b.z;
   }
 
   // Generic noise
@@ -349,40 +362,32 @@ struct SceneInstancing : Scene
 
   void main()
   {
-    // Compute linear path index
-    uint pathIndex = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
+    if (gl_WorkGroupID.x % gl_WorkGroupSize.x == 0 && gl_LocalInvocationID.x == 0)
+      return;
 
-    vec3 position = vec3(
-      paths[pathIndex * 3].position[0],
-      paths[pathIndex * 3].position[1],
-      paths[pathIndex * 3].position[2]
+    uint pathIndex = gl_GlobalInvocationID.x;
+
+    vec3 positionPrev = ToVec3(paths[pathIndex - 1].position);
+    vec3 directionPrev = ToVec3(paths[pathIndex - 1].direction);
+
+    // Compute current sub path position
+    vec3 position = positionPrev + directionPrev;
+    SetTo(paths[pathIndex].position, position);
+
+    // Compute current direction from gradient
+    float angle = Fbm(position) * 10.f;
+    mat3 rot = mat3(
+       cos(angle), 0, sin(angle),
+                0, 1,          0,
+      -sin(angle), 0, cos(angle)
     );
-    vec3 positionPrev = vec3(
-      paths[(pathIndex - 1) * 3].position[0],
-      paths[(pathIndex - 1) * 3].position[1],
-      paths[(pathIndex - 1) * 3].position[2]
-    );
-
-    // Sample next direction from position
-    vec3 direction = positionPrev - position;
-    
-    // Compute gradient steering
-    float angle = atan2(direction.x, direction.z);
-    angle += Fbm(position + direction) * 0.02f;
-    vec3 sampleDirection = vec3(sin(angle), 0.f, cos(angle));
-
+    vec3 direction = rot * vec3(directionPrev.x, 0, directionPrev.z);
     vec3 directionNorm = normalize(direction);
+    //vec3 directionRand = vec3(sin(angle), 0.f, cos(angle));
 
-    // Set first sub path position
-    paths[pathIndex * 3].position[0] = position.x + directionNorm.x;
-    paths[pathIndex * 3].position[1] = position.y + directionNorm.y;
-    paths[pathIndex * 3].position[2] = position.z + directionNorm.z;
-
-    position = vec3(
-      paths[pathIndex * 3].position[0],
-      paths[pathIndex * 3].position[1],
-      paths[pathIndex * 3].position[2]
-    );
+    paths[pathIndex].direction[0] = directionNorm.x + 1.f;
+    paths[pathIndex].direction[1] = directionNorm.y + 1.f;
+    paths[pathIndex].direction[2] = directionNorm.z + 1.f;
   }
   )glsl"
   };
@@ -454,22 +459,27 @@ struct SceneInstancing : Scene
   };
 
   u32                     mNumShips                  { 2048 * 32 };
-  u32                     mNumPaths                  { 1024 * 32 };
+  u32                     mNumPaths                  { 32 };
+  u32                     mNumPathSub                { 1024 };
 
   CameraControllerOrbit   mCameraController          {};
-  Model                   mModelShip                 {};
-                                                     
+
+  ModelLambert            mModelShip                 {};
+  ModelLambert            mModelGround               {};
+
+  TextureU8RGBA           mTextureGround             {};
+
   std::vector<Transform>  mTransforms                {};
   std::vector<Steering>   mSteerings                 {};
-  std::vector<Path>       mPaths                     {};
-                                                     
+  std::vector<Waypoint>   mPaths                     {};
+
   BufferLayout<Transform> mBufferTransforms          {};
   BufferLayout<Steering>  mBufferSteerings           {};
-  BufferLayout<Path>      mBufferPaths               {};
+  BufferLayout<Waypoint>  mBufferPaths               {};
 
   ShaderCompute           mShaderComputeShipSteerings{};
   ShaderCompute           mShaderComputeShipPhysics  {};
-  ShaderCompute           mShaderComputeMap          {};
+  ShaderCompute           mShaderComputeShipPaths    {};
 
   ShaderRender            mShaderRenderShips         {};
 

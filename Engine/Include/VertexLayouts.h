@@ -66,7 +66,8 @@ struct ModelLayout
   u32* mpEbos             {};
 };
 
-using ModelLambert = ModelLayout<VertexLambert, u32>;
+using ModelGizmoLine = ModelLayout<VertexGizmoLine, u32>;
+using ModelLambert   = ModelLayout<VertexLambert, u32>;
 
 /*
 * Drawing methodes.

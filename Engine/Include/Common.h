@@ -8,10 +8,6 @@ struct SANDBOX_ENGINE_API Material
 {
   
 };
-struct SANDBOX_ENGINE_API Model
-{
-  ModelLambert mModelLambert{};
-};
 struct SANDBOX_ENGINE_API Camera
 {
   r32v3 mPosition  {};
@@ -59,10 +55,6 @@ struct SANDBOX_ENGINE_API CameraControllerOrbit
   r32   mScrollDistance         { 100.f };
   r32   mScrollDistanceMin      { 10.f };
   r32   mScrollDistanceMax      { 1000.f };
-};
-struct SANDBOX_ENGINE_API Texture
-{
-  u32 mTid{};
 };
 struct SANDBOX_ENGINE_API ShaderRender
 {

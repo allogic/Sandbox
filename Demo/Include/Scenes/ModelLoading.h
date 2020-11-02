@@ -49,7 +49,7 @@ struct SceneModelLoading : Scene
   };
 
   CameraControllerOrbit mCameraController{};
-  Model                 mModel           {};
+  ModelLambert          mModel           {};
   ShaderRender          mShaderRender    {};
 
   void OnEnable() override;

@@ -539,7 +539,7 @@ void ShaderExecuteCompute(ShaderCompute const& shaderCompute, u32 numThreadsX, u
 * Model management.
 */
 
-void ModelCreate(Model& model, std::string const& fileName)
+void ModelCreate(ModelLambert& model, std::string const& fileName)
 {
   Assimp::Importer importer{};
 
@@ -602,33 +602,55 @@ void ModelCreate(Model& model, std::string const& fileName)
     aiTexture const* pTexture{ pScene->mTextures[i] };
   }
 
-  ModelLayoutCreate(model.mModelLambert, numMeshes, vertexBufferSizes.data(), indexBufferSizes.data());
+  ModelLayoutCreate(model, numMeshes, vertexBufferSizes.data(), indexBufferSizes.data());
   
   for (u32 i{}; i < numMeshes; i++)
   {
-    ModelLayoutBind(model.mModelLambert, i);
-    ModelLayoutData(model.mModelLambert, i, vertexBuffers[i].data(), indexBuffers[i].data());
+    ModelLayoutBind(model, i);
+    ModelLayoutData(model, i, vertexBuffers[i].data(), indexBuffers[i].data());
   }
 }
-void ModelRender(Model const& model)
+void ModelRender(ModelLambert const& model)
 {
-  for (u32 i{}; i < model.mModelLambert.mNumSubMeshes; i++)
+  for (u32 i{}; i < model.mNumSubMeshes; i++)
   {
-    ModelLayoutBind(model.mModelLambert, i);
-    ModelLayoutRender(model.mModelLambert, i, RenderMode::Triangle);
+    ModelLayoutBind(model, i);
+    ModelLayoutRender(model, i, RenderMode::Triangle);
   }
 }
-void ModelRenderInstanced(Model const& model, u32 numInstances)
+void ModelRenderInstanced(ModelLambert const& model, u32 numInstances)
 {
-  for (u32 i{}; i < model.mModelLambert.mNumSubMeshes; i++)
+  for (u32 i{}; i < model.mNumSubMeshes; i++)
   {
-    ModelLayoutBind(model.mModelLambert, i);
-    ModelLayoutRenderInstanced(model.mModelLambert, i, RenderMode::Triangle, numInstances);
+    ModelLayoutBind(model, i);
+    ModelLayoutRenderInstanced(model, i, RenderMode::Triangle, numInstances);
   }
 }
-void ModelDestroy(Model const& model)
+void ModelDestroy(ModelLambert const& model)
 {
-  ModelLayoutDestroy(model.mModelLambert);
+  ModelLayoutDestroy(model);
+}
+
+/*
+* Texture management.
+*/
+
+void TextureCreate(TextureU8RGBA& texture, std::string const& fileName)
+{
+  s32 width{};
+  s32 height{};
+  s32 channels{};
+
+  u8* pImageData = stbi_load(fileName.data(), &width, &height, &channels, STBI_rgb_alpha);
+
+  TextureLayoutCreate(texture, width, height);
+  TextureLayoutData(texture, pImageData);
+
+  stbi_image_free(pImageData);
+}
+void TextureDestroy(TextureU8RGBA const& texture)
+{
+  TextureLayoutDestroy(texture);
 }
 
 /*

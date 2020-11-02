@@ -7,6 +7,7 @@
 
 #include <VertexLayouts.h>
 #include <BufferLayouts.h>
+#include <TextureLayouts.h>
 
 #ifdef SANDBOX_ENGINE_INCLUDE_DEPENDENCIES
 #include <GLFW/glfw3.h>
@@ -14,6 +15,12 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+#undef STB_IMAGE_IMPLEMENTATION
+#else
+#include <stb/stb_image.h>
 #endif
 
 /*
@@ -113,10 +120,17 @@ template<typename Shader> void ShaderUniformR32M4(Shader const& shader, std::str
 * Model management.
 */
 
-extern "C" SANDBOX_ENGINE_API void ModelCreate(Model& model, std::string const& fileName);
-extern "C" SANDBOX_ENGINE_API void ModelRender(Model const& model);
-extern "C" SANDBOX_ENGINE_API void ModelRenderInstanced(Model const& model, u32 numInstances);
-extern "C" SANDBOX_ENGINE_API void ModelDestroy(Model const& model);
+extern "C" SANDBOX_ENGINE_API void ModelCreate(ModelLambert& model, std::string const& fileName);
+extern "C" SANDBOX_ENGINE_API void ModelRender(ModelLambert const& model);
+extern "C" SANDBOX_ENGINE_API void ModelRenderInstanced(ModelLambert const& model, u32 numInstances);
+extern "C" SANDBOX_ENGINE_API void ModelDestroy(ModelLambert const& model);
+
+/*
+* Texture management.
+*/
+
+extern "C" SANDBOX_ENGINE_API void TextureCreate(TextureU8RGBA& texture, std::string const& fileName);
+extern "C" SANDBOX_ENGINE_API void TextureDestroy(TextureU8RGBA const& texture);
 
 /*
 * 3D debug utilities.

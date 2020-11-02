@@ -3,6 +3,7 @@
 #include <Core.h>
 
 using s32 = int;
+using  u8 = char unsigned;
 using u32 = int unsigned;
 
 using r32 = float;
