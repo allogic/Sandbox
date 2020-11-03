@@ -4,9 +4,9 @@ void SceneGame::OnEnable()
 {
   CameraCreate(mCamera, { 0.f, 0.f, 0.f }, 45.f, 0.001f, 10000.f);
 
-  ModelCreate(mModelShip, "C:\\Users\\Michael\\Downloads\\Sandbox\\Model\\Cube.obj");
-  ModelCreate(mModelSky, "C:\\Users\\Michael\\Downloads\\Sandbox\\Model\\Sphere.obj");
-  ModelCreate(mModelMap, "C:\\Users\\Michael\\Downloads\\Sandbox\\Model\\Plane.obj");
+  ModelCreate(mModelShip, SANDBOX_ROOT_PATH "Model\\Cube.obj");
+  ModelCreate(mModelSky, SANDBOX_ROOT_PATH "Model\\Sphere.obj");
+  ModelCreate(mModelMap, SANDBOX_ROOT_PATH "Model\\Plane.obj");
 
   ModelLayoutTransform(mModelShip, { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f });
   ModelLayoutTransform(mModelSky, { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1000.f, 1000.f, 1000.f });
@@ -27,14 +27,14 @@ void SceneGame::OnEnable()
   BufferLayoutData(mBufferSteerings, mSteerings.data(), mNumShips);
   BufferLayoutData(mBufferPaths, mPaths.data(), mNumPaths * mNumPathSub);
 
-  ShaderCreateCompute(mShaderComputeShipSteerings, mShaderComputeShipSteeringsSource);
-  ShaderCreateCompute(mShaderComputeShipPhysics, mShaderComputeShipPhysicsSource);
-  ShaderCreateCompute(mShaderComputeShipPaths, mShaderComputeShipPathsSource);
-  ShaderCreateCompute(mShaderComputeMapNoise, mShaderComputeMapNoiseSource);
+  ShaderLayoutCreate(mShaderComputeShipSteerings, ShaderPaths{ .mCompute{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Compute\\ShipSteering.comp" } });
+  ShaderLayoutCreate(mShaderComputeShipPhysics, ShaderPaths{ .mCompute{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Compute\\ShipPhysic.comp" } });
+  ShaderLayoutCreate(mShaderComputeShipPaths, ShaderPaths{ .mCompute{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Compute\\ShipPath.comp" } });
+  ShaderLayoutCreate(mShaderComputeMapNoise, ShaderPaths{ .mCompute{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Compute\\MapNoise.comp" } });
 
-  ShaderCreateRender(mShaderRenderShips, mShaderRenderShipVertexSource, mShaderRenderShipFragmentSource);
-  ShaderCreateRender(mShaderRenderSky, mShaderRenderSkyVertexSource, mShaderRenderSkyFragmentSource);
-  ShaderCreateRender(mShaderRenderMap, mShaderRenderMapVertexSource, mShaderRenderMapFragmentSource);
+  ShaderLayoutCreate(mShaderRenderShips, ShaderPaths{ .mVertex{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Ship\\Ship.vert" }, .mFragment{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Ship\\Ship.frag" } });
+  ShaderLayoutCreate(mShaderRenderSky, ShaderPaths{ .mVertex{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.vert" }, .mFragment{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.frag" } });
+  ShaderLayoutCreate(mShaderRenderMap, ShaderPaths{ .mVertex{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.vert" }, .mFragment{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.frag" } });
 }
 void SceneGame::OnDisable()
 {
@@ -49,14 +49,14 @@ void SceneGame::OnDisable()
   BufferLayoutDestroy(mBufferSteerings);
   BufferLayoutDestroy(mBufferPaths);
 
-  ShaderDestroyCompute(mShaderComputeShipSteerings);
-  ShaderDestroyCompute(mShaderComputeShipPhysics);
-  ShaderDestroyCompute(mShaderComputeShipPaths);
-  ShaderDestroyCompute(mShaderComputeMapNoise);
+  ShaderLayoutDestroy(mShaderComputeShipSteerings);
+  ShaderLayoutDestroy(mShaderComputeShipPhysics);
+  ShaderLayoutDestroy(mShaderComputeShipPaths);
+  ShaderLayoutDestroy(mShaderComputeMapNoise);
 
-  ShaderDestroyRender(mShaderRenderShips);
-  ShaderDestroyRender(mShaderRenderSky);
-  ShaderDestroyRender(mShaderRenderMap);
+  ShaderLayoutDestroy(mShaderRenderShips);
+  ShaderLayoutDestroy(mShaderRenderSky);
+  ShaderLayoutDestroy(mShaderRenderMap);
 }
 void SceneGame::OnUpdate(r32 timeDelta)
 {
@@ -64,51 +64,51 @@ void SceneGame::OnUpdate(r32 timeDelta)
 
   if (KeyDown(GLFW_KEY_P))
   {
-    ShaderBind(mShaderComputeShipPaths);
-    ShaderUniformR32V3(mShaderComputeShipPaths, "uOffsetRandom", glm::ballRand(10000.f));
-    ShaderExecuteCompute(mShaderComputeShipPaths, mNumPathSub, 1, 1);
+    ShaderLayoutBind(mShaderComputeShipPaths);
+    ShaderLayoutUniformR32V3(mShaderComputeShipPaths, "uOffsetRandom", glm::ballRand(10000.f));
+    ShaderLayoutCompute(mShaderComputeShipPaths, mNumPathSub, 1, 1);
   }
   if (KeyDown(GLFW_KEY_M))
   {
     TextureLayoutBind(mTextureMap);
     TextureLayoutBindImage(mTextureMap, 1);
-    ShaderBind(mShaderComputeMapNoise);
-    ShaderUniformR32V3(mShaderComputeMapNoise, "uOffsetRandom", glm::ballRand(10000.f));
-    ShaderExecuteCompute(mShaderComputeMapNoise, 4096 / 32, 4096 / 32, 1);
+    ShaderLayoutBind(mShaderComputeMapNoise);
+    ShaderLayoutUniformR32V3(mShaderComputeMapNoise, "uOffsetRandom", glm::ballRand(10000.f));
+    ShaderLayoutCompute(mShaderComputeMapNoise, 4096 / 32, 4096 / 32, 1);
   }
 
-  ShaderBind(mShaderComputeShipSteerings);
-  ShaderUniformR32(mShaderComputeShipSteerings, "uTimeDelta", timeDelta);
-  ShaderUniformR32(mShaderComputeShipSteerings, "uAccelerationSpeed", 2000.f);
-  ShaderUniformR32(mShaderComputeShipSteerings, "uVelocityDecay", 100.f);
-  ShaderUniformU32(mShaderComputeShipSteerings, "uMaxPaths", mNumPaths);
+  ShaderLayoutBind(mShaderComputeShipSteerings);
+  ShaderLayoutUniformR32(mShaderComputeShipSteerings, "uTimeDelta", timeDelta);
+  ShaderLayoutUniformR32(mShaderComputeShipSteerings, "uAccelerationSpeed", 2000.f);
+  ShaderLayoutUniformR32(mShaderComputeShipSteerings, "uVelocityDecay", 100.f);
+  ShaderLayoutUniformU32(mShaderComputeShipSteerings, "uMaxPaths", mNumPaths);
 
   u32 numThreadsX{ (u32)glm::ceil(mNumShips / 32) };
-  ShaderExecuteCompute(mShaderComputeShipSteerings, numThreadsX, 1, 1);
+  ShaderLayoutCompute(mShaderComputeShipSteerings, numThreadsX, 1, 1);
 }
 void SceneGame::OnUpdateFixed(r32 timeDelta)
 {
   CameraUpdateControllerPhysicsOrbit(mCamera, mCameraController);
 
-  ShaderBind(mShaderComputeShipPhysics);
+  ShaderLayoutBind(mShaderComputeShipPhysics);
 
   u32 numThreadsX{ (u32)glm::ceil(mNumShips / 32) };
-  ShaderExecuteCompute(mShaderComputeShipPhysics, numThreadsX, 1, 1);
+  ShaderLayoutCompute(mShaderComputeShipPhysics, numThreadsX, 1, 1);
 }
 void SceneGame::OnRender(r32 timeDelta) const
 {
-  ShaderBind(mShaderRenderShips);
-  ShaderUniformR32M4(mShaderRenderShips, "uProjection", mCamera.mProjection);
-  ShaderUniformR32M4(mShaderRenderShips, "uView", mCamera.mView);
-  ModelRenderInstanced(mModelShip, mNumShips);
+  ShaderLayoutBind(mShaderRenderShips);
+  ShaderLayoutUniformR32M4(mShaderRenderShips, "uProjection", mCamera.mProjection);
+  ShaderLayoutUniformR32M4(mShaderRenderShips, "uView", mCamera.mView);
+  //ModelRenderInstanced(mModelShip, mNumShips);
 
   //TextureLayoutBind(mTextureSky);
   //TextureLayoutBindSampler(mTextureSky, 1);
-  ShaderBind(mShaderRenderSky);
-  ShaderUniformR32M4(mShaderRenderSky, "uProjection", mCamera.mProjection);
-  ShaderUniformR32M4(mShaderRenderSky, "uView", mCamera.mView);
-  ShaderUniformR32M4(mShaderRenderSky, "uTransform", mModelSky.mTransform);
-  ModelRender(mModelSky);
+  ShaderLayoutBind(mShaderRenderSky);
+  ShaderLayoutUniformR32M4(mShaderRenderSky, "uProjection", mCamera.mProjection);
+  ShaderLayoutUniformR32M4(mShaderRenderSky, "uView", mCamera.mView);
+  ShaderLayoutUniformR32M4(mShaderRenderSky, "uTransform", mModelSky.mTransform);
+  //ModelRender(mModelSky);
 
   //TextureLayoutBind(mTextureMap);
   //TextureLayoutBindSampler(mTextureMap, 1);

@@ -23,73 +23,11 @@ r32v2 sMouseScroll  {};
 Event sMouseKeyStates[GLFW_MOUSE_BUTTON_LAST]{};
 Event sKeyboardKeyStates[GLFW_KEY_LAST]      {};
 
-std::string const sRenderShaderVertexGizmo
-{
-R"glsl(
-#version 460 core
-
-layout (location = 0) in vec3 lPosition;
-layout (location = 1) in vec4 lColor;
-
-uniform mat4 uProjection;
-uniform mat4 uView;
-
-out vec3 fPosition;
-out vec4 fColor;
-
-void main()
-{
-  fPosition = lPosition;
-  fColor = lColor;
-
-  gl_Position = uProjection * uView * vec4(fPosition, 1.0f);
-}
-)glsl"
-};
-std::string const sRenderShaderFragmentGizmo
-{
-R"glsl(
-#version 460 core
-
-in vec3 fPosition;
-in vec4 fColor;
-
-out vec4 color;
-
-void main()
-{
-  color = fColor;
-}
-)glsl"
-};
-
-u32          sGizmoLineBatchVertexBufferSize{ 65535 };
-ShaderRender sGizmoLineBatchShader          {};
-MeshGizmo    sGizmoLineBatchMesh            {};
-u32          sGizmoLineBatchOffsetVertex    {};
-u32          sGizmoLineBatchOffsetIndex     {};
-
-/*
-* Debug utilities.
-*/
-
-u32 CheckShaderStatus(u32 id, u32 type, std::string& log) {
-  s32 compileInfo{};
-  s32 compileInfoSize{};
-
-  glGetShaderiv(id, type, &compileInfo);
-
-  if (compileInfo <= 0) return 0;
-
-  glGetShaderiv(id, GL_INFO_LOG_LENGTH, &compileInfoSize);
-
-  log.clear();
-  log.resize(compileInfoSize);
-
-  glGetShaderInfoLog(id, compileInfoSize, nullptr, log.data());
-
-  return 1;
-}
+u32         sGizmoLineBatchVertexBufferSize{ 65535 };
+ShaderGizmo sGizmoLineBatchShader          {};
+MeshGizmo   sGizmoLineBatchMesh            {};
+u32         sGizmoLineBatchOffsetVertex    {};
+u32         sGizmoLineBatchOffsetIndex     {};
 
 /*
 * OpenGL context specific.
@@ -178,25 +116,25 @@ void EventsPoll()
 
     if (action == GLFW_PRESS)
     {
-      if (event.mActionCurr != EventType::Down && event.mActionPrev != EventType::Held)
+      if (event.mActionCurr != eEventDown && event.mActionPrev != eEventHeld)
       {
-        event.mActionCurr = EventType::Down;
+        event.mActionCurr = eEventDown;
       }
       else
       {
-        event.mActionCurr = EventType::Held;
+        event.mActionCurr = eEventHeld;
       }
     }
 
     if (action == GLFW_RELEASE)
     {
-      if (event.mActionCurr != EventType::Up && event.mActionPrev == EventType::Held)
+      if (event.mActionCurr != eEventUp && event.mActionPrev == eEventHeld)
       {
-        event.mActionCurr = EventType::Up;
+        event.mActionCurr = eEventUp;
       }
       else
       {
-        event.mActionCurr = EventType::None;
+        event.mActionCurr = eEventNone;
       }
     }
   }
@@ -208,25 +146,25 @@ void EventsPoll()
 
     if (action == GLFW_PRESS)
     {
-      if (event.mActionCurr != EventType::Down && event.mActionPrev != EventType::Held)
+      if (event.mActionCurr != eEventDown && event.mActionPrev != eEventHeld)
       {
-        event.mActionCurr = EventType::Down;
+        event.mActionCurr = eEventDown;
       }
       else
       {
-        event.mActionCurr = EventType::Held;
+        event.mActionCurr = eEventHeld;
       }
     }
 
     if (action == GLFW_RELEASE)
     {
-      if (event.mActionCurr != EventType::Up && event.mActionPrev == EventType::Held)
+      if (event.mActionCurr != eEventUp && event.mActionPrev == eEventHeld)
       {
-        event.mActionCurr = EventType::Up;
+        event.mActionCurr = eEventUp;
       }
       else
       {
-        event.mActionCurr = EventType::None;
+        event.mActionCurr = eEventNone;
       }
     }
   }
@@ -270,27 +208,27 @@ r32 MouseScrollY()
 }
 u32 MouseDown(u32 key)
 {
-  return sMouseKeyStates[key].mActionCurr == EventType::Down;
+  return sMouseKeyStates[key].mActionCurr == eEventDown;
 }
 u32 MouseHeld(u32 key)
 {
-  return sMouseKeyStates[key].mActionCurr == EventType::Held;
+  return sMouseKeyStates[key].mActionCurr == eEventHeld;
 }
 u32 MouseUp(u32 key)
 {
-  return sMouseKeyStates[key].mActionCurr == EventType::Up;
+  return sMouseKeyStates[key].mActionCurr == eEventUp;
 }
 u32 KeyDown(u32 key)
 {
-  return sKeyboardKeyStates[key].mActionCurr == EventType::Down;
+  return sKeyboardKeyStates[key].mActionCurr == eEventDown;
 }
 u32 KeyHeld(u32 key)
 {
-  return sKeyboardKeyStates[key].mActionCurr == EventType::Held;
+  return sKeyboardKeyStates[key].mActionCurr == eEventHeld;
 }
 u32 KeyUp(u32 key)
 {
-  return sKeyboardKeyStates[key].mActionCurr == EventType::Up;
+  return sKeyboardKeyStates[key].mActionCurr == eEventUp;
 }
 
 /*
@@ -487,70 +425,6 @@ void CameraUpdateControllerPhysicsOrbit(Camera& camera, CameraControllerOrbit& c
 }
 
 /*
-* Shader management.
-*/
-
-void ShaderCreateCompute(ShaderCompute& shaderCompute, std::string const& shaderComputeSource)
-{
-  shaderCompute.mPid = glCreateProgram();
-  shaderCompute.mCid = glCreateShader(GL_COMPUTE_SHADER);
-
-  char const* shaderComputeSourcePtr{ shaderComputeSource.data() };
-
-  glShaderSource(shaderCompute.mCid, 1, &shaderComputeSourcePtr, nullptr);
-
-  std::string log{};
-
-  glCompileShader(shaderCompute.mCid);
-  if (CheckShaderStatus(shaderCompute.mCid, GL_COMPILE_STATUS, log))
-    std::printf("%s\n", log.data());
-
-  glAttachShader(shaderCompute.mPid, shaderCompute.mCid);
-  glLinkProgram(shaderCompute.mPid);
-}
-void ShaderCreateRender(ShaderRender& shaderRender, std::string const& renderShaderVertexcSource, std::string const& renderShaderFragmentSource)
-{
-  shaderRender.mPid = glCreateProgram();
-  shaderRender.mVid = glCreateShader(GL_VERTEX_SHADER);
-  shaderRender.mFid = glCreateShader(GL_FRAGMENT_SHADER);
-
-  char const* shaderVertexSourcePtr{ renderShaderVertexcSource.data() };
-  char const* shaderFragmentSourcePtr{ renderShaderFragmentSource.data() };
-  
-  std::string log{};
-
-  glShaderSource(shaderRender.mVid, 1, &shaderVertexSourcePtr, nullptr);
-  glCompileShader(shaderRender.mVid);
-  if (CheckShaderStatus(shaderRender.mVid, GL_COMPILE_STATUS, log))
-    std::printf("%s\n", log.data());
-
-  glShaderSource(shaderRender.mFid, 1, &shaderFragmentSourcePtr, nullptr);
-  glCompileShader(shaderRender.mFid);
-  if (CheckShaderStatus(shaderRender.mFid, GL_COMPILE_STATUS, log))
-    std::printf("%s\n", log.data());
-
-  glAttachShader(shaderRender.mPid, shaderRender.mVid);
-  glAttachShader(shaderRender.mPid, shaderRender.mFid);
-
-  glLinkProgram(shaderRender.mPid);
-}
-void ShaderDestroyCompute(ShaderCompute const& shaderCompute)
-{
-  glDeleteShader(shaderCompute.mCid);
-  glDeleteProgram(shaderCompute.mPid);
-}
-void ShaderDestroyRender(ShaderRender const& shaderRender)
-{
-  glDeleteShader(shaderRender.mVid);
-  glDeleteShader(shaderRender.mFid);
-  glDeleteProgram(shaderRender.mPid);
-}
-void ShaderExecuteCompute(ShaderCompute const& shaderCompute, u32 numThreadsX, u32 numThreadsY, u32 numThreadsZ)
-{
-  glDispatchCompute(numThreadsX, numThreadsY, numThreadsZ);
-}
-
-/*
 * Model management.
 */
 
@@ -631,7 +505,7 @@ void ModelRender(ModelLambert const& model)
   for (u32 i{}; i < model.mNumSubMeshes; i++)
   {
     ModelLayoutBind(model, i);
-    ModelLayoutRender(model, i, RenderMode::Triangle);
+    ModelLayoutRender(model, i, eRenderModeTriangle);
   }
 }
 void ModelRenderInstanced(ModelLambert const& model, u32 numInstances)
@@ -639,7 +513,7 @@ void ModelRenderInstanced(ModelLambert const& model, u32 numInstances)
   for (u32 i{}; i < model.mNumSubMeshes; i++)
   {
     ModelLayoutBind(model, i);
-    ModelLayoutRenderInstanced(model, i, RenderMode::Triangle, numInstances);
+    ModelLayoutRenderInstanced(model, i, eRenderModeTriangle, numInstances);
   }
 }
 void ModelDestroy(ModelLambert const& model)
@@ -653,7 +527,7 @@ void ModelDestroy(ModelLambert const& model)
 
 void GizmoLineBatchCreate()
 {
-  ShaderCreateRender(sGizmoLineBatchShader, sRenderShaderVertexGizmo, sRenderShaderFragmentGizmo);
+  ShaderLayoutCreate(sGizmoLineBatchShader, ShaderPaths{ .mVertex{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Gizmo\\Gizmo.vert" }, .mFragment{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Gizmo\\Gizmo.frag" } });
   MeshLayoutCreate(sGizmoLineBatchMesh, sGizmoLineBatchVertexBufferSize, sGizmoLineBatchVertexBufferSize * 2);
 }
 void GizmoLineBatchClear()
@@ -668,13 +542,9 @@ void GizmoLineBatchBind()
 {
   MeshLayoutBind(sGizmoLineBatchMesh);
 }
-void GizmoLineBatchUnbind()
-{
-  MeshLayoutUnbind(sGizmoLineBatchMesh);
-}
 void GizmoLineBatchPushLine(r32v3 const& p0, r32v3 const& p1, r32v4 const& color)
 {
-  VertexGizmoLine vertices[2]{ { p0, color }, { p1, color } };
+  VertexGizmo vertices[2]{ { p0, color }, { p1, color } };
   u32 indices[2]{ sGizmoLineBatchOffsetVertex + 0, sGizmoLineBatchOffsetVertex + 1 };
 
   MeshLayoutDataSub(sGizmoLineBatchMesh, vertices, indices, sGizmoLineBatchOffsetVertex, sGizmoLineBatchOffsetIndex, 2, 2);
@@ -696,7 +566,7 @@ void GizmoLineBatchPushBox(r32v3 const& position, r32v3 const& size, r32v4 const
   r32v3 tlb{ -half.x,  half.y,  half.z };
   r32v3 trb{  half.x,  half.y,  half.z };
 
-  VertexGizmoLine vertices[8]
+  VertexGizmo vertices[8]
   {
     // front
     { position + blf, color },
@@ -750,10 +620,11 @@ void GizmoLineBatchPushBox(r32v3 const& position, r32v3 const& size, r32v4 const
 }
 void GizmoLineBatchRender()
 {
-  ShaderBind(sGizmoLineBatchShader);
-  ShaderUniformR32M4(sGizmoLineBatchShader, "uProjection", SceneActive()->mCamera.mProjection);
-  ShaderUniformR32M4(sGizmoLineBatchShader, "uView", SceneActive()->mCamera.mView);
-  MeshLayoutRender(sGizmoLineBatchMesh, RenderMode::Line);
+  ShaderLayoutBind(sGizmoLineBatchShader);
+  //ShaderLayoutUniformR32M4(sGizmoLineBatchShader, "uProjection", SceneActive()->mCamera.mProjection);
+  //ShaderLayoutUniformR32M4(sGizmoLineBatchShader, "uView", SceneActive()->mCamera.mView);
+  //ShaderLayoutUniformR32M4(sGizmoLineBatchShader, "uTransform", glm::identity<r32m4>());
+  MeshLayoutRender(sGizmoLineBatchMesh, eRenderModeLine);
 
   sGizmoLineBatchOffsetVertex = 0;
   sGizmoLineBatchOffsetIndex = 0;

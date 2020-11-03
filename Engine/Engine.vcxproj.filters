@@ -42,7 +42,7 @@
     <ClInclude Include="Include\TextureLayouts.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Include\ShaderPipeline.h">
+    <ClInclude Include="Include\ShaderLayouts.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

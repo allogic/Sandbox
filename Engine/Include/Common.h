@@ -2,12 +2,7 @@
 
 #include <Types.h>
 #include <Core.h>
-#include <VertexLayouts.h>
 
-struct SANDBOX_ENGINE_API Material
-{
-  
-};
 struct SANDBOX_ENGINE_API Camera
 {
   r32v3 mPosition  {};
@@ -55,17 +50,6 @@ struct SANDBOX_ENGINE_API CameraControllerOrbit
   r32   mScrollDistance         { 100.f };
   r32   mScrollDistanceMin      { 10.f };
   r32   mScrollDistanceMax      { 1000.f };
-};
-struct SANDBOX_ENGINE_API ShaderRender
-{
-  u32 mPid{};
-  u32 mVid{};
-  u32 mFid{};
-};
-struct SANDBOX_ENGINE_API ShaderCompute
-{
-  u32 mPid{};
-  u32 mCid{};
 };
 struct Scene
 {

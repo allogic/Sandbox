@@ -147,8 +147,16 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="Shaders\Compute\MapNoise.comp" />
+    <None Include="Shaders\Compute\ShipPath.comp" />
+    <None Include="Shaders\Compute\ShipPhysic.comp" />
+    <None Include="Shaders\Compute\ShipSteering.comp" />
+    <None Include="Shaders\Gizmo\Gizmo.frag" />
+    <None Include="Shaders\Gizmo\Gizmo.vert" />
     <None Include="Shaders\Lambert\Lambert.frag" />
     <None Include="Shaders\Lambert\Lambert.vert" />
+    <None Include="Shaders\Ship\Ship.frag" />
+    <None Include="Shaders\Ship\Ship.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />

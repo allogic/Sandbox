@@ -7,13 +7,13 @@
 * Texture layouts.
 */
 
-enum LayoutType : u32
+enum TextureLayoutType : u32
 {
-  U8,
-  R32,
+  eTextureLayoutU8,
+  eTextureLayoutR32,
 };
 
-template<LayoutType Layout, u32 Channels>
+template<u32 Layout, u32 Channels>
 struct TextureLayout
 {
   constexpr static u32 sLayout  { Layout };
@@ -24,9 +24,9 @@ struct TextureLayout
   u32 mTid   {};
 };
 
-using TextureU8RGB   = TextureLayout<U8, 3>;
-using TextureU8RGBA  = TextureLayout<U8, 4>;
-using TextureR32RGBA = TextureLayout<R32, 4>;
+using TextureU8RGB   = TextureLayout<eTextureLayoutU8, 3>;
+using TextureU8RGBA  = TextureLayout<eTextureLayoutU8, 4>;
+using TextureR32RGBA = TextureLayout<eTextureLayoutR32, 4>;
 
 /*
 * Texture management.
@@ -40,8 +40,8 @@ template<typename TextureLayout> void TextureLayoutData(TextureLayout const& tex
 
   switch (TextureLayout::sLayout)
   {
-    case U8: type = GL_UNSIGNED_BYTE; break;
-    case R32: type = GL_FLOAT; break;
+    case eTextureLayoutU8: type = GL_UNSIGNED_BYTE; break;
+    case eTextureLayoutR32: type = GL_FLOAT; break;
   }
   switch (TextureLayout::sChannels)
   {
@@ -72,7 +72,7 @@ template<typename TextureLayout> void TextureLayoutDataFrom(TextureLayout const&
 
   u32 textureSize{ textureLayout.mWidth * textureLayout.mHeight * TextureLayout::sChannels };
 
-  if (TextureLayout::sLayout == R32)
+  if (TextureLayout::sLayout == eTextureLayoutR32)
   {
     std::vector<r32> imageData{};
 
@@ -122,8 +122,8 @@ template<typename TextureLayout> void TextureLayoutBindImage(TextureLayout const
 
   switch (TextureLayout::sLayout)
   {
-    case U8: type = GL_RGBA8UI; break;
-    case R32: type = GL_RGBA32F; break;
+    case eTextureLayoutU8: type = GL_RGBA8UI; break;
+    case eTextureLayoutR32: type = GL_RGBA32F; break;
   }
 
   glBindImageTexture(imageUnit, textureLayout.mTid, 0, GL_FALSE, 0, GL_READ_WRITE, type);

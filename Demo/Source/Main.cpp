@@ -6,10 +6,10 @@ r32 sTime     {};
 r32 sTimePrev {};
 r32 sTimeDelta{};
 
-r32 sTimeRenderFixed    { 1.f / 60 };
-r32 sTimeRenderFixedPrev{};
+r32 sTimeRender    { 1.f / 60 };
+r32 sTimeRenderPrev{};
 
-s32 main()
+int main(int argc, char** argv)
 {
   ContextCreate(1280, 720, "Sandbox");
   ContextRegisterDebugHandler();
@@ -31,7 +31,7 @@ s32 main()
 
     SceneActive()->OnUpdate(sTimeDelta);
 
-    if ((sTime - sTimeRenderFixedPrev) >= sTimeRenderFixed)
+    if ((sTime - sTimeRenderPrev) >= sTimeRender)
     {
       glEnable(GL_DEPTH_TEST);
       glDepthFunc(GL_LESS);
@@ -44,11 +44,10 @@ s32 main()
       GizmoLineBatchBind();
       SceneActive()->OnGizmos(sTimeDelta);
       GizmoLineBatchRender();
-      GizmoLineBatchUnbind();
 
       glfwSwapBuffers(ContextHandle());
 
-      sTimeRenderFixedPrev = sTime;
+      sTimeRenderPrev = sTime;
     }
 
     sTimePrev = sTime;

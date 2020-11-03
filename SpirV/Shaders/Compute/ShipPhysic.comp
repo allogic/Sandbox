@@ -1,0 +1,59 @@
+#version 460 core
+
+layout (local_size_x = 32) in;
+
+struct Transform
+{
+  float position[3];
+  float rotationLocalRight[3];
+  float rotationLocalUp[3];
+  float rotationLocalFront[3];
+};
+struct Steering
+{
+  float acceleration[3];
+  float velocity[3];
+  uint  pathIndex;
+  uint  pathIndexSub;
+};
+
+layout (binding = 0, std430) buffer TransformBuffer
+{
+  Transform transforms[];
+};
+layout (binding = 1, std430) buffer SteeringBuffer
+{
+  Steering steerings[];
+};
+
+void AddTo(inout float a[3], in float b[3])
+{
+  a[0] += b[0];
+  a[1] += b[1];
+  a[2] += b[2];
+}
+void SetTo(inout float a[3], in float b)
+{
+  a[0] = b;
+  a[1] = b;
+  a[2] = b;
+}
+
+void main()
+{
+  uint objIndex = gl_GlobalInvocationID.x;
+
+  // Transform rotation
+  //transforms[idx].rotationLocalRight = rotationMatrix * vec4(transforms[idx].rotationLocalRight, 1.f);
+  //transforms[idx].rotationLocalUp = rotationMatrix * vec4(transforms[idx].rotationLocalUp, 1.f);
+  //transforms[idx].rotationLocalFront = rotationMatrix * vec4(transforms[idx].rotationLocalFront, 1.f);
+
+  // Add acceleration to velocity
+  AddTo(steerings[objIndex].velocity, steerings[objIndex].acceleration);
+
+  // Clear acceleration
+  SetTo(steerings[objIndex].acceleration, 0.f);
+
+  // Add velocity to position
+  AddTo(transforms[objIndex].position, steerings[objIndex].velocity);
+}

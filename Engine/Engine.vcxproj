@@ -158,7 +158,7 @@
     <ClInclude Include="Include\Events.h" />
     <ClInclude Include="Include\Primitives.h" />
     <ClInclude Include="Include\BufferLayouts.h" />
-    <ClInclude Include="Include\ShaderPipeline.h" />
+    <ClInclude Include="Include\ShaderLayouts.h" />
     <ClInclude Include="Include\TextureLayouts.h" />
     <ClInclude Include="Include\Types.h" />
     <ClInclude Include="Include\VertexLayouts.h" />

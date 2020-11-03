@@ -8,12 +8,7 @@
 #include <VertexLayouts.h>
 #include <BufferLayouts.h>
 #include <TextureLayouts.h>
-
-/*
-* Debug utilities.
-*/
-
-u32  CheckShaderStatus(u32 id, u32 type, std::string& log);
+#include <ShaderLayouts.h>
 
 /*
 * OpenGL context specific.
@@ -67,46 +62,6 @@ extern "C" SANDBOX_ENGINE_API void CameraUpdateControllerInputSpace(Camera & cam
 extern "C" SANDBOX_ENGINE_API void CameraUpdateControllerInputOrbit(Camera & camera, CameraControllerOrbit & controller, r32 timeDelta);
 extern "C" SANDBOX_ENGINE_API void CameraUpdateControllerPhysicsSpace(Camera& camera, CameraControllerSpace& controller);
 extern "C" SANDBOX_ENGINE_API void CameraUpdateControllerPhysicsOrbit(Camera& camera, CameraControllerOrbit& controller);
-
-/*
-* Shader management.
-*/
-
-extern "C" SANDBOX_ENGINE_API void ShaderCreateCompute(ShaderCompute& shaderCompute, std::string const& computeShaderSource);
-extern "C" SANDBOX_ENGINE_API void ShaderCreateRender(ShaderRender& shaderRender, std::string const& renderShaderVertexcSource, std::string const& renderShaderFragmentSource);
-extern "C" SANDBOX_ENGINE_API void ShaderDestroyCompute(ShaderCompute const& shaderCompute);
-extern "C" SANDBOX_ENGINE_API void ShaderDestroyRender(ShaderRender const& shaderRender);
-extern "C" SANDBOX_ENGINE_API void ShaderExecuteCompute(ShaderCompute const& shaderCompute, u32 numThreadsX, u32 numThreadsY, u32 numThreadsZ);
-
-template<typename Shader> void ShaderBind(Shader const& shader)
-{
-  glUseProgram(shader.mPid);
-}
-template<typename Shader> void ShaderUniformS32(Shader const& shader, std::string const& name, s32 value)
-{
-  u32 uniformIndex{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
-  glUniform1i(uniformIndex, value);
-}
-template<typename Shader> void ShaderUniformU32(Shader const& shader, std::string const& name, u32 value)
-{
-  u32 uniformIndex{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
-  glUniform1ui(uniformIndex, value);
-}
-template<typename Shader> void ShaderUniformR32(Shader const& shader, std::string const& name, r32 value)
-{
-  u32 uniformIndex{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
-  glUniform1f(uniformIndex, value);
-}
-template<typename Shader> void ShaderUniformR32V3(Shader const& shader, std::string const& name, r32v3 value)
-{
-  u32 uniformIndex{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
-  glUniform3fv(uniformIndex, 1, &value[0]);
-}
-template<typename Shader> void ShaderUniformR32M4(Shader const& shader, std::string const& name, r32m4 const& matrix)
-{
-  u32 uniformIndex{ (u32)glGetUniformLocation(shader.mPid, name.data()) };
-  glUniformMatrix4fv(uniformIndex, 1, GL_FALSE, &matrix[0][0]);
-}
 
 /*
 * Model management.

@@ -7,22 +7,22 @@
 * Vertex layouts.
 */
 
-enum VertexType : u32
+enum VertexLayoutType : u32
 {
-  Gizmo,
-  Lambert,
+  eVertexLayoutGizmo,
+  eVertexLayoutLambert,
 };
 
-struct VertexGizmoLine
+struct VertexGizmo
 {
-  constexpr static VertexType sType{ Gizmo };
+  constexpr static u32 sType{ eVertexLayoutGizmo };
 
   r32v3 mPosition{};
   r32v4 mColor   {};
 };
 struct VertexLambert
 {
-  constexpr static VertexType sType{ Lambert };
+  constexpr static u32 sType{ eVertexLayoutLambert };
 
   r32v3 mPosition{};
   r32v3 mNormal  {};
@@ -48,7 +48,7 @@ struct MeshLayout
   r32m4 mTransform       { glm::identity<r32m4>() };
 };
 
-using MeshGizmo = MeshLayout<VertexGizmoLine, u32>;
+using MeshGizmo = MeshLayout<VertexGizmo, u32>;
 
 /*
 * Model layouts.
@@ -69,17 +69,16 @@ struct ModelLayout
   r32m4 mTransform         { glm::identity<r32m4>() };
 };
 
-using ModelGizmoLine = ModelLayout<VertexGizmoLine, u32>;
-using ModelLambert   = ModelLayout<VertexLambert, u32>;
+using ModelLambert = ModelLayout<VertexLambert, u32>;
 
 /*
 * Drawing methodes.
 */
 
-enum RenderMode : u32
+enum RenderModeType : u32
 {
-  Line,
-  Triangle,
+  eRenderModeLine,
+  eRenderModeTriangle,
 };
 
 template<typename MeshLayout>  void DrawMeshLayoutLines(MeshLayout const& meshLayout)
@@ -154,7 +153,7 @@ template<typename ModelLayout> void DrawModelLayoutTrianglesInstanced(ModelLayou
 * VAO management.
 */
 
-template<typename MeshLayout>                                      void MeshLayoutCreate(MeshLayout& meshLayout, u32 vertexBufferSize, u32 indexBufferSize)
+template<typename MeshLayout> void MeshLayoutCreate(MeshLayout& meshLayout, u32 vertexBufferSize, u32 indexBufferSize)
 {
   glGenVertexArrays(1, &meshLayout.mVao);
 
@@ -167,20 +166,22 @@ template<typename MeshLayout>                                      void MeshLayo
   glBindVertexArray(meshLayout.mVao);
 
   glBindBuffer(GL_ARRAY_BUFFER, meshLayout.mVbo);
-  glBufferStorage(GL_ARRAY_BUFFER, meshLayout.mVertexBufferSize * sizeof(VertexGizmoLine), nullptr, GL_DYNAMIC_STORAGE_BIT);
 
   switch (MeshLayout::VertexType::sType)
   {
-    case VertexType::Gizmo:
+    case eVertexLayoutGizmo:
     {
+      //glBufferStorage(GL_ARRAY_BUFFER, meshLayout.mVertexBufferSize * sizeof(VertexGizmo), nullptr, GL_DYNAMIC_STORAGE_BIT);
+      glBufferData(GL_ARRAY_BUFFER, meshLayout.mVertexBufferSize * sizeof(VertexGizmo), nullptr, GL_STATIC_DRAW);
       glEnableVertexAttribArray(0);
       glEnableVertexAttribArray(1);
-      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexGizmoLine), (void*)(0));
-      glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexGizmoLine), (void*)(sizeof(r32v3)));
+      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexGizmo), (void*)(0));
+      glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexGizmo), (void*)(sizeof(r32v3)));
       break;
     }
-    case VertexType::Lambert:
+    case eVertexLayoutLambert:
     {
+      glBufferStorage(GL_ARRAY_BUFFER, meshLayout.mVertexBufferSize * sizeof(VertexLambert), nullptr, GL_DYNAMIC_STORAGE_BIT);
       glEnableVertexAttribArray(0);
       glEnableVertexAttribArray(1);
       glEnableVertexAttribArray(2);
@@ -194,17 +195,14 @@ template<typename MeshLayout>                                      void MeshLayo
   }
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshLayout.mEbo);
-  glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, meshLayout.mIndexBufferSize * sizeof(MeshLayout::IndexType), nullptr, GL_DYNAMIC_STORAGE_BIT);
+  //glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, meshLayout.mIndexBufferSize * sizeof(MeshLayout::IndexType), nullptr, GL_DYNAMIC_STORAGE_BIT);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshLayout.mIndexBufferSize * sizeof(MeshLayout::IndexType), nullptr, GL_STATIC_DRAW);
 
   glBindVertexArray(0);
 }
 template<typename MeshLayout> void MeshLayoutBind(MeshLayout const& meshLayout)
 {
   glBindVertexArray(meshLayout.mVao);
-}
-template<typename MeshLayout> void MeshLayoutUnbind(MeshLayout const& meshLayout)
-{
-  glBindVertexArray(0);
 }
 template<typename MeshLayout> void MeshLayoutTransform(MeshLayout& meshLayout, r32v3 position, r32v3 rotation, r32v3 scale)
 {
@@ -240,12 +238,12 @@ template<typename MeshLayout> void MeshLayoutDataSub(MeshLayout const& meshLayou
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshLayout.mEbo);
   glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, indexBufferOffset * sizeof(MeshLayout::IndexType), indexBufferSizeSub * sizeof(MeshLayout::IndexType), pIndexData);
 }
-template<typename MeshLayout> void MeshLayoutRender(MeshLayout const& meshLayout, RenderMode renderMode)
+template<typename MeshLayout> void MeshLayoutRender(MeshLayout const& meshLayout, RenderModeType renderMode)
 {
   switch (renderMode)
   {
-    case Line: DrawMeshLayoutLines(meshLayout); break;
-    case Triangle: DrawMeshLayoutTriangles(meshLayout); break;
+    case eRenderModeLine: DrawMeshLayoutLines(meshLayout); break;
+    case eRenderModeTriangle: DrawMeshLayoutTriangles(meshLayout); break;
   }
 }
 template<typename MeshLayout> void MeshLayoutDestroy(MeshLayout const& meshLayout)
@@ -256,10 +254,10 @@ template<typename MeshLayout> void MeshLayoutDestroy(MeshLayout const& meshLayou
 }
 
 /*
-* VAO's management.
+* Multi VAO management.
 */
 
-template<typename ModelLayout>                                      void ModelLayoutCreate(ModelLayout& modelLayout, u32 numSubMeshes, u32* pVertexBufferSizes, u32* pIndexBufferSizes)
+template<typename ModelLayout> void ModelLayoutCreate(ModelLayout& modelLayout, u32 numSubMeshes, u32* pVertexBufferSizes, u32* pIndexBufferSizes)
 {
   modelLayout.mpVaos = new u32[numSubMeshes];
   modelLayout.mNumSubMeshes = numSubMeshes;
@@ -283,18 +281,18 @@ template<typename ModelLayout>                                      void ModelLa
 
     switch (ModelLayout::VertexType::sType)
     {
-      case VertexType::Gizmo:
+      case eVertexLayoutGizmo:
       {
-        glBufferData(GL_ARRAY_BUFFER, modelLayout.mpVertexBufferSizes[i] * sizeof(VertexGizmoLine), nullptr, GL_STATIC_DRAW);
+        glBufferStorage(GL_ARRAY_BUFFER, modelLayout.mpVertexBufferSizes[i] * sizeof(VertexGizmo), nullptr, GL_DYNAMIC_STORAGE_BIT);
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexGizmoLine), (void*)(0));
-        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexGizmoLine), (void*)(sizeof(r32v3)));
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexGizmo), (void*)(0));
+        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexGizmo), (void*)(sizeof(r32v3)));
         break;
       }
-      case VertexType::Lambert:
+      case eVertexLayoutLambert:
       {
-        glBufferData(GL_ARRAY_BUFFER, modelLayout.mpVertexBufferSizes[i] * sizeof(VertexLambert), nullptr, GL_STATIC_DRAW);
+        glBufferStorage(GL_ARRAY_BUFFER, modelLayout.mpVertexBufferSizes[i] * sizeof(VertexLambert), nullptr, GL_DYNAMIC_STORAGE_BIT);
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
         glEnableVertexAttribArray(2);
@@ -308,16 +306,16 @@ template<typename ModelLayout>                                      void ModelLa
     }
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modelLayout.mpEbos[i]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, modelLayout.mpIndexBufferSizes[i] * sizeof(ModelLayout::IndexType), nullptr, GL_STATIC_DRAW);
+    glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, modelLayout.mpIndexBufferSizes[i] * sizeof(ModelLayout::IndexType), nullptr, GL_DYNAMIC_STORAGE_BIT);
   }
 
   glBindVertexArray(0);
 }
-template<typename ModelLayout>                                      void ModelLayoutBind(ModelLayout const& modelLayout, u32 subMeshIndex)
+template<typename ModelLayout> void ModelLayoutBind(ModelLayout const& modelLayout, u32 subMeshIndex)
 {
   glBindVertexArray(modelLayout.mpVaos[subMeshIndex]);
 }
-template<typename ModelLayout>                                      void ModelLayoutTransform(ModelLayout& modelLayout, r32v3 position, r32v3 rotation, r32v3 scale)
+template<typename ModelLayout> void ModelLayoutTransform(ModelLayout& modelLayout, r32v3 position, r32v3 rotation, r32v3 scale)
 {
   modelLayout.mTransform = glm::translate(modelLayout.mTransform, position);
 
@@ -327,55 +325,39 @@ template<typename ModelLayout>                                      void ModelLa
 
   modelLayout.mTransform = glm::scale(modelLayout.mTransform, scale);
 }
-template<typename ModelLayout>                                      void ModelLayoutClear(ModelLayout const& modelLayout, u32 subMeshIndex)
+template<typename ModelLayout> void ModelLayoutClear(ModelLayout const& modelLayout, u32 subMeshIndex)
 {
   glBindBuffer(GL_ARRAY_BUFFER, modelLayout.mpVbos[subMeshIndex]);
-  glBufferData(GL_ARRAY_BUFFER, modelLayout.mpVertexBufferSizes[subMeshIndex] * sizeof(ModelLayout::VertexType), nullptr, GL_STATIC_DRAW);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, modelLayout.mpVertexBufferSizes[subMeshIndex] * sizeof(ModelLayout::VertexType), nullptr);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modelLayout.mpEbos[subMeshIndex]);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, modelLayout.mpIndexBufferSizes[subMeshIndex] * sizeof(ModelLayout::IndexType), nullptr, GL_STATIC_DRAW);
+  glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, modelLayout.mpIndexBufferSizes[subMeshIndex] * sizeof(ModelLayout::IndexType), nullptr);
 }
-template<typename ModelLayout, typename Vertices, typename Indices> void ModelLayoutData(ModelLayout const& modelLayout, u32 subMeshIndex, Vertices* pVertexData, Indices* pIndexData)
+template<typename ModelLayout> void ModelLayoutData(ModelLayout const& modelLayout, u32 subMeshIndex, void* pVertexData, void* pIndexData)
 {
   glBindBuffer(GL_ARRAY_BUFFER, modelLayout.mpVbos[subMeshIndex]);
-  glBufferData(GL_ARRAY_BUFFER, modelLayout.mpVertexBufferSizes[subMeshIndex] * sizeof(ModelLayout::VertexType), pVertexData, GL_STATIC_DRAW);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, modelLayout.mpVertexBufferSizes[subMeshIndex] * sizeof(ModelLayout::VertexType), pVertexData);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modelLayout.mpEbos[subMeshIndex]);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, modelLayout.mpIndexBufferSizes[subMeshIndex] * sizeof(ModelLayout::IndexType), pIndexData, GL_STATIC_DRAW);
+  glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, modelLayout.mpIndexBufferSizes[subMeshIndex] * sizeof(ModelLayout::IndexType), pIndexData);
 }
-template<typename ModelLayout>                                      void ModelLayoutRender(ModelLayout const& modelLayout, u32 subMeshIndex, RenderMode renderMode)
+template<typename ModelLayout> void ModelLayoutRender(ModelLayout const& modelLayout, u32 subMeshIndex, RenderModeType renderMode)
 {
   switch (renderMode)
   {
-    case Line:
-    {
-      DrawModelLayoutLines(modelLayout, subMeshIndex);
-      break;
-    }
-    case Triangle:
-    {
-      DrawModelLayoutTriangles(modelLayout, subMeshIndex);
-      break;
-    }
+    case eRenderModeLine: DrawModelLayoutLines(modelLayout, subMeshIndex); break;
+    case eRenderModeTriangle: DrawModelLayoutTriangles(modelLayout, subMeshIndex); break;
   }
 }
-template<typename ModelLayout>                                      void ModelLayoutRenderInstanced(ModelLayout const& modelLayout, u32 subMeshIndex, RenderMode renderMode, u32 numInstances)
+template<typename ModelLayout> void ModelLayoutRenderInstanced(ModelLayout const& modelLayout, u32 subMeshIndex, RenderModeType renderMode, u32 numInstances)
 {
   switch (renderMode)
   {
-    case Line:
-    {
-      DrawModelLayoutLinesInstanced(modelLayout, subMeshIndex, numInstances);
-      break;
-    }
-    case Triangle:
-    {
-      DrawModelLayoutTrianglesInstanced(modelLayout, subMeshIndex, numInstances);
-      break;
-    }
+    case eRenderModeLine: DrawModelLayoutLinesInstanced(modelLayout, subMeshIndex, numInstances); break;
+    case eRenderModeTriangle: DrawModelLayoutTrianglesInstanced(modelLayout, subMeshIndex, numInstances); break;
   }
 }
-template<typename ModelLayout>                                      void ModelLayoutDestroy(ModelLayout const& modelLayout)
+template<typename ModelLayout> void ModelLayoutDestroy(ModelLayout const& modelLayout)
 {
   glDeleteBuffers(modelLayout.mNumSubMeshes, modelLayout.mpVbos);
   glDeleteBuffers(modelLayout.mNumSubMeshes, modelLayout.mpEbos);

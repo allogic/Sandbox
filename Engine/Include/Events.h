@@ -2,16 +2,16 @@
 
 #include <Types.h>
 
-enum struct EventType : u32
+enum EventType : u32
 {
-  None,
-  Down,
-  Held,
-  Up,
+  eEventNone,
+  eEventDown,
+  eEventHeld,
+  eEventUp,
 };
 
 struct Event
 {
-  EventType mActionCurr{ EventType::None };
-  EventType mActionPrev{ EventType::None };
+  EventType mActionCurr{ eEventNone };
+  EventType mActionPrev{ eEventNone };
 };

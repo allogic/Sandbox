@@ -1,0 +1,150 @@
+#version 460 core
+
+#define PI          3.14159265
+#define NUM_OCTAVES 5
+
+layout (local_size_x = 32) in;
+
+struct Waypoint
+{
+  float position[3];
+  float direction[3];
+  float rotationLocalFront[3];
+};
+
+layout (binding = 2, std430) buffer PathBuffer
+{
+  Waypoint paths[];
+};
+
+layout (binding = 0) uniform ConfigurationBlock
+{
+  vec3 uOffsetRandom;
+};
+
+vec3 ToVec3(in float a[3])
+{
+  return vec3(a[0], a[1], a[2]);
+}
+void SetTo(inout float a[3], in vec3 b)
+{
+  a[0] = b.x;
+  a[1] = b.y;
+  a[2] = b.z;
+}
+
+float Hash(in float n)
+{
+  return fract(sin(n) * 1e4);
+}
+float Hash(in vec2 p)
+{
+  return fract(1e4 * sin(17.0 * p.x + p.y * 0.1) * (0.1 + abs(sin(p.y * 13.0 + p.x))));
+}
+
+float Noise(in float x)
+{
+  float i = floor(x);
+  float f = fract(x);
+  float u = f * f * (3.0 - 2.0 * f);
+  return mix(Hash(i), Hash(i + 1.0), u);
+}
+float Noise(in vec2 x)
+{
+  vec2 i = floor(x);
+  vec2 f = fract(x);
+
+  float a = Hash(i);
+  float b = Hash(i + vec2(1.0, 0.0));
+  float c = Hash(i + vec2(0.0, 1.0));
+  float d = Hash(i + vec2(1.0, 1.0));
+
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+}
+float Noise(in vec3 x)
+{
+	const vec3 step = uOffsetRandom;
+
+	vec3 i = floor(x);
+	vec3 f = fract(x);
+ 
+  float n = dot(i, step);
+
+	vec3 u = f * f * (3.0 - 2.0 * f);
+	return mix(mix(mix( Hash(n + dot(step, vec3(0, 0, 0))), Hash(n + dot(step, vec3(1, 0, 0))), u.x),
+                 mix( Hash(n + dot(step, vec3(0, 1, 0))), Hash(n + dot(step, vec3(1, 1, 0))), u.x), u.y),
+             mix(mix( Hash(n + dot(step, vec3(0, 0, 1))), Hash(n + dot(step, vec3(1, 0, 1))), u.x),
+                 mix( Hash(n + dot(step, vec3(0, 1, 1))), Hash(n + dot(step, vec3(1, 1, 1))), u.x), u.y), u.z);
+}
+
+float Fbm(in float x)
+{
+  float v = 0.0;
+  float a = 0.5;
+  float shift = float(100);
+  for (int i = 0; i < NUM_OCTAVES; ++i)
+  {
+    v += a * Noise(x);
+    x = x * 2.0 + shift;
+    a *= 0.5;
+  }
+  return v;
+}
+float Fbm(in vec2 x)
+{
+  float v = 0.0;
+  float a = 0.5;
+  vec2 shift = vec2(100);
+  mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.50));
+  for (int i = 0; i < NUM_OCTAVES; ++i)
+  {
+    v += a * Noise(x);
+    x = rot * x * 2.0 + shift;
+    a *= 0.5;
+  }
+  return v;
+}
+float Fbm(in vec3 x)
+{
+  float v = 0.0;
+  float a = 0.5;
+  vec3 shift = vec3(100);
+  for (int i = 0; i < NUM_OCTAVES; ++i)
+  {
+    v += a * Noise(x);
+    x = x * 2.0 + shift;
+    a *= 0.5;
+  }
+  return v;
+}
+
+void main()
+{
+  if (gl_WorkGroupID.x % gl_WorkGroupSize.x == 0 && gl_LocalInvocationID.x == 0)
+    return;
+
+  uint pathIndex = gl_GlobalInvocationID.x;
+
+  vec3 positionPrev = ToVec3(paths[pathIndex - 1].position);
+  vec3 directionPrev = ToVec3(paths[pathIndex - 1].direction);
+
+  // Compute current sub path position
+  vec3 position = positionPrev + directionPrev;
+  SetTo(paths[pathIndex].position, position);
+
+  // Compute current direction from gradient
+  float angle = Fbm(position) * 10.f;
+  mat3 rot = mat3(
+     cos(angle), 0, sin(angle),
+              0, 1,          0,
+    -sin(angle), 0, cos(angle)
+  );
+  vec3 direction = rot * vec3(directionPrev.x, 0, directionPrev.z);
+  vec3 directionNorm = normalize(direction);
+  //vec3 directionRand = vec3(sin(angle), 0.f, cos(angle));
+
+  paths[pathIndex].direction[0] = directionNorm.x + 1.f;
+  paths[pathIndex].direction[1] = directionNorm.y + 1.f;
+  paths[pathIndex].direction[2] = directionNorm.z + 1.f;
+}

@@ -1,6 +1,0 @@
-#pragma once
-
-/*
-* Shader pipelines.
-*/
-
