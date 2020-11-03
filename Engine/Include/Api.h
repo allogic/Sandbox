@@ -124,6 +124,7 @@ extern "C" SANDBOX_ENGINE_API void ModelDestroy(ModelLambert const& model);
 extern "C" SANDBOX_ENGINE_API void GizmoLineBatchCreate();
 extern "C" SANDBOX_ENGINE_API void GizmoLineBatchClear();
 extern "C" SANDBOX_ENGINE_API void GizmoLineBatchBind();
+extern "C" SANDBOX_ENGINE_API void GizmoLineBatchUnbind();
 extern "C" SANDBOX_ENGINE_API void GizmoLineBatchPushLine(r32v3 const& p0, r32v3 const& p1, r32v4 const& color);
 extern "C" SANDBOX_ENGINE_API void GizmoLineBatchPushBox(r32v3 const& center, r32v3 const& size, r32v4 const& color);
 extern "C" SANDBOX_ENGINE_API void GizmoLineBatchRender();

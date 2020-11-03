@@ -74,17 +74,19 @@ u32          sGizmoLineBatchOffsetIndex     {};
 */
 
 u32 CheckShaderStatus(u32 id, u32 type, std::string& log) {
-  s32 compileInfo, compileInfoSize;
+  s32 compileInfo{};
+  s32 compileInfoSize{};
 
-  glGetShaderiv(id, (GLenum)type, &compileInfo);
+  glGetShaderiv(id, type, &compileInfo);
+
+  if (compileInfo <= 0) return 0;
+
   glGetShaderiv(id, GL_INFO_LOG_LENGTH, &compileInfoSize);
-
-  if (compileInfoSize <= 0) return 0;
 
   log.clear();
   log.resize(compileInfoSize);
 
-  glGetShaderInfoLog(id, compileInfoSize, nullptr, &log[0]);
+  glGetShaderInfoLog(id, compileInfoSize, nullptr, log.data());
 
   return 1;
 }
@@ -139,7 +141,13 @@ void        ContextRegisterDebugHandler()
   glEnable(GL_DEBUG_OUTPUT);
   glDebugMessageCallback([](u32 source, u32 type, u32 id, u32 severity, s32 length, s8 const* msg, void const* userParam)
     {
-      std::printf("GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n", type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "", type, severity, msg);
+      switch (severity)
+      {
+        case GL_DEBUG_SEVERITY_NOTIFICATION: break;
+        case GL_DEBUG_SEVERITY_LOW: std::printf("Severity:Low Type:0x%x Message:%s\n", type, msg); break;
+        case GL_DEBUG_SEVERITY_MEDIUM: std::printf("Severity:Medium Type:0x%x Message:%s\n", type, msg); break;
+        case GL_DEBUG_SEVERITY_HIGH: std::printf("Severity:High Type:0x%x Message:%s\n", type, msg); break;
+      }
     }, 0);
 }
 GLFWwindow* ContextHandle()
@@ -498,10 +506,7 @@ void ShaderCreateCompute(ShaderCompute& shaderCompute, std::string const& shader
     std::printf("%s\n", log.data());
 
   glAttachShader(shaderCompute.mPid, shaderCompute.mCid);
-
   glLinkProgram(shaderCompute.mPid);
-  if (CheckShaderStatus(shaderCompute.mPid, GL_LINK_STATUS, log))
-    std::printf("%s\n", log.data());
 }
 void ShaderCreateRender(ShaderRender& shaderRender, std::string const& renderShaderVertexcSource, std::string const& renderShaderFragmentSource)
 {
@@ -511,16 +516,15 @@ void ShaderCreateRender(ShaderRender& shaderRender, std::string const& renderSha
 
   char const* shaderVertexSourcePtr{ renderShaderVertexcSource.data() };
   char const* shaderFragmentSourcePtr{ renderShaderFragmentSource.data() };
-
-  glShaderSource(shaderRender.mVid, 1, &shaderVertexSourcePtr, nullptr);
-  glShaderSource(shaderRender.mFid, 1, &shaderFragmentSourcePtr, nullptr);
   
   std::string log{};
 
+  glShaderSource(shaderRender.mVid, 1, &shaderVertexSourcePtr, nullptr);
   glCompileShader(shaderRender.mVid);
   if (CheckShaderStatus(shaderRender.mVid, GL_COMPILE_STATUS, log))
     std::printf("%s\n", log.data());
 
+  glShaderSource(shaderRender.mFid, 1, &shaderFragmentSourcePtr, nullptr);
   glCompileShader(shaderRender.mFid);
   if (CheckShaderStatus(shaderRender.mFid, GL_COMPILE_STATUS, log))
     std::printf("%s\n", log.data());
@@ -529,8 +533,6 @@ void ShaderCreateRender(ShaderRender& shaderRender, std::string const& renderSha
   glAttachShader(shaderRender.mPid, shaderRender.mFid);
 
   glLinkProgram(shaderRender.mPid);
-  if (CheckShaderStatus(shaderRender.mPid, GL_LINK_STATUS, log))
-    std::printf("%s\n", log.data());
 }
 void ShaderDestroyCompute(ShaderCompute const& shaderCompute)
 {
@@ -665,6 +667,10 @@ void GizmoLineBatchClear()
 void GizmoLineBatchBind()
 {
   MeshLayoutBind(sGizmoLineBatchMesh);
+}
+void GizmoLineBatchUnbind()
+{
+  MeshLayoutUnbind(sGizmoLineBatchMesh);
 }
 void GizmoLineBatchPushLine(r32v3 const& p0, r32v3 const& p1, r32v4 const& color)
 {

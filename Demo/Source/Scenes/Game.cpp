@@ -4,9 +4,9 @@ void SceneGame::OnEnable()
 {
   CameraCreate(mCamera, { 0.f, 0.f, 0.f }, 45.f, 0.001f, 10000.f);
 
-  ModelCreate(mModelShip, "C:\\Users\\Burmi\\Downloads\\Sandbox\\Models\\Cube.obj");
-  ModelCreate(mModelSky, "C:\\Users\\Burmi\\Downloads\\Sandbox\\Models\\Sphere.obj");
-  ModelCreate(mModelMap, "C:\\Users\\Burmi\\Downloads\\Sandbox\\Models\\Plane.obj");
+  ModelCreate(mModelShip, "C:\\Users\\Michael\\Downloads\\Sandbox\\Model\\Cube.obj");
+  ModelCreate(mModelSky, "C:\\Users\\Michael\\Downloads\\Sandbox\\Model\\Sphere.obj");
+  ModelCreate(mModelMap, "C:\\Users\\Michael\\Downloads\\Sandbox\\Model\\Plane.obj");
 
   ModelLayoutTransform(mModelShip, { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f });
   ModelLayoutTransform(mModelSky, { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1000.f, 1000.f, 1000.f });
@@ -100,26 +100,28 @@ void SceneGame::OnRender(r32 timeDelta) const
   ShaderBind(mShaderRenderShips);
   ShaderUniformR32M4(mShaderRenderShips, "uProjection", mCamera.mProjection);
   ShaderUniformR32M4(mShaderRenderShips, "uView", mCamera.mView);
-  //ModelRenderInstanced(mModelShip, mNumShips);
+  ModelRenderInstanced(mModelShip, mNumShips);
 
-  TextureLayoutBind(mTextureSky);
-  TextureLayoutBindSampler(mTextureSky, 1);
+  //TextureLayoutBind(mTextureSky);
+  //TextureLayoutBindSampler(mTextureSky, 1);
   ShaderBind(mShaderRenderSky);
   ShaderUniformR32M4(mShaderRenderSky, "uProjection", mCamera.mProjection);
   ShaderUniformR32M4(mShaderRenderSky, "uView", mCamera.mView);
   ShaderUniformR32M4(mShaderRenderSky, "uTransform", mModelSky.mTransform);
   ModelRender(mModelSky);
 
-  TextureLayoutBind(mTextureMap);
-  TextureLayoutBindSampler(mTextureMap, 1);
-  ShaderBind(mShaderRenderMap);
-  ShaderUniformR32M4(mShaderRenderMap, "uProjection", mCamera.mProjection);
-  ShaderUniformR32M4(mShaderRenderMap, "uView", mCamera.mView);
-  ShaderUniformR32M4(mShaderRenderMap, "uTransform", mModelMap.mTransform);
-  ModelRender(mModelMap);
+  //TextureLayoutBind(mTextureMap);
+  //TextureLayoutBindSampler(mTextureMap, 1);
+  //ShaderBind(mShaderRenderMap);
+  //ShaderUniformR32M4(mShaderRenderMap, "uProjection", mCamera.mProjection);
+  //ShaderUniformR32M4(mShaderRenderMap, "uView", mCamera.mView);
+  //ShaderUniformR32M4(mShaderRenderMap, "uTransform", mModelMap.mTransform);
+  //ModelRender(mModelMap);
 }
 void SceneGame::OnGizmos(r32 timeDelta)
 {
+  return;
+
   BufferLayoutDataSubGet(mBufferPaths, 0, mNumPaths * mNumPathSub, mPaths.data());
 
   for (u32 i{}; i < mNumPaths; i++)

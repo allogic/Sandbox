@@ -44,6 +44,7 @@ s32 main()
       GizmoLineBatchBind();
       SceneActive()->OnGizmos(sTimeDelta);
       GizmoLineBatchRender();
+      GizmoLineBatchUnbind();
 
       glfwSwapBuffers(ContextHandle());
 
