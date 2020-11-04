@@ -23,8 +23,9 @@
     <None Include="Shaders\Compute\ShipPath.comp" />
     <None Include="Shaders\Compute\ShipPhysic.comp" />
     <None Include="Shaders\Compute\ShipSteering.comp" />
-    <None Include="Shaders\Ship\Ship.frag" />
-    <None Include="Shaders\Ship\Ship.vert" />
+    <None Include="Shaders\LambertInstanced\LambertInstanced.frag" />
+    <None Include="Shaders\LambertInstanced\LambertInstanced.vert" />
+    <None Include="Shaders\Compute\SkyNoise.comp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">

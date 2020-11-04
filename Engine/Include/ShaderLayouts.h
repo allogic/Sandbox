@@ -21,9 +21,9 @@ struct ShaderPaths
 enum ShaderLayoutType : u32
 {
   eShaderLayoutLambert,
+  eShaderLayoutLambertInstanced,
   eShaderLayoutCompute,
   eShaderLayoutGizmo,
-  eShaderLayoutShip,
 };
 
 template<u32 Layout>
@@ -37,10 +37,10 @@ struct ShaderLayout
   u32 mCompId{};
 };
 
-using ShaderLambert = ShaderLayout<eShaderLayoutLambert>;
-using ShaderCompute = ShaderLayout<eShaderLayoutCompute>;
-using ShaderGizmo   = ShaderLayout<eShaderLayoutGizmo>;
-using ShaderShip    = ShaderLayout<eShaderLayoutShip>;
+using ShaderLambert          = ShaderLayout<eShaderLayoutLambert>;
+using ShaderLambertInstanced = ShaderLayout<eShaderLayoutLambertInstanced>;
+using ShaderCompute          = ShaderLayout<eShaderLayoutCompute>;
+using ShaderGizmo            = ShaderLayout<eShaderLayoutGizmo>;
 
 /*
 * Shader utilities.
@@ -126,8 +126,8 @@ template<typename ShaderLayout> void ShaderLayoutCreate(ShaderLayout& shaderLayo
   switch (ShaderLayout::sLayout)
   {
     case eShaderLayoutLambert:
+    case eShaderLayoutLambertInstanced:
     case eShaderLayoutGizmo:
-    case eShaderLayoutShip:
     {
       shaderLayout.mVertId = glCreateShader(GL_VERTEX_SHADER);
       shaderLayout.mFragId = glCreateShader(GL_FRAGMENT_SHADER);
@@ -145,8 +145,8 @@ template<typename ShaderLayout> void ShaderLayoutCreate(ShaderLayout& shaderLayo
   switch (ShaderLayout::sLayout)
   {
     case eShaderLayoutLambert:
+    case eShaderLayoutLambertInstanced:
     case eShaderLayoutGizmo:
-    case eShaderLayoutShip:
     {
       ShaderLayoutLoadBinary(shaderBytes, shaderPaths.mVertex);
       glShaderBinary(1, &shaderLayout.mVertId, GL_SHADER_BINARY_FORMAT_SPIR_V, shaderBytes.data(), (s32)shaderBytes.size());
@@ -174,8 +174,8 @@ template<typename ShaderLayout> void ShaderLayoutCreate(ShaderLayout& shaderLayo
   switch (ShaderLayout::sLayout)
   {
     case eShaderLayoutLambert:
+    case eShaderLayoutLambertInstanced:
     case eShaderLayoutGizmo:
-    case eShaderLayoutShip:
     {
       glAttachShader(shaderLayout.mProgId, shaderLayout.mVertId);
       glAttachShader(shaderLayout.mProgId, shaderLayout.mFragId);
@@ -195,8 +195,8 @@ template<typename ShaderLayout> void ShaderLayoutCreate(ShaderLayout& shaderLayo
   switch (ShaderLayout::sLayout)
   {
     case eShaderLayoutLambert:
+    case eShaderLayoutLambertInstanced:
     case eShaderLayoutGizmo:
-    case eShaderLayoutShip:
     {
       glDetachShader(shaderLayout.mProgId, shaderLayout.mVertId);
       glDetachShader(shaderLayout.mProgId, shaderLayout.mFragId);
@@ -219,31 +219,46 @@ template<typename ShaderLayout> void ShaderLayoutCompute(ShaderLayout const& sha
 }
 
 /*
-* Shader bindings.
+* Shader SSBO/UBO bindings.
 */
 
-template<typename ShaderLayout> void ShaderLayoutUniformS32(ShaderLayout const& shaderLayout, std::string const& name, s32 value)
+template<typename ShaderLayout> void ShaderLayoutBufferBlock(ShaderLayout const& shaderLayout, std::string const& blockName, u32 blockIndex)
 {
-  u32 uniformIndex{ (u32)glGetUniformLocation(shaderLayout.mProgId, name.data()) };
+  u32 ssboIndex{ glGetProgramResourceIndex(shaderLayout.mProgId, GL_SHADER_STORAGE_BLOCK, blockName.data()) };
+  glShaderStorageBlockBinding(shaderLayout.mProgId, ssboIndex, blockIndex);
+}
+template<typename ShaderLayout> void ShaderLayoutUniformBlock(ShaderLayout const& shaderLayout, std::string const& blockName, u32 blockIndex)
+{
+  u32 uboIndex{ glGetProgramResourceIndex(shaderLayout.mProgId, GL_UNIFORM_BLOCK, blockName.data()) };
+  glUniformBlockBinding(shaderLayout.mProgId, uboIndex, blockIndex);
+}
+
+/*
+* Shader uniform bindings.
+*/
+
+template<typename ShaderLayout> void ShaderLayoutUniformS32(ShaderLayout const& shaderLayout, std::string const& uniformName, s32 value)
+{
+  u32 uniformIndex{ (u32)glGetUniformLocation(shaderLayout.mProgId, uniformName.data()) };
   glUniform1i(uniformIndex, value);
 }
-template<typename ShaderLayout> void ShaderLayoutUniformU32(ShaderLayout const& shaderLayout, std::string const& name, u32 value)
+template<typename ShaderLayout> void ShaderLayoutUniformU32(ShaderLayout const& shaderLayout, std::string const& uniformName, u32 value)
 {
-  u32 uniformIndex{ (u32)glGetUniformLocation(shaderLayout.mProgId, name.data()) };
+  u32 uniformIndex{ (u32)glGetUniformLocation(shaderLayout.mProgId, uniformName.data()) };
   glUniform1ui(uniformIndex, value);
 }
-template<typename ShaderLayout> void ShaderLayoutUniformR32(ShaderLayout const& shaderLayout, std::string const& name, r32 value)
+template<typename ShaderLayout> void ShaderLayoutUniformR32(ShaderLayout const& shaderLayout, std::string const& uniformName, r32 value)
 {
-  u32 uniformIndex{ (u32)glGetUniformLocation(shaderLayout.mProgId, name.data()) };
+  u32 uniformIndex{ (u32)glGetUniformLocation(shaderLayout.mProgId, uniformName.data()) };
   glUniform1f(uniformIndex, value);
 }
-template<typename ShaderLayout> void ShaderLayoutUniformR32V3(ShaderLayout const& shaderLayout, std::string const& name, r32v3 const& vector)
+template<typename ShaderLayout> void ShaderLayoutUniformR32V3(ShaderLayout const& shaderLayout, std::string const& uniformName, r32v3 const& vector)
 {
-  u32 uniformIndex{ (u32)glGetUniformLocation(shaderLayout.mProgId, name.data()) };
+  u32 uniformIndex{ (u32)glGetUniformLocation(shaderLayout.mProgId, uniformName.data()) };
   glUniform3fv(uniformIndex, 1, &vector[0]);
 }
-template<typename ShaderLayout> void ShaderLayoutUniformR32M4(ShaderLayout const& shaderLayout, std::string const& name, r32m4 const& matrix)
+template<typename ShaderLayout> void ShaderLayoutUniformR32M4(ShaderLayout const& shaderLayout, std::string const& uniformName, r32m4 const& matrix)
 {
-  u32 uniformIndex{ (u32)glGetUniformLocation(shaderLayout.mProgId, name.data()) };
+  u32 uniformIndex{ (u32)glGetUniformLocation(shaderLayout.mProgId, uniformName.data()) };
   glUniformMatrix4fv(uniformIndex, 1, GL_FALSE, &matrix[0][0]);
 }

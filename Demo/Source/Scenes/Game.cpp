@@ -12,8 +12,8 @@ void SceneGame::OnEnable()
   ModelLayoutTransform(mModelSky, { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1000.f, 1000.f, 1000.f });
   ModelLayoutTransform(mModelMap, { 0.f, -10.f, 0.f }, { 0.f, 0.f, 0.f }, { 1000.f, 1.f, 1000.f });
 
-  TextureLayoutCreate(mTextureSky, 4096, 4096);
-  TextureLayoutCreate(mTextureMap, 4096, 4096);
+  TextureLayoutCreate(mTextureSky, mNumSkyDimension, mNumSkyDimension);
+  TextureLayoutCreate(mTextureMap, mNumMapDimension, mNumMapDimension);
 
   InitializeTransforms();
   InitializeSteerings();
@@ -21,18 +21,37 @@ void SceneGame::OnEnable()
 
   BufferLayoutCreate(mBufferTransforms, mNumShips, 0);
   BufferLayoutCreate(mBufferSteerings, mNumShips, 1);
-  BufferLayoutCreate(mBufferPaths, mNumPaths * mNumPathSub, 2);
+  BufferLayoutCreate(mBufferPaths, mNumPathsTotal, 2);
 
-  BufferLayoutData(mBufferTransforms, mTransforms.data(), mNumShips);
-  BufferLayoutData(mBufferSteerings, mSteerings.data(), mNumShips);
-  BufferLayoutData(mBufferPaths, mPaths.data(), mNumPaths * mNumPathSub);
+  BufferLayoutBind(mBufferTransforms);
+  BufferLayoutDataSet(mBufferTransforms, mNumShips, mTransforms.data());
+
+  BufferLayoutBind(mBufferSteerings);
+  BufferLayoutDataSet(mBufferSteerings, mNumShips, mSteerings.data());
+
+  BufferLayoutBind(mBufferPaths);
+  BufferLayoutDataSet(mBufferPaths, mNumPathsTotal, mPaths.data());
+
+  UniformLayoutCreate(mUniformConfigSteering, 0);
+  UniformLayoutCreate(mUniformConfigNoise, 1);
+  UniformLayoutCreate(mUniformConfigProjection, 2);
+
+  UniformLayoutBind(mUniformConfigSteering);
+  UniformLayoutDataSet(mUniformConfigSteering, 1, &mConfigSteering);
+
+  UniformLayoutBind(mUniformConfigNoise);
+  UniformLayoutDataSet(mUniformConfigNoise, 1, &mConfigNoise);
+
+  UniformLayoutBind(mUniformConfigProjection);
+  UniformLayoutDataSet(mUniformConfigProjection, 1, &mConfigProjection);
 
   ShaderLayoutCreate(mShaderComputeShipSteerings, ShaderPaths{ .mCompute{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Compute\\ShipSteering.comp" } });
   ShaderLayoutCreate(mShaderComputeShipPhysics, ShaderPaths{ .mCompute{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Compute\\ShipPhysic.comp" } });
   ShaderLayoutCreate(mShaderComputeShipPaths, ShaderPaths{ .mCompute{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Compute\\ShipPath.comp" } });
+  ShaderLayoutCreate(mShaderComputeSkyNoise, ShaderPaths{ .mCompute{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Compute\\SkyNoise.comp" } });
   ShaderLayoutCreate(mShaderComputeMapNoise, ShaderPaths{ .mCompute{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Compute\\MapNoise.comp" } });
 
-  ShaderLayoutCreate(mShaderRenderShips, ShaderPaths{ .mVertex{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Ship\\Ship.vert" }, .mFragment{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Ship\\Ship.frag" } });
+  ShaderLayoutCreate(mShaderRenderShips, ShaderPaths{ .mVertex{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\LambertInstanced\\LambertInstanced.vert" }, .mFragment{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\LambertInstanced\\LambertInstanced.frag" } });
   ShaderLayoutCreate(mShaderRenderSky, ShaderPaths{ .mVertex{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.vert" }, .mFragment{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.frag" } });
   ShaderLayoutCreate(mShaderRenderMap, ShaderPaths{ .mVertex{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.vert" }, .mFragment{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.frag" } });
 }
@@ -49,9 +68,14 @@ void SceneGame::OnDisable()
   BufferLayoutDestroy(mBufferSteerings);
   BufferLayoutDestroy(mBufferPaths);
 
+  UniformLayoutDestroy(mUniformConfigSteering);
+  UniformLayoutDestroy(mUniformConfigNoise);
+  UniformLayoutDestroy(mUniformConfigProjection);
+
   ShaderLayoutDestroy(mShaderComputeShipSteerings);
   ShaderLayoutDestroy(mShaderComputeShipPhysics);
   ShaderLayoutDestroy(mShaderComputeShipPaths);
+  ShaderLayoutDestroy(mShaderComputeSkyNoise);
   ShaderLayoutDestroy(mShaderComputeMapNoise);
 
   ShaderLayoutDestroy(mShaderRenderShips);
@@ -62,74 +86,90 @@ void SceneGame::OnUpdate(r32 timeDelta)
 {
   CameraUpdateControllerInputOrbit(mCamera, mCameraController, timeDelta);
 
+  mConfigSteering.mTimeDelta = timeDelta;
+  mConfigSteering.mAccelerationSpeed = 2000.f;
+  mConfigSteering.mVelocityDecay = 100.f;
+  mConfigSteering.mMaxPaths = mNumPaths;
+
+  UniformLayoutBind(mUniformConfigSteering);
+  UniformLayoutDataSet(mUniformConfigSteering, 1, &mConfigSteering);
+
+  mConfigNoise.mRandomOffset = glm::ballRand(100.f);
+
+  UniformLayoutBind(mUniformConfigNoise);
+  UniformLayoutDataSet(mUniformConfigNoise, 1, &mConfigNoise);
+
   if (KeyDown(GLFW_KEY_P))
   {
     ShaderLayoutBind(mShaderComputeShipPaths);
-    ShaderLayoutUniformR32V3(mShaderComputeShipPaths, "uOffsetRandom", glm::ballRand(10000.f));
-    ShaderLayoutCompute(mShaderComputeShipPaths, mNumPathSub, 1, 1);
+    ShaderLayoutCompute(mShaderComputeShipPaths, mNumPathsSub, 1, 1);
   }
+
+  TextureLayoutBind(mTextureSky);
+  TextureLayoutBindImage(mTextureSky, 0);
+  ShaderLayoutBind(mShaderComputeSkyNoise);
+  ShaderLayoutCompute(mShaderComputeSkyNoise, mNumSkyDimension / 32, mNumSkyDimension / 32, 1);
+
   if (KeyDown(GLFW_KEY_M))
   {
     TextureLayoutBind(mTextureMap);
-    TextureLayoutBindImage(mTextureMap, 1);
+    TextureLayoutBindImage(mTextureMap, 0);
     ShaderLayoutBind(mShaderComputeMapNoise);
-    ShaderLayoutUniformR32V3(mShaderComputeMapNoise, "uOffsetRandom", glm::ballRand(10000.f));
-    ShaderLayoutCompute(mShaderComputeMapNoise, 4096 / 32, 4096 / 32, 1);
+    ShaderLayoutCompute(mShaderComputeMapNoise, mNumMapDimension / 32, mNumMapDimension / 32, 1);
   }
 
   ShaderLayoutBind(mShaderComputeShipSteerings);
-  ShaderLayoutUniformR32(mShaderComputeShipSteerings, "uTimeDelta", timeDelta);
-  ShaderLayoutUniformR32(mShaderComputeShipSteerings, "uAccelerationSpeed", 2000.f);
-  ShaderLayoutUniformR32(mShaderComputeShipSteerings, "uVelocityDecay", 100.f);
-  ShaderLayoutUniformU32(mShaderComputeShipSteerings, "uMaxPaths", mNumPaths);
-
-  u32 numThreadsX{ (u32)glm::ceil(mNumShips / 32) };
-  ShaderLayoutCompute(mShaderComputeShipSteerings, numThreadsX, 1, 1);
+  ShaderLayoutCompute(mShaderComputeShipSteerings, mNumShips / 32, 1, 1);
 }
 void SceneGame::OnUpdateFixed(r32 timeDelta)
 {
   CameraUpdateControllerPhysicsOrbit(mCamera, mCameraController);
 
   ShaderLayoutBind(mShaderComputeShipPhysics);
-
-  u32 numThreadsX{ (u32)glm::ceil(mNumShips / 32) };
-  ShaderLayoutCompute(mShaderComputeShipPhysics, numThreadsX, 1, 1);
+  ShaderLayoutCompute(mShaderComputeShipPhysics, mNumShips / 32, 1, 1);
 }
-void SceneGame::OnRender(r32 timeDelta) const
+void SceneGame::OnRender(r32 timeDelta)
 {
+  mConfigProjection.mProjection = mCamera.mProjection;
+  mConfigProjection.mView = mCamera.mView;
+  mConfigProjection.mTransform = glm::identity<r32m4>();
+
+  UniformLayoutBind(mUniformConfigProjection);
+  UniformLayoutDataSet(mUniformConfigProjection, 1, &mConfigProjection);
+
   ShaderLayoutBind(mShaderRenderShips);
-  ShaderLayoutUniformR32M4(mShaderRenderShips, "uProjection", mCamera.mProjection);
-  ShaderLayoutUniformR32M4(mShaderRenderShips, "uView", mCamera.mView);
-  //ModelRenderInstanced(mModelShip, mNumShips);
+  ModelRenderInstanced(mModelShip, mNumShips);
 
-  //TextureLayoutBind(mTextureSky);
-  //TextureLayoutBindSampler(mTextureSky, 1);
+  mConfigProjection.mTransform = mModelSky.mTransform;
+
+  UniformLayoutBind(mUniformConfigProjection);
+  UniformLayoutDataSet(mUniformConfigProjection, 1, &mConfigProjection);
+
+  TextureLayoutBind(mTextureSky);
+  TextureLayoutBindSampler(mTextureSky, 0);
   ShaderLayoutBind(mShaderRenderSky);
-  ShaderLayoutUniformR32M4(mShaderRenderSky, "uProjection", mCamera.mProjection);
-  ShaderLayoutUniformR32M4(mShaderRenderSky, "uView", mCamera.mView);
-  ShaderLayoutUniformR32M4(mShaderRenderSky, "uTransform", mModelSky.mTransform);
-  //ModelRender(mModelSky);
+  ModelRender(mModelSky);
 
-  //TextureLayoutBind(mTextureMap);
-  //TextureLayoutBindSampler(mTextureMap, 1);
-  //ShaderBind(mShaderRenderMap);
-  //ShaderUniformR32M4(mShaderRenderMap, "uProjection", mCamera.mProjection);
-  //ShaderUniformR32M4(mShaderRenderMap, "uView", mCamera.mView);
-  //ShaderUniformR32M4(mShaderRenderMap, "uTransform", mModelMap.mTransform);
-  //ModelRender(mModelMap);
+  mConfigProjection.mTransform = mModelMap.mTransform;
+
+  UniformLayoutBind(mUniformConfigProjection);
+  UniformLayoutDataSet(mUniformConfigProjection, 1, &mConfigProjection);
+
+  TextureLayoutBind(mTextureMap);
+  TextureLayoutBindSampler(mTextureMap, 0);
+  ShaderLayoutBind(mShaderRenderMap);
+  ModelRender(mModelMap);
 }
 void SceneGame::OnGizmos(r32 timeDelta)
 {
-  return;
-
-  BufferLayoutDataSubGet(mBufferPaths, 0, mNumPaths * mNumPathSub, mPaths.data());
+  //BufferLayoutDataSubGet(mBufferPaths, 0, mNumTotalPaths, mPaths.data());
 
   for (u32 i{}; i < mNumPaths; i++)
   {
     for (u32 j{ 1 }; j < 100; j++)
     {
-      Waypoint const& waypointCurr{ mPaths[mNumPathSub * i + j] };
-      Waypoint const& waypointPrev{ mPaths[mNumPathSub * i + j - 1] };
+      Waypoint const& waypointCurr{ mPaths[mNumPathsSub * i + j] };
+      Waypoint const& waypointPrev{ mPaths[mNumPathsSub * i + j - 1] };
 
       GizmoLineBatchPushLine(waypointCurr.mPosition, waypointPrev.mPosition, { 1.f, 0.f, 0.f, 1.f });
       GizmoLineBatchPushLine(waypointCurr.mPosition, waypointCurr.mPosition + waypointCurr.mDirection, { 1.f, 1.f, 0.f, 1.f });
@@ -198,24 +238,24 @@ void SceneGame::InitializeSteerings()
 }
 void SceneGame::InitializePaths()
 {
-  mPaths.resize(mNumPaths * mNumPathSub);
+  mPaths.resize(mNumPathsTotal);
 
   for (u32 i{}; i < mNumPaths; i++)
   {
     r32v3 positionWaypoint{ i * 10.f, 0.f, 0.f };
 
-    mPaths[mNumPathSub * i].mPosition = positionWaypoint;
-    mPaths[mNumPathSub * i].mDirection = { 0.f, 0.f, 1.f };
-    mPaths[mNumPathSub * i].mRotationLocalFront = { 0.f, 0.f, 1.f };
+    mPaths[mNumPathsSub * i].mPosition = positionWaypoint;
+    mPaths[mNumPathsSub * i].mDirection = { 0.f, 0.f, 1.f };
+    mPaths[mNumPathsSub * i].mRotationLocalFront = { 0.f, 0.f, 1.f };
 
-    for (u32 j{ 1 }; j < mNumPathSub; j++)
+    for (u32 j{ 1 }; j < mNumPathsSub; j++)
     {
-      r32v3 positionWaypointPrev{ mPaths[mNumPathSub * i + j - 1].mPosition };
-      r32v3 directionWaypointPrev{ mPaths[mNumPathSub * i + j - 1].mDirection };
+      r32v3 positionWaypointPrev{ mPaths[mNumPathsSub * i + j - 1].mPosition };
+      r32v3 directionWaypointPrev{ mPaths[mNumPathsSub * i + j - 1].mDirection };
 
-      mPaths[mNumPathSub * i + j].mPosition = positionWaypointPrev + directionWaypointPrev;
-      mPaths[mNumPathSub * i + j].mDirection = directionWaypointPrev;
-      mPaths[mNumPathSub * i + j].mRotationLocalFront = directionWaypointPrev;
+      mPaths[mNumPathsSub * i + j].mPosition = positionWaypointPrev + directionWaypointPrev;
+      mPaths[mNumPathsSub * i + j].mDirection = directionWaypointPrev;
+      mPaths[mNumPathsSub * i + j].mRotationLocalFront = directionWaypointPrev;
     }
   }
 }

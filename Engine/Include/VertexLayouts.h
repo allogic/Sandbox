@@ -171,8 +171,7 @@ template<typename MeshLayout> void MeshLayoutCreate(MeshLayout& meshLayout, u32 
   {
     case eVertexLayoutGizmo:
     {
-      //glBufferStorage(GL_ARRAY_BUFFER, meshLayout.mVertexBufferSize * sizeof(VertexGizmo), nullptr, GL_DYNAMIC_STORAGE_BIT);
-      glBufferData(GL_ARRAY_BUFFER, meshLayout.mVertexBufferSize * sizeof(VertexGizmo), nullptr, GL_STATIC_DRAW);
+      glBufferStorage(GL_ARRAY_BUFFER, meshLayout.mVertexBufferSize * sizeof(VertexGizmo), nullptr, GL_DYNAMIC_STORAGE_BIT);
       glEnableVertexAttribArray(0);
       glEnableVertexAttribArray(1);
       glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexGizmo), (void*)(0));
@@ -195,8 +194,7 @@ template<typename MeshLayout> void MeshLayoutCreate(MeshLayout& meshLayout, u32 
   }
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshLayout.mEbo);
-  //glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, meshLayout.mIndexBufferSize * sizeof(MeshLayout::IndexType), nullptr, GL_DYNAMIC_STORAGE_BIT);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshLayout.mIndexBufferSize * sizeof(MeshLayout::IndexType), nullptr, GL_STATIC_DRAW);
+  glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, meshLayout.mIndexBufferSize * sizeof(MeshLayout::IndexType), nullptr, GL_DYNAMIC_STORAGE_BIT);
 
   glBindVertexArray(0);
 }

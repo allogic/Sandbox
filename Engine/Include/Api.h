@@ -9,6 +9,7 @@
 #include <BufferLayouts.h>
 #include <TextureLayouts.h>
 #include <ShaderLayouts.h>
+#include <UniformLayouts.h>
 
 /*
 * OpenGL context specific.

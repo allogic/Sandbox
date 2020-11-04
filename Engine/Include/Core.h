@@ -1,7 +1,7 @@
 #pragma once
 
 #define SANDBOX_ENGINE_API
-#define SANDBOX_ROOT_PATH "C:\\Users\\Burmi\\Downloads\\Sandbox\\"
+#define SANDBOX_ROOT_PATH "C:\\Users\\Michael\\Downloads\\Sandbox\\"
 
 #include <array>
 #include <vector>
@@ -21,6 +21,10 @@
 #include <GLFW/glfw3.h>
 
 #include <stb/stb_image.h>
+
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>

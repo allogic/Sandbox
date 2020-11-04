@@ -1,12 +1,5 @@
 #include <Api.h>
 
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb/stb_image.h>
-
 GLFWwindow* spWindow{};
 
 std::vector<Scene*> sScenes      {};
@@ -621,9 +614,6 @@ void GizmoLineBatchPushBox(r32v3 const& position, r32v3 const& size, r32v4 const
 void GizmoLineBatchRender()
 {
   ShaderLayoutBind(sGizmoLineBatchShader);
-  //ShaderLayoutUniformR32M4(sGizmoLineBatchShader, "uProjection", SceneActive()->mCamera.mProjection);
-  //ShaderLayoutUniformR32M4(sGizmoLineBatchShader, "uView", SceneActive()->mCamera.mView);
-  //ShaderLayoutUniformR32M4(sGizmoLineBatchShader, "uTransform", glm::identity<r32m4>());
   MeshLayoutRender(sGizmoLineBatchMesh, eRenderModeLine);
 
   sGizmoLineBatchOffsetVertex = 0;

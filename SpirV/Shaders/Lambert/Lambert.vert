@@ -1,6 +1,6 @@
 #version 460 core
 
-layout (binding = 0) uniform ProjectionBlock
+layout (binding = 2) uniform ProjectionBlock
 {
   mat4 uProjection;
   mat4 uView;

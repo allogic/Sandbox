@@ -32,7 +32,7 @@ using TextureR32RGBA = TextureLayout<eTextureLayoutR32, 4>;
 * Texture management.
 */
 
-template<typename TextureLayout> void TextureLayoutData(TextureLayout const& textureLayout, void* pImageData)
+template<typename TextureLayout> void TextureLayoutDataSet(TextureLayout const& textureLayout, void* pImageData)
 {
   s32 formatInternal{};
   s32 format{};
@@ -51,7 +51,7 @@ template<typename TextureLayout> void TextureLayoutData(TextureLayout const& tex
 
   glTexImage2D(GL_TEXTURE_2D, 0, formatInternal, textureLayout.mWidth, textureLayout.mHeight, 0, format, type, pImageData);
 }
-template<typename TextureLayout> void TextureLayoutDataFrom(TextureLayout const& textureLayout, std::string const& fileName)
+template<typename TextureLayout> void TextureLayoutDataSetFrom(TextureLayout const& textureLayout, std::string const& fileName)
 {
   s32 width{};
   s32 height{};
@@ -104,7 +104,7 @@ template<typename TextureLayout> void TextureLayoutCreate(TextureLayout& texture
   glTextureParameteri(textureLayout.mTid, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTextureParameteri(textureLayout.mTid, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-  TextureLayoutData(textureLayout, nullptr);
+  TextureLayoutDataSet(textureLayout, nullptr);
 
   glBindTexture(GL_TEXTURE_2D, 0);
 }

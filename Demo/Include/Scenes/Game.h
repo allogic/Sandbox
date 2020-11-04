@@ -23,43 +23,73 @@ struct Waypoint
   r32v3 mRotationLocalFront{};
 };
 
+struct ConfigSteering
+{
+  r32 mTimeDelta        {};
+  r32 mAccelerationSpeed{};
+  r32 mVelocityDecay    {};
+  u32 mMaxPaths         {};
+};
+struct ConfigNoise
+{
+  r32v3 mRandomOffset{};
+};
+struct ConfigProjection
+{
+  r32m4 mProjection{};
+  r32m4 mView      {};
+  r32m4 mTransform {};
+};
+
 struct SceneGame : Scene
 {
-  u32                     mNumShips                  { 2048 * 32 };
-  u32                     mNumPaths                  { 32 };
-  u32                     mNumPathSub                { 1024 };
+  u32                              mNumShips                  { 2048 * 32 };
+  u32                              mNumPaths                  { 32 };
+  u32                              mNumPathsSub               { 1024 };
+  u32                              mNumPathsTotal             { mNumPaths * mNumPathsSub };
+  u32                              mNumSkyDimension           { 512 };
+  u32                              mNumMapDimension           { 512 };
 
-  CameraControllerOrbit   mCameraController          {};
+  CameraControllerOrbit            mCameraController          {};
 
-  ModelLambert            mModelShip                 {};
-  ModelLambert            mModelSky                  {};
-  ModelLambert            mModelMap                  {};
+  ModelLambert                     mModelShip                 {};
+  ModelLambert                     mModelSky                  {};
+  ModelLambert                     mModelMap                  {};
 
-  TextureR32RGBA          mTextureSky                {};
-  TextureR32RGBA          mTextureMap                {};
+  TextureR32RGBA                   mTextureSky                {};
+  TextureR32RGBA                   mTextureMap                {};
 
-  std::vector<Transform>  mTransforms                {};
-  std::vector<Steering>   mSteerings                 {};
-  std::vector<Waypoint>   mPaths                     {};
+  std::vector<Transform>           mTransforms                {};
+  std::vector<Steering>            mSteerings                 {};
+  std::vector<Waypoint>            mPaths                     {};
 
-  BufferLayout<Transform> mBufferTransforms          {};
-  BufferLayout<Steering>  mBufferSteerings           {};
-  BufferLayout<Waypoint>  mBufferPaths               {};
+  BufferLayout<Transform>          mBufferTransforms          {};
+  BufferLayout<Steering>           mBufferSteerings           {};
+  BufferLayout<Waypoint>           mBufferPaths               {};
 
-  ShaderCompute           mShaderComputeShipSteerings{};
-  ShaderCompute           mShaderComputeShipPhysics  {};
-  ShaderCompute           mShaderComputeShipPaths    {};
-  ShaderCompute           mShaderComputeMapNoise     {};
+  ConfigSteering                   mConfigSteering            {};
+  ConfigNoise                      mConfigNoise               {};
+  ConfigProjection                 mConfigProjection          {};
 
-  ShaderShip              mShaderRenderShips         {};
-  ShaderLambert           mShaderRenderSky           {};
-  ShaderLambert           mShaderRenderMap           {};
+  UniformLayout<ConfigSteering>    mUniformConfigSteering     {};
+  UniformLayout<ConfigNoise>       mUniformConfigNoise        {};
+  UniformLayout<ConfigProjection>  mUniformConfigProjection   {};
+
+  ShaderCompute                    mShaderComputeShipSteerings{};
+  ShaderCompute                    mShaderComputeShipPhysics  {};
+  ShaderCompute                    mShaderComputeShipPaths    {};
+  ShaderCompute                    mShaderComputeSkyNoise     {};
+  ShaderCompute                    mShaderComputeMapNoise     {};
+
+  ShaderLambertInstanced           mShaderRenderShips         {};
+  ShaderLambert                    mShaderRenderSky           {};
+  ShaderLambert                    mShaderRenderMap           {};
 
   void OnEnable() override;
   void OnDisable() override;
   void OnUpdate(r32 timeDelta) override;
   void OnUpdateFixed(r32 timeDelta) override;
-  void OnRender(r32 timeDelta) const override;
+  void OnRender(r32 timeDelta) override;
   void OnGizmos(r32 timeDelta) override;
 
   void InitializeTransforms();
