@@ -50,7 +50,8 @@ struct SceneGame : Scene
   u32                              mNumSkyDimension           { 512 };
   u32                              mNumMapDimension           { 512 };
 
-  CameraControllerOrbit            mCameraController          {};
+  CameraControllerSpace            mCameraControllerSpace     {};
+  CameraControllerOrbit            mCameraControllerOrbit     {};
 
   ModelLambert                     mModelShip                 {};
   ModelLambert                     mModelSky                  {};
@@ -91,6 +92,9 @@ struct SceneGame : Scene
   void OnUpdateFixed(r32 timeDelta) override;
   void OnRender(r32 timeDelta) override;
   void OnGizmos(r32 timeDelta) override;
+
+  void CameraControllerUpdateInputSpace(r32 timeDelta);
+  void CameraControllerUpdateInputOrbit(r32 timeDelta);
 
   void InitializeTransforms();
   void InitializeSteerings();

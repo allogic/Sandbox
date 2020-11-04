@@ -153,10 +153,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\Api.h" />
-    <ClInclude Include="Include\Common.h" />
+    <ClInclude Include="Include\Camera.h" />
     <ClInclude Include="Include\Core.h" />
+    <ClInclude Include="Include\DepthBuffer.h" />
     <ClInclude Include="Include\Events.h" />
     <ClInclude Include="Include\BufferLayouts.h" />
+    <ClInclude Include="Include\FrameBuffer.h" />
+    <ClInclude Include="Include\GraphicBuffer.h" />
+    <ClInclude Include="Include\Scene.h" />
     <ClInclude Include="Include\ShaderLayouts.h" />
     <ClInclude Include="Include\TextureLayouts.h" />
     <ClInclude Include="Include\Types.h" />

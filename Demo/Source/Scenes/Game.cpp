@@ -2,7 +2,7 @@
 
 void SceneGame::OnEnable()
 {
-  CameraCreate(mCamera, { 0.f, 0.f, 0.f }, 45.f, 0.001f, 10000.f);
+  CameraCreate(mCamera, { 0.f, 0.f, 0.f }, WindowAspect(), 45.f, 0.001f, 10000.f);
 
   ModelCreate(mModelShip, SANDBOX_ROOT_PATH "Model\\Cube.obj");
   ModelCreate(mModelSky, SANDBOX_ROOT_PATH "Model\\Sphere.obj");
@@ -84,7 +84,8 @@ void SceneGame::OnDisable()
 }
 void SceneGame::OnUpdate(r32 timeDelta)
 {
-  CameraUpdateControllerInputOrbit(mCamera, mCameraController, timeDelta);
+  //CameraControllerUpdateInputSpace(timeDelta);
+  CameraControllerUpdateInputOrbit(timeDelta);
 
   mConfigSteering.mTimeDelta = timeDelta;
   mConfigSteering.mAccelerationSpeed = 2000.f;
@@ -123,7 +124,8 @@ void SceneGame::OnUpdate(r32 timeDelta)
 }
 void SceneGame::OnUpdateFixed(r32 timeDelta)
 {
-  CameraUpdateControllerPhysicsOrbit(mCamera, mCameraController);
+  //CameraControllerUpdatePhysicsSpace(mCamera, mCameraControllerSpace);
+  CameraControllerUpdatePhysicsOrbit(mCamera, mCameraControllerOrbit);
 
   ShaderLayoutBind(mShaderComputeShipPhysics);
   ShaderLayoutCompute(mShaderComputeShipPhysics, mNumShips / 32, 1, 1);
@@ -162,7 +164,7 @@ void SceneGame::OnRender(r32 timeDelta)
 }
 void SceneGame::OnGizmos(r32 timeDelta)
 {
-  //BufferLayoutDataSubGet(mBufferPaths, 0, mNumTotalPaths, mPaths.data());
+  BufferLayoutDataGet(mBufferPaths, mNumPathsTotal, mPaths.data());
 
   for (u32 i{}; i < mNumPaths; i++)
   {
@@ -202,6 +204,74 @@ void SceneGame::OnGizmos(r32 timeDelta)
       GizmoLineBatchPushLine(startP0, endP0, color);
       GizmoLineBatchPushLine(startP1, endP1, color);
     }
+}
+
+void SceneGame::CameraControllerUpdateInputSpace(r32 timeDelta)
+{
+  if (KeyHeld(GLFW_KEY_A)) mCameraControllerSpace.mPositionAccel += -glm::normalize(mCamera.mLocalRight) * mCameraControllerSpace.mPositionAmount * timeDelta;
+  if (KeyHeld(GLFW_KEY_D)) mCameraControllerSpace.mPositionAccel += glm::normalize(mCamera.mLocalRight) * mCameraControllerSpace.mPositionAmount * timeDelta;
+
+  if (KeyHeld(GLFW_KEY_S)) mCameraControllerSpace.mPositionAccel += -glm::normalize(mCamera.mLocalFront) * mCameraControllerSpace.mPositionAmount * timeDelta;
+  if (KeyHeld(GLFW_KEY_W)) mCameraControllerSpace.mPositionAccel += glm::normalize(mCamera.mLocalFront) * mCameraControllerSpace.mPositionAmount * timeDelta;
+
+  if (KeyHeld(GLFW_KEY_Q)) mCameraControllerSpace.mRollAccel += -mCameraControllerSpace.mRollAmount * timeDelta;
+  if (KeyHeld(GLFW_KEY_E)) mCameraControllerSpace.mRollAccel += mCameraControllerSpace.mRollAmount * timeDelta;
+
+  static r32v2 mousePositionDown{};
+
+  if (MouseDown(GLFW_MOUSE_BUTTON_RIGHT))
+  {
+    mousePositionDown = { MousePositionX(), MousePositionY() };
+  }
+  if (MouseHeld(GLFW_MOUSE_BUTTON_RIGHT))
+  {
+    r32v2 mousePosition{ MousePositionX(), MousePositionY() };
+    r32v2 mousePositionDelta{ mousePositionDown - mousePosition };
+    r32v2 mousePositionDeltaAligned{ mousePositionDelta.x, mousePositionDelta.y };
+
+    if (glm::length(mousePositionDeltaAligned) > glm::epsilon<r32>())
+      mCameraControllerSpace.mRotationAccel += glm::normalize(mousePositionDeltaAligned) * mCameraControllerSpace.mRotationAmount * timeDelta;
+  }
+
+  mCameraControllerSpace.mPositionVelocity += -mCameraControllerSpace.mPositionVelocity * mCameraControllerSpace.mPositionVelocityDecay * timeDelta;
+  mCameraControllerSpace.mRotationVelocityAngular += -mCameraControllerSpace.mRotationVelocityAngular * mCameraControllerSpace.mRotationVelocityDecay * timeDelta;
+  mCameraControllerSpace.mRollVelocityAngular += -mCameraControllerSpace.mRollVelocityAngular * mCameraControllerSpace.mRollVelocityDecay * timeDelta;
+}
+void SceneGame::CameraControllerUpdateInputOrbit(r32 timeDelta)
+{
+  r32 distanceScaleLog{ glm::log(mCameraControllerOrbit.mScrollDistance) };
+
+  if (KeyHeld(GLFW_KEY_A)) mCameraControllerOrbit.mPositionAccel += -glm::normalize(mCamera.mLocalRight) * mCameraControllerOrbit.mPositionAmount * distanceScaleLog * timeDelta;
+  if (KeyHeld(GLFW_KEY_D)) mCameraControllerOrbit.mPositionAccel += glm::normalize(mCamera.mLocalRight) * mCameraControllerOrbit.mPositionAmount * distanceScaleLog * timeDelta;
+
+  r32v3 mLocalFrontNoXRot{ glm::cross(mCamera.mUp, mCamera.mLocalRight) };
+
+  if (KeyHeld(GLFW_KEY_S)) mCameraControllerOrbit.mPositionAccel += -glm::normalize(mLocalFrontNoXRot) * mCameraControllerOrbit.mPositionAmount * distanceScaleLog * timeDelta;
+  if (KeyHeld(GLFW_KEY_W)) mCameraControllerOrbit.mPositionAccel += glm::normalize(mLocalFrontNoXRot) * mCameraControllerOrbit.mPositionAmount * distanceScaleLog * timeDelta;
+
+  static r32v2 mousePositionDown{};
+
+  if (MouseDown(GLFW_MOUSE_BUTTON_RIGHT))
+  {
+    mousePositionDown = { MousePositionX(), MousePositionY() };
+  }
+  if (MouseHeld(GLFW_MOUSE_BUTTON_RIGHT))
+  {
+    r32v2 mousePosition{ MousePositionX(), MousePositionY() };
+    r32v2 mousePositionDelta{ mousePositionDown - mousePosition };
+    r32v2 mousePositionDeltaAligned{ mousePositionDelta.x, mousePositionDelta.y };
+
+    if (glm::length(mousePositionDeltaAligned) > glm::epsilon<r32>())
+      mCameraControllerOrbit.mRotationAccel += glm::normalize(mousePositionDeltaAligned) * mCameraControllerOrbit.mRotationAmount * distanceScaleLog * timeDelta;
+  }
+
+  mCameraControllerOrbit.mScrollAccel += -MouseScrollY() * mCameraControllerOrbit.mScrollAmount * timeDelta;
+
+  mCameraControllerOrbit.mPositionVelocity += -mCameraControllerOrbit.mPositionVelocity * mCameraControllerOrbit.mPositionVelocityDecay * timeDelta;
+  mCameraControllerOrbit.mRotationVelocityAngular += -mCameraControllerOrbit.mRotationVelocityAngular * mCameraControllerOrbit.mRotationVelocityDecay * timeDelta;
+  mCameraControllerOrbit.mScrollVelocity += -mCameraControllerOrbit.mScrollVelocity * mCameraControllerOrbit.mScrollVelocityDecay * timeDelta;
+
+  mCameraControllerOrbit.mScrollVelocity = glm::clamp(mCameraControllerOrbit.mScrollVelocity, -2.f, 2.f);
 }
 
 void SceneGame::InitializeTransforms()
