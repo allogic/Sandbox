@@ -151,7 +151,6 @@
     <None Include="Shaders\Compute\ShipPath.comp" />
     <None Include="Shaders\Compute\ShipPhysic.comp" />
     <None Include="Shaders\Compute\ShipSteering.comp" />
-    <None Include="Shaders\Compute\SkyNoise.comp" />
     <None Include="Shaders\Gizmo\Gizmo.frag" />
     <None Include="Shaders\Gizmo\Gizmo.vert" />
     <None Include="Shaders\Lambert\Lambert.frag" />

@@ -7,15 +7,21 @@ layout (binding = 3) uniform sampler2D uRoughness;
 
 layout (location = 0) in VertOut
 {
-  vec3 fPosition;
-  vec3 fNormal;
-  vec2 fUv;
-  vec4 fColor;
+  vec3 position;
+  vec3 normal;
+  vec2 uv;
+  vec4 color;
 } fragIn;
 
-layout (location = 0) out vec4 color;
+layout (location = 0) out vec4 oPosition;
+layout (location = 1) out vec4 oAlbedo;
+layout (location = 2) out vec4 oNormal;
+layout (location = 3) out vec4 oUv;
 
 void main()
 {
-  color = vec4(texture(uAlbedo, fragIn.fUv).rgb, 1.f);
+  oPosition = vec4(fragIn.position, 0.f);
+  oAlbedo = texture(uAlbedo, fragIn.uv).rgba;
+  oNormal = vec4(fragIn.normal, 0.f);
+  oUv = vec4(fragIn.uv, 0.f, 0.f);
 }

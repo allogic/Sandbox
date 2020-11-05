@@ -7,19 +7,19 @@ layout (binding = 2) uniform ProjectionBlock
   mat4 uTransform;
 };
 
-layout (location = 0) in vec3 lPosition;
-layout (location = 1) in vec4 lColor;
+layout (location = 0) in vec3 iPosition;
+layout (location = 1) in vec4 iColor;
 
 layout (location = 0) out VertOut
 {
-  vec3 fPosition;
-  vec4 fColor;
+  vec3 position;
+  vec4 color;
 } vertOut;
 
 void main()
 {
-  vertOut.fPosition = lPosition;
-  vertOut.fColor = lColor;
+  vertOut.position = iPosition;
+  vertOut.color = iColor;
 
-  gl_Position = uProjection * uView * vec4(lPosition, 1.f);
+  gl_Position = uProjection * uView * vec4(iPosition, 1.f);
 }

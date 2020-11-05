@@ -5,14 +5,11 @@ void SceneGame::OnEnable()
   CameraCreate(mCamera, { 0.f, 0.f, 0.f }, WindowAspect(), 45.f, 0.001f, 10000.f);
 
   ModelCreate(mModelShip, SANDBOX_ROOT_PATH "Model\\Cube.obj");
-  ModelCreate(mModelSky, SANDBOX_ROOT_PATH "Model\\Sphere.obj");
   ModelCreate(mModelMap, SANDBOX_ROOT_PATH "Model\\Plane.obj");
 
   ModelLayoutTransform(mModelShip, { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f });
-  ModelLayoutTransform(mModelSky, { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1000.f, 1000.f, 1000.f });
   ModelLayoutTransform(mModelMap, { 0.f, -10.f, 0.f }, { 0.f, 0.f, 0.f }, { 1000.f, 1.f, 1000.f });
 
-  TextureLayoutCreate(mTextureSky, mNumSkyDimension, mNumSkyDimension);
   TextureLayoutCreate(mTextureMap, mNumMapDimension, mNumMapDimension);
 
   InitializeTransforms();
@@ -48,20 +45,16 @@ void SceneGame::OnEnable()
   ShaderLayoutCreate(mShaderComputeShipSteerings, ShaderPaths{ .mCompute{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Compute\\ShipSteering.comp" } });
   ShaderLayoutCreate(mShaderComputeShipPhysics, ShaderPaths{ .mCompute{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Compute\\ShipPhysic.comp" } });
   ShaderLayoutCreate(mShaderComputeShipPaths, ShaderPaths{ .mCompute{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Compute\\ShipPath.comp" } });
-  ShaderLayoutCreate(mShaderComputeSkyNoise, ShaderPaths{ .mCompute{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Compute\\SkyNoise.comp" } });
   ShaderLayoutCreate(mShaderComputeMapNoise, ShaderPaths{ .mCompute{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Compute\\MapNoise.comp" } });
 
   ShaderLayoutCreate(mShaderRenderShips, ShaderPaths{ .mVertex{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\LambertInstanced\\LambertInstanced.vert" }, .mFragment{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\LambertInstanced\\LambertInstanced.frag" } });
-  ShaderLayoutCreate(mShaderRenderSky, ShaderPaths{ .mVertex{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.vert" }, .mFragment{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.frag" } });
   ShaderLayoutCreate(mShaderRenderMap, ShaderPaths{ .mVertex{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.vert" }, .mFragment{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.frag" } });
 }
 void SceneGame::OnDisable()
 {
   ModelDestroy(mModelShip);
-  ModelDestroy(mModelSky);
   ModelDestroy(mModelMap);
 
-  TextureLayoutDestroy(mTextureSky);
   TextureLayoutDestroy(mTextureMap);
 
   BufferLayoutDestroy(mBufferTransforms);
@@ -75,11 +68,9 @@ void SceneGame::OnDisable()
   ShaderLayoutDestroy(mShaderComputeShipSteerings);
   ShaderLayoutDestroy(mShaderComputeShipPhysics);
   ShaderLayoutDestroy(mShaderComputeShipPaths);
-  ShaderLayoutDestroy(mShaderComputeSkyNoise);
   ShaderLayoutDestroy(mShaderComputeMapNoise);
 
   ShaderLayoutDestroy(mShaderRenderShips);
-  ShaderLayoutDestroy(mShaderRenderSky);
   ShaderLayoutDestroy(mShaderRenderMap);
 }
 void SceneGame::OnUpdate(r32 timeDelta)
@@ -105,12 +96,6 @@ void SceneGame::OnUpdate(r32 timeDelta)
     ShaderLayoutBind(mShaderComputeShipPaths);
     ShaderLayoutCompute(mShaderComputeShipPaths, mNumPathsSub, 1, 1);
   }
-
-  TextureLayoutBind(mTextureSky);
-  TextureLayoutBindImage(mTextureSky, 0);
-  ShaderLayoutBind(mShaderComputeSkyNoise);
-  ShaderLayoutCompute(mShaderComputeSkyNoise, mNumSkyDimension / 32, mNumSkyDimension / 32, 1);
-
   if (KeyDown(GLFW_KEY_M))
   {
     TextureLayoutBind(mTextureMap);
@@ -118,14 +103,14 @@ void SceneGame::OnUpdate(r32 timeDelta)
     ShaderLayoutBind(mShaderComputeMapNoise);
     ShaderLayoutCompute(mShaderComputeMapNoise, mNumMapDimension / 32, mNumMapDimension / 32, 1);
   }
-
-  ShaderLayoutBind(mShaderComputeShipSteerings);
-  ShaderLayoutCompute(mShaderComputeShipSteerings, mNumShips / 32, 1, 1);
 }
 void SceneGame::OnUpdateFixed(r32 timeDelta)
 {
   //CameraControllerUpdatePhysicsSpace(mCamera, mCameraControllerSpace);
   CameraControllerUpdatePhysicsOrbit(mCamera, mCameraControllerOrbit);
+
+  ShaderLayoutBind(mShaderComputeShipSteerings);
+  ShaderLayoutCompute(mShaderComputeShipSteerings, mNumShips / 32, 1, 1);
 
   ShaderLayoutBind(mShaderComputeShipPhysics);
   ShaderLayoutCompute(mShaderComputeShipPhysics, mNumShips / 32, 1, 1);
@@ -142,16 +127,6 @@ void SceneGame::OnRender(r32 timeDelta)
   ShaderLayoutBind(mShaderRenderShips);
   ModelRenderInstanced(mModelShip, mNumShips);
 
-  mConfigProjection.mTransform = mModelSky.mTransform;
-
-  UniformLayoutBind(mUniformConfigProjection);
-  UniformLayoutDataSet(mUniformConfigProjection, 1, &mConfigProjection);
-
-  TextureLayoutBind(mTextureSky);
-  TextureLayoutBindSampler(mTextureSky, 0);
-  ShaderLayoutBind(mShaderRenderSky);
-  ModelRender(mModelSky);
-
   mConfigProjection.mTransform = mModelMap.mTransform;
 
   UniformLayoutBind(mUniformConfigProjection);
@@ -164,6 +139,7 @@ void SceneGame::OnRender(r32 timeDelta)
 }
 void SceneGame::OnGizmos(r32 timeDelta)
 {
+  BufferLayoutBind(mBufferPaths);
   BufferLayoutDataGet(mBufferPaths, mNumPathsTotal, mPaths.data());
 
   for (u32 i{}; i < mNumPaths; i++)
@@ -189,7 +165,7 @@ void SceneGame::OnGizmos(r32 timeDelta)
       r32v3 startP1{ 0, 0, j };
       r32v3 endP0{ i, 0, size };
       r32v3 endP1{ size, 0, j };
-      r32v4 color{ (i / (r32)size), (j / (r32)size), 0.f, 1.f };
+      r32v4 color{ 1.f, 1.f, 0.f, 1.f };
 
       startP0 *= spacing;
       startP1 *= spacing;

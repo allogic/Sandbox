@@ -17,7 +17,7 @@ struct GraphicBuffer
   FrameBuffer    mFrameBuffer    {};
   DepthBuffer    mDepthBuffer    {};
   TextureR32RGBA mTexturePosition{};
-  TextureR32RGBA mTextureDiffuse {};
+  TextureR32RGBA mTextureAlbedo  {};
   TextureR32RGBA mTextureNormal  {};
   TextureR32RGBA mTextureUv      {};
 };
@@ -32,16 +32,16 @@ template<typename GraphicBuffer> void GraphicBufferCreate(GraphicBuffer& graphic
   DepthBufferCreate(graphicBuffer.mDepthBuffer, width, height);
 
   TextureLayoutCreate(graphicBuffer.mTexturePosition, width, height);
-  TextureLayoutCreate(graphicBuffer.mTextureDiffuse, width, height);
+  TextureLayoutCreate(graphicBuffer.mTextureAlbedo, width, height);
   TextureLayoutCreate(graphicBuffer.mTextureNormal, width, height);
   TextureLayoutCreate(graphicBuffer.mTextureUv, width, height);
 
-  FrameBufferBindDraw(graphicBuffer.mFrameBuffer);
+  FrameBufferBindWrite(graphicBuffer.mFrameBuffer);
 
   FrameBufferAttachTexture(graphicBuffer.mTexturePosition, 0);
-  FrameBufferAttachTexture(graphicBuffer.mTexturePosition, 1);
-  FrameBufferAttachTexture(graphicBuffer.mTexturePosition, 2);
-  FrameBufferAttachTexture(graphicBuffer.mTexturePosition, 3);
+  FrameBufferAttachTexture(graphicBuffer.mTextureAlbedo, 1);
+  FrameBufferAttachTexture(graphicBuffer.mTextureNormal, 2);
+  FrameBufferAttachTexture(graphicBuffer.mTextureUv, 3);
 
   FrameBufferAttachDepthBuffer(graphicBuffer.mDepthBuffer);
 
@@ -49,16 +49,19 @@ template<typename GraphicBuffer> void GraphicBufferCreate(GraphicBuffer& graphic
 
   glDrawBuffers(4, buffers);
 
-  GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-
-  if (Status != GL_FRAMEBUFFER_COMPLETE) {
-    printf("FB error, status: 0x%x\n", Status);
-    return false;
-  }
-
-  FrameBufferUnbindDraw(graphicBuffer.mFrameBuffer);
+  FrameBufferUnbindWrite(graphicBuffer.mFrameBuffer);
 }
-template<typename GraphicBuffer> void GraphicBufferBind(GraphicBuffer const& graphicBuffer)
+template<typename GraphicBuffer> void GraphicBufferReadBuffer(GraphicBuffer const& graphicBuffer, u32 textureIndex)
 {
+  glReadBuffer(GL_COLOR_ATTACHMENT0 + textureIndex);
+}
+template<typename GraphicBuffer> void GraphicBufferDestroy(GraphicBuffer const& graphicBuffer)
+{
+  FrameBufferDestroy(graphicBuffer.mFrameBuffer);
+  DepthBufferDestroy(graphicBuffer.mDepthBuffer);
 
+  TextureLayoutDestroy(graphicBuffer.mTexturePosition);
+  TextureLayoutDestroy(graphicBuffer.mTextureAlbedo);
+  TextureLayoutDestroy(graphicBuffer.mTextureNormal);
+  TextureLayoutDestroy(graphicBuffer.mTextureUv);
 }

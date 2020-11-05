@@ -18,6 +18,8 @@ int main(int argc, char** argv)
 
   GizmoLineBatchCreate();
 
+  DeferredRenderCreate();
+
   while (!WindowStatus())
   {
     EventsPoll();
@@ -25,25 +27,18 @@ int main(int argc, char** argv)
     sTime = (r32)glfwGetTime();
     sTimeDelta = sTime - sTimePrev;
 
-    if (KeyDown(GLFW_KEY_1)) SceneSwitch(0);
-    if (KeyDown(GLFW_KEY_2)) SceneSwitch(1);
-    if (KeyDown(GLFW_KEY_3)) SceneSwitch(2);
-
     SceneActive()->OnUpdate(sTimeDelta);
 
     if ((sTime - sTimeRenderPrev) >= sTimeRender)
     {
-      glEnable(GL_DEPTH_TEST);
-      glDepthFunc(GL_LESS);
-      glClearColor(0.f, 0.f, 0.f, 0.f);
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
       SceneActive()->OnUpdateFixed(sTimeDelta);
-      SceneActive()->OnRender(sTimeDelta);
 
-      GizmoLineBatchBind();
-      SceneActive()->OnGizmos(sTimeDelta);
-      GizmoLineBatchRender();
+      DeferredRenderPassGeometry(sTimeDelta);
+      DeferredRenderPassLight(sTimeDelta);
+
+      //GizmoLineBatchBind();
+      //SceneActive()->OnGizmos(sTimeDelta);
+      //GizmoLineBatchRender();
 
       glfwSwapBuffers(ContextHandle());
 
@@ -54,6 +49,8 @@ int main(int argc, char** argv)
   }
 
   SceneDestroyAll();
+
+  DeferredRenderDestroy();
 
   ContextDestroy();
 

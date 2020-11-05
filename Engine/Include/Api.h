@@ -69,10 +69,13 @@ extern "C" void ModelRenderInstanced(ModelLambert const& model, u32 numInstances
 extern "C" void ModelDestroy(ModelLambert const& model);
 
 /*
-* 3D render passes.
+* Deferred rendering.
 */
 
-
+extern "C" void DeferredRenderCreate();
+extern "C" void DeferredRenderPassGeometry(r32 timeDelta);
+extern "C" void DeferredRenderPassLight(r32 timeDelta);
+extern "C" void DeferredRenderDestroy();
 
 /*
 * 3D debug utilities.

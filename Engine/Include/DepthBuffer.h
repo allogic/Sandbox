@@ -30,3 +30,7 @@ template<typename DepthBuffer> void DepthBufferBind(DepthBuffer const& depthBuff
 {
   glBindTexture(depthBuffer.mTid);
 }
+template<typename DepthBuffer> void DepthBufferDestroy(DepthBuffer const& depthBuffer)
+{
+  glDeleteTextures(1, &depthBuffer.mTid);
+}

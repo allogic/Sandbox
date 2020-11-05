@@ -47,17 +47,14 @@ struct SceneGame : Scene
   u32                              mNumPaths                  { 32 };
   u32                              mNumPathsSub               { 1024 };
   u32                              mNumPathsTotal             { mNumPaths * mNumPathsSub };
-  u32                              mNumSkyDimension           { 512 };
   u32                              mNumMapDimension           { 512 };
 
   CameraControllerSpace            mCameraControllerSpace     {};
   CameraControllerOrbit            mCameraControllerOrbit     {};
 
   ModelLambert                     mModelShip                 {};
-  ModelLambert                     mModelSky                  {};
   ModelLambert                     mModelMap                  {};
 
-  TextureR32RGBA                   mTextureSky                {};
   TextureR32RGBA                   mTextureMap                {};
 
   std::vector<Transform>           mTransforms                {};
@@ -79,11 +76,9 @@ struct SceneGame : Scene
   ShaderCompute                    mShaderComputeShipSteerings{};
   ShaderCompute                    mShaderComputeShipPhysics  {};
   ShaderCompute                    mShaderComputeShipPaths    {};
-  ShaderCompute                    mShaderComputeSkyNoise     {};
   ShaderCompute                    mShaderComputeMapNoise     {};
 
   ShaderLambertInstanced           mShaderRenderShips         {};
-  ShaderLambert                    mShaderRenderSky           {};
   ShaderLambert                    mShaderRenderMap           {};
 
   void OnEnable() override;
