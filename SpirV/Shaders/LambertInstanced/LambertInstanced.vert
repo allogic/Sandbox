@@ -8,16 +8,15 @@ struct Transform
   float rotationLocalFront[3];
 };
 
-layout (binding = 0, std430) buffer TransformBuffer
-{
-  Transform transforms[];
-};
-
-layout (binding = 2) uniform ProjectionBlock
+layout (binding = 0) uniform ProjectionUniform
 {
   mat4 uProjection;
   mat4 uView;
   mat4 uTransform;
+};
+layout (binding = 1, std430) buffer TransformBuffer
+{
+  Transform transforms[];
 };
 
 layout (location = 0) in vec3 iPosition;
@@ -55,13 +54,14 @@ mat4 Rotate3D(vec3 axis, in float angle)
 void main()
 {
   uint objIndex = gl_InstanceID;
+  vec3 transformPosition = ToVec3(transforms[objIndex].position);
+  mat4 tp = uProjection * uTransform;
+  mat4 tvp = uProjection * uView * uTransform;
 
-  vertOut.position = iPosition;
+  vertOut.position = vec4(tp * vec4(iPosition + transformPosition, 1.f)).xyz;
   vertOut.normal = iNormal;
   vertOut.uv = iUv;
   vertOut.color = iColor;
 
-  vec3 transformPosition = ToVec3(transforms[objIndex].position);
-
-  gl_Position = uProjection * uView * uTransform * vec4(iPosition + transformPosition, 1.f);
+  gl_Position = tvp * vec4(iPosition + transformPosition, 1.f);
 }

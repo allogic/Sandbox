@@ -19,14 +19,12 @@ struct UniformLayout
 * Uniform management.
 */
 
-template<typename UniformLayout> void UniformLayoutCreate(UniformLayout& uniformLayout, u32 bufferIndex)
+template<typename UniformLayout> void UniformLayoutCreate(UniformLayout& uniformLayout)
 {
   glGenBuffers(1, &uniformLayout.mUbo);
 
   glBindBuffer(GL_UNIFORM_BUFFER, uniformLayout.mUbo);
   glBufferStorage(GL_UNIFORM_BUFFER, sizeof(UniformLayout::BufferType), nullptr, GL_DYNAMIC_STORAGE_BIT);
-
-  glBindBufferBase(GL_UNIFORM_BUFFER, bufferIndex, uniformLayout.mUbo);
 
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
@@ -34,9 +32,17 @@ template<typename UniformLayout> void UniformLayoutBind(UniformLayout const& uni
 {
   glBindBuffer(GL_UNIFORM_BUFFER, uniformLayout.mUbo);
 }
+template<typename UniformLayout> void UniformLayoutMap(UniformLayout const& uniformLayout, u32 mappingIndex)
+{
+  glBindBufferBase(GL_UNIFORM_BUFFER, mappingIndex, uniformLayout.mUbo);
+}
 template<typename UniformLayout> void UniformLayoutDataSet(UniformLayout const& uniformLayout, u32 bufferSize, void* pBufferData)
 {
   glBufferSubData(GL_UNIFORM_BUFFER, 0, bufferSize * sizeof(UniformLayout::BufferType), pBufferData);
+}
+template<typename UniformLayout> void UniformLayoutDataGet(UniformLayout const& uniformLayout, u32 bufferSize, void* pBufferData)
+{
+  glGetBufferSubData(GL_UNIFORM_BUFFER, 0, bufferSize * sizeof(UniformLayout::BufferType), pBufferData);
 }
 template<typename UniformLayout> void UniformLayoutDestroy(UniformLayout const& uniformLayout)
 {

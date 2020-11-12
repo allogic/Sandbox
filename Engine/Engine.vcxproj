@@ -150,6 +150,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source\Api.cpp" />
+    <ClCompile Include="Source\Scene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\Api.h" />
@@ -157,15 +158,19 @@
     <ClInclude Include="Include\Core.h" />
     <ClInclude Include="Include\DepthBuffer.h" />
     <ClInclude Include="Include\Events.h" />
-    <ClInclude Include="Include\BufferLayouts.h" />
+    <ClInclude Include="Include\Layouts\BufferLayouts.h" />
     <ClInclude Include="Include\FrameBuffer.h" />
     <ClInclude Include="Include\GraphicBuffer.h" />
+    <ClInclude Include="Include\Materials\ComputeMaterials.h" />
+    <ClInclude Include="Include\Materials\RenderMaterials.h" />
+    <ClInclude Include="Include\Layouts\ShaderLayouts.h" />
+    <ClInclude Include="Include\Layouts\TextureLayouts.h" />
+    <ClInclude Include="Include\Registry.h" />
     <ClInclude Include="Include\Scene.h" />
-    <ClInclude Include="Include\ShaderLayouts.h" />
-    <ClInclude Include="Include\TextureLayouts.h" />
     <ClInclude Include="Include\Types.h" />
-    <ClInclude Include="Include\UniformLayouts.h" />
-    <ClInclude Include="Include\VertexLayouts.h" />
+    <ClInclude Include="Include\Layouts\UniformLayouts.h" />
+    <ClInclude Include="Include\Layouts\VertexLayouts.h" />
+    <ClInclude Include="Include\Uniforms\Projection.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

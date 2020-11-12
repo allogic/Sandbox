@@ -204,7 +204,7 @@ template<typename MeshLayout> void MeshLayoutBind(MeshLayout const& meshLayout)
 }
 template<typename MeshLayout> void MeshLayoutTransform(MeshLayout& meshLayout, r32v3 position, r32v3 rotation, r32v3 scale)
 {
-  meshLayout.mTransform = glm::translate(meshLayout.mTransform, position);
+  meshLayout.mTransform = glm::translate(glm::identity<r32m4>(), position);
 
   meshLayout.mTransform = glm::rotate(meshLayout.mTransform, rotation.x, { 1.f, 0.f, 0.f });
   meshLayout.mTransform = glm::rotate(meshLayout.mTransform, rotation.y, { 0.f, 1.f, 0.f });
@@ -315,7 +315,7 @@ template<typename ModelLayout> void ModelLayoutBind(ModelLayout const& modelLayo
 }
 template<typename ModelLayout> void ModelLayoutTransform(ModelLayout& modelLayout, r32v3 position, r32v3 rotation, r32v3 scale)
 {
-  modelLayout.mTransform = glm::translate(modelLayout.mTransform, position);
+  modelLayout.mTransform = glm::translate(glm::identity<r32m4>(), position);
 
   modelLayout.mTransform = glm::rotate(modelLayout.mTransform, rotation.x, { 1.f, 0.f, 0.f });
   modelLayout.mTransform = glm::rotate(modelLayout.mTransform, rotation.y, { 0.f, 1.f, 0.f });

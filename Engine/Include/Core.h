@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 #include <tuple>
+#include <variant>
 #include <string>
 #include <cstring>
 #include <fstream>
@@ -14,6 +15,7 @@
 #include <limits>
 #include <utility>
 #include <cstdint>
+#include <chrono>
 
 #include <glad/glad.h>
 
@@ -30,3 +32,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/random.hpp>
 #undef GLM_ENABLE_EXPERIMENTAL
+
+#define SANDBOX_ENGINE_MEASURE_BEGIN(NAME) auto NAME##Start = std::chrono::high_resolution_clock::now();
+#define SANDBOX_ENGINE_MEASURE_END(NAME) auto NAME##Duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - NAME##Start).count();

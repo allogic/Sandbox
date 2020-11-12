@@ -26,7 +26,7 @@ enum ShaderLayoutType : u32
   eShaderLayoutGizmo,
 };
 
-template<u32 Layout>
+template<ShaderLayoutType Layout>
 struct ShaderLayout
 {
   constexpr static u32 sLayout{ Layout };
@@ -222,15 +222,39 @@ template<typename ShaderLayout> void ShaderLayoutCompute(ShaderLayout const& sha
 * Shader SSBO/UBO bindings.
 */
 
-template<typename ShaderLayout> void ShaderLayoutBufferBlock(ShaderLayout const& shaderLayout, std::string const& blockName, u32 blockIndex)
+template<typename ShaderLayout> void ShaderLayoutGetBindingsUniform(ShaderLayout const& shaderLayout, std::map<std::string, u32>& bindings)
 {
-  u32 ssboIndex{ glGetProgramResourceIndex(shaderLayout.mProgId, GL_SHADER_STORAGE_BLOCK, blockName.data()) };
-  glShaderStorageBlockBinding(shaderLayout.mProgId, ssboIndex, blockIndex);
+  u32 numUniforms{};
+  std::string resourceName{};
+
+  glGetProgramInterfaceiv(shaderLayout.mProgId, GL_UNIFORM_BLOCK, GL_ACTIVE_RESOURCES, (s32*)(&numUniforms));
+
+  for (u32 i{}; i < numUniforms; i++)
+  {
+    glGetProgramResourceName(shaderLayout.mProgId, GL_UNIFORM_BLOCK, i, 64, nullptr, resourceName.data());
+    u32 resourceId{ glGetProgramResourceIndex(shaderLayout.mProgId, GL_UNIFORM_BLOCK, resourceName.data()) };
+
+    bindings.emplace(resourceName, resourceId);
+
+    resourceName.clear();
+  }
 }
-template<typename ShaderLayout> void ShaderLayoutUniformBlock(ShaderLayout const& shaderLayout, std::string const& blockName, u32 blockIndex)
+template<typename ShaderLayout> void ShaderLayoutGetBindingsBuffer(ShaderLayout const& shaderLayout, std::map<std::string, u32>& bindings)
 {
-  u32 uboIndex{ glGetProgramResourceIndex(shaderLayout.mProgId, GL_UNIFORM_BLOCK, blockName.data()) };
-  glUniformBlockBinding(shaderLayout.mProgId, uboIndex, blockIndex);
+  u32 numBuffers{};
+  std::string resourceName{};
+
+  glGetProgramInterfaceiv(shaderLayout.mProgId, GL_SHADER_STORAGE_BLOCK, GL_ACTIVE_RESOURCES, (s32*)(&numBuffers));
+
+  for (u32 i{}; i < numBuffers; i++)
+  {
+    glGetProgramResourceName(shaderLayout.mProgId, GL_SHADER_STORAGE_BLOCK, i, 64, nullptr, resourceName.data());
+    u32 resourceId{ glGetProgramResourceIndex(shaderLayout.mProgId, GL_SHADER_STORAGE_BLOCK, resourceName.data()) };
+
+    bindings.emplace(resourceName, resourceId);
+
+    resourceName.clear();
+  }
 }
 
 /*

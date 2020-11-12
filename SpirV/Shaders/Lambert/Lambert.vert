@@ -1,6 +1,6 @@
 #version 460 core
 
-layout (binding = 2) uniform ProjectionBlock
+layout (binding = 0) uniform ProjectionUniform
 {
   mat4 uProjection;
   mat4 uView;
@@ -22,10 +22,13 @@ layout (location = 0) out VertOut
 
 void main()
 {
-  vertOut.position = iPosition;
+  mat4 tp = uProjection * uTransform;
+  mat4 tvp = uProjection * uView * uTransform;
+
+  vertOut.position = vec4(tp * vec4(iPosition, 1.f)).xyz;
   vertOut.normal = iNormal;
   vertOut.uv = iUv;
   vertOut.color = iColor;
 
-  gl_Position = uProjection * uView * uTransform * vec4(iPosition, 1.f);
+  gl_Position = tvp * vec4(iPosition, 1.f);
 }

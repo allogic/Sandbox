@@ -1,16 +1,20 @@
 #pragma once
 
-#include <Types.h>
 #include <Core.h>
+#include <Types.h>
+#include <Registry.h>
 #include <Events.h>
 #include <Camera.h>
 #include <Scene.h>
 
-#include <VertexLayouts.h>
-#include <BufferLayouts.h>
-#include <TextureLayouts.h>
-#include <ShaderLayouts.h>
-#include <UniformLayouts.h>
+#include <Layouts/VertexLayouts.h>
+#include <Layouts/BufferLayouts.h>
+#include <Layouts/TextureLayouts.h>
+#include <Layouts/ShaderLayouts.h>
+#include <Layouts/UniformLayouts.h>
+
+#include <Materials/ComputeMaterials.h>
+#include <Materials/RenderMaterials.h>
 
 #include <FrameBuffer.h>
 #include <DepthBuffer.h>
@@ -67,15 +71,6 @@ extern "C" void ModelCreate(ModelLambert& model, std::string const& fileName);
 extern "C" void ModelRender(ModelLambert const& model);
 extern "C" void ModelRenderInstanced(ModelLambert const& model, u32 numInstances);
 extern "C" void ModelDestroy(ModelLambert const& model);
-
-/*
-* Deferred rendering.
-*/
-
-extern "C" void DeferredRenderCreate();
-extern "C" void DeferredRenderPassGeometry(r32 timeDelta);
-extern "C" void DeferredRenderPassLight(r32 timeDelta);
-extern "C" void DeferredRenderDestroy();
 
 /*
 * 3D debug utilities.

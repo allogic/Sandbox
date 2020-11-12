@@ -14,11 +14,9 @@ int main(int argc, char** argv)
   ContextCreate(1280, 720, "Sandbox");
   ContextRegisterDebugHandler();
 
-  SceneCreate(new SceneGame);
+  SceneCreate(new SceneGame(1280, 720));
 
   GizmoLineBatchCreate();
-
-  DeferredRenderCreate();
 
   while (!WindowStatus())
   {
@@ -33,12 +31,20 @@ int main(int argc, char** argv)
     {
       SceneActive()->OnUpdateFixed(sTimeDelta);
 
-      DeferredRenderPassGeometry(sTimeDelta);
-      DeferredRenderPassLight(sTimeDelta);
+      SANDBOX_ENGINE_MEASURE_BEGIN(GraphicBufferDeferredPassGeometry);
+      GraphicBufferDeferredPassGeometryBegin(SceneActive()->mGraphicBuffer);
+      SceneActive()->OnRender(sTimeDelta);
+      GraphicBufferDeferredPassGeometryEnd(SceneActive()->mGraphicBuffer);
+      SANDBOX_ENGINE_MEASURE_END(GraphicBufferDeferredPassGeometry);
 
-      //GizmoLineBatchBind();
-      //SceneActive()->OnGizmos(sTimeDelta);
-      //GizmoLineBatchRender();
+      SANDBOX_ENGINE_MEASURE_BEGIN(GraphicBufferDeferredPassLight);
+      GraphicBufferDeferredPassLightBegin(SceneActive()->mGraphicBuffer);
+      GraphicBufferDeferredPassLightEnd(SceneActive()->mGraphicBuffer);
+      SANDBOX_ENGINE_MEASURE_END(GraphicBufferDeferredPassLight);
+
+      GizmoLineBatchBind();
+      SceneActive()->OnGizmos(sTimeDelta);
+      GizmoLineBatchRender();
 
       glfwSwapBuffers(ContextHandle());
 
@@ -49,8 +55,6 @@ int main(int argc, char** argv)
   }
 
   SceneDestroyAll();
-
-  DeferredRenderDestroy();
 
   ContextDestroy();
 

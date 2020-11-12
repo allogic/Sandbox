@@ -19,20 +19,22 @@ struct BufferLayout
 * SSBO management.
 */
 
-template<typename BufferLayout> void BufferLayoutCreate(BufferLayout& bufferLayout, u32 bufferSize, u32 bufferIndex)
+template<typename BufferLayout> void BufferLayoutCreate(BufferLayout& bufferLayout, u32 bufferSize)
 {
   glGenBuffers(1, &bufferLayout.mSsbo);
 
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, bufferLayout.mSsbo);
-  glBufferStorage(GL_SHADER_STORAGE_BUFFER, bufferSize * sizeof(BufferLayout::BufferType), nullptr, GL_DYNAMIC_STORAGE_BIT | GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bufferIndex, bufferLayout.mSsbo);
+  glBufferStorage(GL_SHADER_STORAGE_BUFFER, bufferSize * sizeof(BufferLayout::BufferType), nullptr, GL_DYNAMIC_STORAGE_BIT | GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT);
 
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 template<typename BufferLayout> void BufferLayoutBind(BufferLayout const& bufferLayout)
 {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, bufferLayout.mSsbo);
+}
+template<typename BufferLayout> void BufferLayoutMap(BufferLayout const& bufferLayout, u32 mappingIndex)
+{
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, mappingIndex, bufferLayout.mSsbo);
 }
 template<typename BufferLayout> void BufferLayoutDataSet(BufferLayout const& bufferLayout, u32 bufferSize, void* pBufferData)
 {

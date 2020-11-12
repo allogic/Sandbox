@@ -3,13 +3,11 @@
 #define PI          3.14159265
 #define NUM_OCTAVES 5
 
-layout (local_size_x = 32) in;
+layout (local_size_x = 128) in;
 
 struct Waypoint
 {
   float position[3];
-  float direction[3];
-  float rotationLocalFront[3];
 };
 
 layout (binding = 2, std430) buffer PathBuffer
@@ -17,9 +15,10 @@ layout (binding = 2, std430) buffer PathBuffer
   Waypoint paths[];
 };
 
-layout (binding = 1) uniform NoiseBlock
+layout (binding = 2) uniform NoiseUniform
 {
   vec3 uOffsetRandom;
+  float uFrequency;
 };
 
 vec3 ToVec3(in float a[3])
@@ -85,7 +84,7 @@ float Fbm(in float x)
   float shift = float(100);
   for (int i = 0; i < NUM_OCTAVES; ++i)
   {
-    v += a * Noise(x);
+    v += a * Noise(x * uFrequency);
     x = x * 2.0 + shift;
     a *= 0.5;
   }
@@ -99,7 +98,7 @@ float Fbm(in vec2 x)
   mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.50));
   for (int i = 0; i < NUM_OCTAVES; ++i)
   {
-    v += a * Noise(x);
+    v += a * Noise(x * uFrequency);
     x = rot * x * 2.0 + shift;
     a *= 0.5;
   }
@@ -112,7 +111,7 @@ float Fbm(in vec3 x)
   vec3 shift = vec3(100);
   for (int i = 0; i < NUM_OCTAVES; ++i)
   {
-    v += a * Noise(x);
+    v += a * Noise(x * uFrequency);
     x = x * 2.0 + shift;
     a *= 0.5;
   }
@@ -121,30 +120,14 @@ float Fbm(in vec3 x)
 
 void main()
 {
-  if (gl_WorkGroupID.x % gl_WorkGroupSize.x == 0 && gl_LocalInvocationID.x == 0)
-    return;
+  uint pathIndexSub = gl_GlobalInvocationID.x;
 
-  uint pathIndex = gl_GlobalInvocationID.x;
+  vec3 position = ToVec3(paths[pathIndexSub].position);
 
-  vec3 positionPrev = ToVec3(paths[pathIndex - 1].position);
-  vec3 directionPrev = ToVec3(paths[pathIndex - 1].direction);
+  // Compute displacement from gradient
+  float density = Fbm(position);
+  position += vec3(density, 0, density);
 
-  // Compute current sub path position
-  vec3 position = positionPrev + directionPrev;
-  SetTo(paths[pathIndex].position, position);
-
-  // Compute current direction from gradient
-  float angle = Fbm(position) * 10.f;
-  mat3 rot = mat3(
-     cos(angle), 0, sin(angle),
-              0, 1,          0,
-    -sin(angle), 0, cos(angle)
-  );
-  vec3 direction = rot * vec3(directionPrev.x, 0, directionPrev.z);
-  vec3 directionNorm = normalize(direction);
-  //vec3 directionRand = vec3(sin(angle), 0.f, cos(angle));
-
-  paths[pathIndex].direction[0] = directionNorm.x + 1.f;
-  paths[pathIndex].direction[1] = directionNorm.y + 1.f;
-  paths[pathIndex].direction[2] = directionNorm.z + 1.f;
+  // Set sub path position and direction
+  SetTo(paths[pathIndexSub].position, position);
 }

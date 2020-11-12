@@ -16,6 +16,14 @@ struct Steering
   uint  pathIndex;
   uint  pathIndexSub;
 };
+struct Waypoint
+{
+  float position[3];
+};
+struct OctreeNode
+{
+  float position[3];
+};
 
 layout (binding = 0, std430) buffer TransformBuffer
 {
@@ -25,12 +33,46 @@ layout (binding = 1, std430) buffer SteeringBuffer
 {
   Steering steerings[];
 };
+layout (binding = 2, std430) buffer PathBuffer
+{
+  Waypoint paths[];
+};
+layout (binding = 3, std430) buffer OctreeBuffer
+{
+  OctreeNode nodes[];
+};
 
+layout (binding = 1) uniform SteeringUniform
+{
+  float uTimeDelta;
+  float uAccelerationSpeed;
+  float uVelocityDecay;
+  uint  uMaxPaths;
+};
+
+vec3 ToVec3(in float a[3])
+{
+  return vec3(a[0], a[1], a[2]);
+}
+vec3 Sub(in vec3 a, in float b[3])
+{
+  return vec3(
+    a.x - b[0],
+    a.y - b[1],
+    a.z - b[2]
+  );
+}
 void AddTo(inout float a[3], in float b[3])
 {
   a[0] += b[0];
   a[1] += b[1];
   a[2] += b[2];
+}
+void AddTo(inout float a[3], in vec3 b)
+{
+  a[0] += b.x;
+  a[1] += b.y;
+  a[2] += b.z;
 }
 void SetTo(inout float a[3], in float b)
 {
@@ -38,10 +80,67 @@ void SetTo(inout float a[3], in float b)
   a[1] = b;
   a[2] = b;
 }
+void Clamp(inout float a[3], in float min, in float max)
+{
+  a[0] = clamp(a[0], min, max);
+  a[1] = clamp(a[1], min, max);
+  a[2] = clamp(a[2], min, max);
+}
+
+vec3 Alignment(in vec3 position)
+{
+  vec3 velocity = vec3(0.f);
+
+  
+
+  return velocity;
+}
+vec3 Separation(in vec3 position)
+{
+  vec3 velocity = vec3(0.f);
+
+  
+
+  return velocity;
+}
+vec3 Cohesion(in vec3 position)
+{
+  vec3 velocity = vec3(0.f);
+
+  
+
+  return velocity;
+}
 
 void main()
 {
   uint objIndex = gl_GlobalInvocationID.x;
+
+  // Compute current path target
+  uint pathIndex = steerings[objIndex].pathIndex;
+  uint pathIndexSub = steerings[objIndex].pathIndexSub;
+  vec3 pathTargetSub = ToVec3(paths[pathIndex * pathIndexSub * 32].position);
+
+  // Separation
+  // Alignment
+  // Cohesion
+
+  // Compute steering direction
+  vec3 steeringDirection = Sub(pathTargetSub, transforms[objIndex].position);
+  vec3 steeringDirectionNorm = normalize(steeringDirection);
+
+  // Add steering direction to acceleration
+  AddTo(steerings[objIndex].acceleration, steeringDirectionNorm * uAccelerationSpeed * uTimeDelta);
+
+  // Add negative steering velocity to itself
+  //AddTo(steerings[objIndex].velocity, -steerings[objIndex].velocity * uVelocityDecay * uTimeDelta);
+
+  // Limit velocity
+  Clamp(steerings[objIndex].velocity, -1, 1);
+
+  // Loop paths
+  if (length(steeringDirection) < 100.f)
+    steerings[objIndex].pathIndex = (pathIndex + 1) % uMaxPaths;
 
   // Transform rotation
   //transforms[idx].rotationLocalRight = rotationMatrix * vec4(transforms[idx].rotationLocalRight, 1.f);

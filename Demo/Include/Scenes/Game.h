@@ -1,85 +1,23 @@
 #pragma once
 
+/*
+* Todo:
+*  - Create clean shader SSBO/UBO mapping API.
+*  - Create SVO/DAG for fast steering lookups.
+*  - Continue deferred rendering pipeline.
+*/
+
 #include <Api.h>
 
-struct Transform
-{
-  r32v3 mPosition{};
-  r32v3 mRotationLocalRight{};
-  r32v3 mRotationLocalUp{};
-  r32v3 mRotationLocalFront{};
-};
-struct Steering
-{
-  r32v3 mAcceleration{};
-  r32v3 mVelocity    {};
-  u32   mPathIndex   {};
-  u32   mPathIndexSub{};
-};
-struct Waypoint
-{
-  r32v3 mPosition {};
-  r32v3 mDirection{};
-  r32v3 mRotationLocalFront{};
-};
-
-struct ConfigSteering
-{
-  r32 mTimeDelta        {};
-  r32 mAccelerationSpeed{};
-  r32 mVelocityDecay    {};
-  u32 mMaxPaths         {};
-};
-struct ConfigNoise
-{
-  r32v3 mRandomOffset{};
-};
-struct ConfigProjection
-{
-  r32m4 mProjection{};
-  r32m4 mView      {};
-  r32m4 mTransform {};
-};
+#include <PlayerManager.h>
+#include <ShipManager.h>
 
 struct SceneGame : Scene
 {
-  u32                              mNumShips                  { 2048 * 32 };
-  u32                              mNumPaths                  { 32 };
-  u32                              mNumPathsSub               { 1024 };
-  u32                              mNumPathsTotal             { mNumPaths * mNumPathsSub };
-  u32                              mNumMapDimension           { 512 };
+  SceneGame(u32 width, u32 height) : Scene(width, height) {}
 
-  CameraControllerSpace            mCameraControllerSpace     {};
-  CameraControllerOrbit            mCameraControllerOrbit     {};
-
-  ModelLambert                     mModelShip                 {};
-  ModelLambert                     mModelMap                  {};
-
-  TextureR32RGBA                   mTextureMap                {};
-
-  std::vector<Transform>           mTransforms                {};
-  std::vector<Steering>            mSteerings                 {};
-  std::vector<Waypoint>            mPaths                     {};
-
-  BufferLayout<Transform>          mBufferTransforms          {};
-  BufferLayout<Steering>           mBufferSteerings           {};
-  BufferLayout<Waypoint>           mBufferPaths               {};
-
-  ConfigSteering                   mConfigSteering            {};
-  ConfigNoise                      mConfigNoise               {};
-  ConfigProjection                 mConfigProjection          {};
-
-  UniformLayout<ConfigSteering>    mUniformConfigSteering     {};
-  UniformLayout<ConfigNoise>       mUniformConfigNoise        {};
-  UniformLayout<ConfigProjection>  mUniformConfigProjection   {};
-
-  ShaderCompute                    mShaderComputeShipSteerings{};
-  ShaderCompute                    mShaderComputeShipPhysics  {};
-  ShaderCompute                    mShaderComputeShipPaths    {};
-  ShaderCompute                    mShaderComputeMapNoise     {};
-
-  ShaderLambertInstanced           mShaderRenderShips         {};
-  ShaderLambert                    mShaderRenderMap           {};
+  PlayerManager mPlayerManager{};
+  ShipManager   mShipManager  { 2048 * 32, 5, 32, 256 };
 
   void OnEnable() override;
   void OnDisable() override;
@@ -88,10 +26,6 @@ struct SceneGame : Scene
   void OnRender(r32 timeDelta) override;
   void OnGizmos(r32 timeDelta) override;
 
-  void CameraControllerUpdateInputSpace(r32 timeDelta);
-  void CameraControllerUpdateInputOrbit(r32 timeDelta);
-
-  void InitializeTransforms();
-  void InitializeSteerings();
-  void InitializePaths();
+  RenderMaterialLambert mMaterialCruiserBerlin{};
+  ModelLambert          mModelCruiserBerlin   {};
 };

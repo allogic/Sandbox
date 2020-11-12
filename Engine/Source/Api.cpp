@@ -16,8 +16,6 @@ r32v2 sMouseScroll  {};
 Event sMouseKeyStates[GLFW_MOUSE_BUTTON_LAST]{};
 Event sKeyboardKeyStates[GLFW_KEY_LAST]      {};
 
-GraphicBuffer sGraphicBuffer{};
-
 u32         sGizmoLineBatchVertexBufferSize{ 65535 };
 ShaderGizmo sGizmoLineBatchShader          {};
 MeshGizmo   sGizmoLineBatchMesh            {};
@@ -360,60 +358,6 @@ void ModelRenderInstanced(ModelLambert const& model, u32 numInstances)
 void ModelDestroy(ModelLambert const& model)
 {
   ModelLayoutDestroy(model);
-}
-
-/*
-* Deferred rendering.
-*/
-
-void DeferredRenderCreate()
-{
-  GraphicBufferCreate(sGraphicBuffer, sWidth, sHeight);
-}
-void DeferredRenderPassGeometry(r32 timeDelta)
-{
-  FrameBufferBindWrite(sGraphicBuffer.mFrameBuffer);
-
-  glDepthMask(GL_TRUE);
-  glClearColor(0.f, 0.f, 0.f, 1.f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glEnable(GL_DEPTH_TEST);
-  glDisable(GL_BLEND);
-
-  spSceneActive->OnRender(timeDelta);
-
-  glDepthMask(GL_FALSE);
-  glDisable(GL_DEPTH_TEST);
-
-  FrameBufferUnbind(sGraphicBuffer.mFrameBuffer);
-}
-void DeferredRenderPassLight(r32 timeDelta)
-{
-  FrameBufferBindRead(sGraphicBuffer.mFrameBuffer);
-
-  //glClearColor(0.f, 0.f, 0.f, 1.f);
-  //glClear(GL_COLOR_BUFFER_BIT);
-
-  u32 halfWidth{ (u32)(WindowSizeX() / 2.f) };
-  u32 halfHeight{ (u32)(WindowSizeY() / 2.f) };
-
-  GraphicBufferReadBuffer(sGraphicBuffer, 0);
-  glBlitFramebuffer(0, 0, sWidth, sHeight, 0, 0, halfWidth, halfHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-
-  GraphicBufferReadBuffer(sGraphicBuffer, 1);
-  glBlitFramebuffer(0, 0, sWidth, sHeight, 0, halfHeight, halfWidth, halfHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-
-  GraphicBufferReadBuffer(sGraphicBuffer, 2);
-  glBlitFramebuffer(0, 0, sWidth, sHeight, halfWidth, 0, halfWidth, halfHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-  
-  GraphicBufferReadBuffer(sGraphicBuffer, 3);
-  glBlitFramebuffer(0, 0, sWidth, sHeight, halfWidth, halfHeight, halfWidth, halfHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-
-  FrameBufferUnbind(sGraphicBuffer.mFrameBuffer);
-}
-void DeferredRenderDestroy()
-{
-  GraphicBufferDestroy(sGraphicBuffer);
 }
 
 /*

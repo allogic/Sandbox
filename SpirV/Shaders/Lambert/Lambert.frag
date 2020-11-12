@@ -13,15 +13,15 @@ layout (location = 0) in VertOut
   vec4 color;
 } fragIn;
 
-layout (location = 0) out vec4 oPosition;
-layout (location = 1) out vec4 oAlbedo;
-layout (location = 2) out vec4 oNormal;
-layout (location = 3) out vec4 oUv;
+layout (location = 0) out vec3 oPosition;
+layout (location = 1) out vec3 oAlbedo;
+layout (location = 2) out vec3 oNormal;
+layout (location = 3) out vec3 oUv;
 
 void main()
 {
-  oPosition = vec4(fragIn.position, 0.f);
-  oAlbedo = texture(uAlbedo, fragIn.uv).rgba;
-  oNormal = vec4(fragIn.normal, 0.f);
-  oUv = vec4(fragIn.uv, 0.f, 0.f);
+  oPosition = fragIn.position;
+  oAlbedo = texture(uAlbedo, fragIn.uv).rgb;
+  oNormal = fragIn.normal;
+  oUv = vec3(fragIn.uv, 0.f);
 }

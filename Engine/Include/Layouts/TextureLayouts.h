@@ -112,21 +112,21 @@ template<typename TextureLayout> void TextureLayoutBind(TextureLayout const& tex
 {
   glBindTexture(GL_TEXTURE_2D, textureLayout.mTid);
 }
-template<typename TextureLayout> void TextureLayoutBindSampler(TextureLayout const& textureLayout, u32 textureUnit)
+template<typename TextureLayout> void TextureLayoutMapSampler(TextureLayout const& textureLayout, u32 mappingIndex)
 {
-  glBindTextureUnit(textureUnit, textureLayout.mTid);
+  glBindTextureUnit(mappingIndex, textureLayout.mTid);
 }
-template<typename TextureLayout> void TextureLayoutBindImage(TextureLayout const& textureLayout, u32 imageUnit)
+template<typename TextureLayout> void TextureLayoutMapTexture(TextureLayout const& textureLayout, u32 mappingIndex)
 {
   u32 type{};
 
   switch (TextureLayout::sLayout)
   {
-    case eTextureLayoutU8: type = GL_RGBA8UI; break;
-    case eTextureLayoutR32: type = GL_RGBA32F; break;
+  case eTextureLayoutU8: type = GL_RGBA8UI; break;
+  case eTextureLayoutR32: type = GL_RGBA32F; break;
   }
 
-  glBindImageTexture(imageUnit, textureLayout.mTid, 0, GL_FALSE, 0, GL_READ_WRITE, type);
+  glBindImageTexture(mappingIndex, textureLayout.mTid, 0, GL_FALSE, 0, GL_READ_WRITE, type);
 }
 template<typename TextureLayout> void TextureLayoutDestroy(TextureLayout const& textureLayout)
 {
