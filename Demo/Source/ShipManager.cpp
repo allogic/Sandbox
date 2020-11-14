@@ -14,40 +14,36 @@ ShipManager::ShipManager(
 
   ModelLayoutTransform(mModelShip, { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f });
 
-  UniformLayoutCreate(mUniformSteering);
-  UniformLayoutBind(mUniformSteering);
-  UniformLayoutMap(mUniformSteering, 1);
+  //UniformLayoutCreate(mUniformSteering);
+  //UniformLayoutBind(mUniformSteering);
+  //UniformLayoutMap(mUniformSteering, 1);
+  //
+  //UniformLayoutCreate(mUniformNoise);
+  //UniformLayoutBind(mUniformNoise);
+  //UniformLayoutMap(mUniformNoise, 2);
 
-  UniformLayoutCreate(mUniformNoise);
-  UniformLayoutBind(mUniformNoise);
-  UniformLayoutMap(mUniformNoise, 2);
-
-  BufferLayoutCreate(mBufferTransforms, mNumShips);
-  BufferLayoutBind(mBufferTransforms);
-  BufferLayoutMap(mBufferTransforms, 0);
-
-  BufferLayoutCreate(mBufferSteerings, mNumShips);
-  BufferLayoutBind(mBufferSteerings);
-  BufferLayoutMap(mBufferSteerings, 1);
-
-  BufferLayoutCreate(mBufferPaths, mNumPaths * mNumPathsSub);
-  BufferLayoutBind(mBufferPaths);
-  BufferLayoutMap(mBufferPaths, 2);
-
-  BufferLayoutCreate(mBufferOctreeNodes, mNumOctreeLevels);
-  BufferLayoutBind(mBufferOctreeNodes);
-  BufferLayoutMap(mBufferOctreeNodes, 3);
-
-  InitializeShipTransforms();
-  InitializeShipSteerings();
-  InitializeShipPaths();
-  InitializeOctreeNodes();
+  BufferLayoutCreate(mBufferSteering, mNumShips);
+  BufferLayoutBind(mBufferSteering);
+  BufferLayoutMap(mBufferSteering, 1);
+  
+  BufferLayoutCreate(mBufferPath, mNumPaths * mNumPathsSub);
+  BufferLayoutBind(mBufferPath);
+  BufferLayoutMap(mBufferPath, 2);
+  
+  BufferLayoutCreate(mBufferOctreeNode, mNumOctreeLevels);
+  BufferLayoutBind(mBufferOctreeNode);
+  BufferLayoutMap(mBufferOctreeNode, 3);
 
   ComputeMaterialCreate(mMaterialComputeShipPhysics, "ShipPhysic");
   ComputeMaterialCreate(mMaterialComputeShipPaths, "ShipPath");
   ComputeMaterialCreate(mMaterialComputeShipOctree, "ShipOctree");
 
-  RenderMaterialCreate(mMaterialLambertInstanced);
+  RenderMaterialCreate(mMaterialLambertInstanced, mNumShips);
+
+  InitializeShipTransforms();
+  InitializeShipSteerings();
+  InitializeShipPaths();
+  InitializeOctreeNodes();
 }
 ShipManager::~ShipManager()
 {
@@ -56,10 +52,10 @@ ShipManager::~ShipManager()
   UniformLayoutDestroy(mUniformSteering);
   UniformLayoutDestroy(mUniformNoise);
 
-  BufferLayoutDestroy(mBufferTransforms);
-  BufferLayoutDestroy(mBufferSteerings);
-  BufferLayoutDestroy(mBufferPaths);
-  BufferLayoutDestroy(mBufferOctreeNodes);
+  BufferLayoutDestroy(mBufferTransform);
+  BufferLayoutDestroy(mBufferSteering);
+  BufferLayoutDestroy(mBufferPath);
+  BufferLayoutDestroy(mBufferOctreeNode);
 
   ComputeMaterialDestroy(mMaterialComputeShipPhysics);
   ComputeMaterialDestroy(mMaterialComputeShipPaths);
@@ -68,26 +64,26 @@ ShipManager::~ShipManager()
   RenderMaterialDestroy(mMaterialLambertInstanced);
 }
 
-void ShipManager::OnUpdate(r32 timeDelta)
+void ShipManager::Update(r32 timeDelta)
 {
   if (KeyDown(GLFW_KEY_O))
   {
     ComputeMaterialBind(mMaterialComputeShipOctree);
-    ComputeMaterialCompute(mMaterialComputeShipOctree, 1, 1, 1);
+    ComputeMaterialCompute(mMaterialComputeShipOctree);
 
-    BufferLayoutBind(mBufferOctreeNodes);
-    BufferLayoutDataGet(mBufferOctreeNodes, mNumOctreeLevels, mOctreeNodes.data());
+    BufferLayoutBind(mBufferOctreeNode);
+    BufferLayoutDataGet(mBufferOctreeNode, mNumOctreeLevels, mOctreeNodes.data());
   }
   if (KeyDown(GLFW_KEY_P))
   {
     ComputeMaterialBind(mMaterialComputeShipPaths);
-    ComputeMaterialCompute(mMaterialComputeShipPaths, mNumPaths, 1, 1);
+    ComputeMaterialCompute(mMaterialComputeShipPaths);
 
-    BufferLayoutBind(mBufferPaths);
-    BufferLayoutDataGet(mBufferPaths, mNumPaths * mNumPathsSub, mShipPaths.data());
+    BufferLayoutBind(mBufferPath);
+    BufferLayoutDataGet(mBufferPath, mNumPaths * mNumPathsSub, mShipPaths.data());
   }
 }
-void ShipManager::OnUpdateFixed(r32 timeDelta)
+void ShipManager::UpdatePhysics(r32 timeDelta)
 {
   UniformLayoutBind(mUniformSteering);
   Steering steering
@@ -108,14 +104,14 @@ void ShipManager::OnUpdateFixed(r32 timeDelta)
   UniformLayoutDataSet(mUniformNoise, 1, &noise);
 
   ComputeMaterialBind(mMaterialComputeShipPhysics);
-  ComputeMaterialCompute(mMaterialComputeShipPhysics, mNumShips / 32, 1, 1);
+  ComputeMaterialCompute(mMaterialComputeShipPhysics);
 }
-void ShipManager::OnRender(r32 timeDelta)
+void ShipManager::Render()
 {
   RenderMaterialBind(mMaterialLambertInstanced);
   ModelRenderInstanced(mModelShip, mNumShips);
 }
-void ShipManager::OnGizmos(r32 timeDelta)
+void ShipManager::Debug()
 {
   for (u32 i{}; i < mNumPaths; i++)
   {
@@ -146,8 +142,9 @@ void ShipManager::InitializeShipTransforms()
     };
   }
 
-  BufferLayoutBind(mBufferTransforms);
-  BufferLayoutDataSet(mBufferTransforms, mNumShips, mShipTransforms.data());
+  BufferLayoutBind(mBufferTransform);
+  BufferLayoutDataSet(mBufferTransform, mNumShips, mShipTransforms.data());
+  BufferLayoutUnbind(mBufferTransform);
 }
 void ShipManager::InitializeShipSteerings()
 {
@@ -164,8 +161,9 @@ void ShipManager::InitializeShipSteerings()
     };
   }
 
-  BufferLayoutBind(mBufferSteerings);
-  BufferLayoutDataSet(mBufferSteerings, mNumShips, mShipSteerings.data());
+  BufferLayoutBind(mBufferSteering);
+  BufferLayoutDataSet(mBufferSteering, mNumShips, mShipSteerings.data());
+  BufferLayoutUnbind(mBufferSteering);
 }
 void ShipManager::InitializeShipPaths()
 {
@@ -185,13 +183,15 @@ void ShipManager::InitializeShipPaths()
     }
   }
 
-  BufferLayoutBind(mBufferPaths);
-  BufferLayoutDataSet(mBufferPaths, mNumPaths * mNumPathsSub, mShipPaths.data());
+  BufferLayoutBind(mBufferPath);
+  BufferLayoutDataSet(mBufferPath, mNumPaths * mNumPathsSub, mShipPaths.data());
+  BufferLayoutUnbind(mBufferPath);
 }
 void ShipManager::InitializeOctreeNodes()
 {
   mOctreeNodes.resize(mNumOctreeLevels);
 
-  BufferLayoutBind(mBufferOctreeNodes);
-  BufferLayoutDataSet(mBufferOctreeNodes, mNumOctreeLevels, mOctreeNodes.data());
+  BufferLayoutBind(mBufferOctreeNode);
+  BufferLayoutDataSet(mBufferOctreeNode, mNumOctreeLevels, mOctreeNodes.data());
+  BufferLayoutUnbind(mBufferOctreeNode);
 }

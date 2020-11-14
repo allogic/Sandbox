@@ -25,7 +25,4 @@ struct SceneGame : Scene
   void OnUpdateFixed(r32 timeDelta) override;
   void OnRender(r32 timeDelta) override;
   void OnGizmos(r32 timeDelta) override;
-
-  RenderMaterialLambert mMaterialCruiserBerlin{};
-  ModelLambert          mModelCruiserBerlin   {};
 };

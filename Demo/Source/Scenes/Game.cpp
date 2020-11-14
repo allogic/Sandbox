@@ -2,8 +2,7 @@
 
 void SceneGame::OnEnable()
 {
-  RenderMaterialCreate(mMaterialCruiserBerlin);
-  ModelCreate(mModelCruiserBerlin, SANDBOX_ROOT_PATH "Model\\CruiserBerlin.fbx");
+
 }
 void SceneGame::OnDisable()
 {
@@ -11,26 +10,21 @@ void SceneGame::OnDisable()
 }
 void SceneGame::OnUpdate(r32 timeDelta)
 {
-  mPlayerManager.OnUpdate(timeDelta);
-  mShipManager.OnUpdate(timeDelta);
+  mPlayerManager.Update(timeDelta);
+  mShipManager.Update(timeDelta);
 }
 void SceneGame::OnUpdateFixed(r32 timeDelta)
 {
-  mPlayerManager.OnUpdateFixed(timeDelta);
-  mShipManager.OnUpdateFixed(timeDelta);
+  mPlayerManager.UpdatePhysics(timeDelta);
+  mShipManager.UpdatePhysics(timeDelta);
 }
 void SceneGame::OnRender(r32 timeDelta)
 {
-  RenderMaterialBind(mMaterialCruiserBerlin);
-  ModelRender(mModelCruiserBerlin);
-
-  //mPlayerManager.OnRender(timeDelta);
-  mShipManager.OnRender(timeDelta);
+  //mShipManager.Render();
 }
 void SceneGame::OnGizmos(r32 timeDelta)
 {
-  mPlayerManager.OnGizmos(timeDelta);
-  mShipManager.OnGizmos(timeDelta);
+  mShipManager.Debug();
 
   u32 size{ 32 };
 

@@ -1,17 +1,14 @@
 #pragma once
 
 #include <Api.h>
-#include <Object.h>
 
-struct PlayerManager : Object
+struct PlayerManager
 {
   PlayerManager();
   virtual ~PlayerManager();
 
-  void OnUpdate(r32 timeDelta) override;
-  void OnUpdateFixed(r32 timeDelta) override;
-  void OnRender(r32 timeDelta) override;
-  void OnGizmos(r32 timeDelta) override;
+  void Update(r32 timeDelta);
+  void UpdatePhysics(r32 timeDelta);
 
   void CameraControllerUpdateInputSpace(r32 timeDelta);
   void CameraControllerUpdateInputOrbit(r32 timeDelta);

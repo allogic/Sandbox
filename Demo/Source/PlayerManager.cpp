@@ -9,12 +9,12 @@ PlayerManager::~PlayerManager()
 
 }
 
-void PlayerManager::OnUpdate(r32 timeDelta)
+void PlayerManager::Update(r32 timeDelta)
 {
   //CameraControllerUpdateInputSpace(timeDelta);
   CameraControllerUpdateInputOrbit(timeDelta);
 }
-void PlayerManager::OnUpdateFixed(r32 timeDelta)
+void PlayerManager::UpdatePhysics(r32 timeDelta)
 {
   //CameraControllerUpdatePhysicsSpace(mCamera, mCameraControllerSpace);
   CameraControllerUpdatePhysicsOrbit(mCamera, mCameraControllerOrbit);
@@ -25,14 +25,6 @@ void PlayerManager::OnUpdateFixed(r32 timeDelta)
   projection.mProjection = mCamera.mProjection;
   projection.mView = mCamera.mView;
   UniformLayoutDataSet(mUniformProjection, 1, &projection);
-}
-void PlayerManager::OnRender(r32 timeDelta)
-{
-
-}
-void PlayerManager::OnGizmos(r32 timeDelta)
-{
-
 }
 
 void PlayerManager::CameraControllerUpdateInputSpace(r32 timeDelta)
@@ -73,10 +65,10 @@ void PlayerManager::CameraControllerUpdateInputOrbit(r32 timeDelta)
   if (KeyHeld(GLFW_KEY_A)) mCameraControllerOrbit.mPositionAccel += -glm::normalize(mCamera.mLocalRight) * mCameraControllerOrbit.mPositionAmount * distanceScaleLog * timeDelta;
   if (KeyHeld(GLFW_KEY_D)) mCameraControllerOrbit.mPositionAccel += glm::normalize(mCamera.mLocalRight) * mCameraControllerOrbit.mPositionAmount * distanceScaleLog * timeDelta;
 
-  r32v3 mLocalFrontNoXRot{ glm::cross(mCamera.mUp, mCamera.mLocalRight) };
+  r32v3 localFrontNoXRot{ glm::cross(mCamera.mUp, mCamera.mLocalRight) };
 
-  if (KeyHeld(GLFW_KEY_S)) mCameraControllerOrbit.mPositionAccel += -glm::normalize(mLocalFrontNoXRot) * mCameraControllerOrbit.mPositionAmount * distanceScaleLog * timeDelta;
-  if (KeyHeld(GLFW_KEY_W)) mCameraControllerOrbit.mPositionAccel += glm::normalize(mLocalFrontNoXRot) * mCameraControllerOrbit.mPositionAmount * distanceScaleLog * timeDelta;
+  if (KeyHeld(GLFW_KEY_S)) mCameraControllerOrbit.mPositionAccel += -glm::normalize(localFrontNoXRot) * mCameraControllerOrbit.mPositionAmount * distanceScaleLog * timeDelta;
+  if (KeyHeld(GLFW_KEY_W)) mCameraControllerOrbit.mPositionAccel += glm::normalize(localFrontNoXRot) * mCameraControllerOrbit.mPositionAmount * distanceScaleLog * timeDelta;
 
   static r32v2 mousePositionDown{};
 

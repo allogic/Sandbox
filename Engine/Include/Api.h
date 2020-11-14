@@ -7,6 +7,9 @@
 #include <Camera.h>
 #include <Scene.h>
 
+#include <Uniforms/Projection.h>
+#include <Buffers/Transform.h>
+
 #include <Layouts/VertexLayouts.h>
 #include <Layouts/BufferLayouts.h>
 #include <Layouts/TextureLayouts.h>

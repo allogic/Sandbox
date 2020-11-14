@@ -15,7 +15,7 @@ layout (binding = 2, std430) buffer PathBuffer
   Waypoint paths[];
 };
 
-layout (binding = 2) uniform NoiseUniform
+layout (binding = 0) uniform NoiseUniform
 {
   vec3 uOffsetRandom;
   float uFrequency;

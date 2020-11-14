@@ -8,9 +8,25 @@
 #include <Layouts/BufferLayouts.h>
 
 #include <Uniforms/Projection.h>
+#include <Buffers/Transform.h>
 
 /*
 * Render materials.
+*
+* Bindings
+*   Uniforms
+*     0 -> ProjectionUniform
+*     1 -> SteeringUniform
+*     2 -> NoiseUniform
+*     x -> AlbedoUniform
+*     x -> NormalUniform
+*     x -> SpecularUniform
+*     x -> RoughnessUniform
+*   Buffers
+*     0 -> TransformBuffer
+*     1 -> SteerigBuffer
+*     2 -> PathBuffer
+*     3 -> OctreeBuffer
 */
 
 template<typename ShaderLayout>
@@ -22,10 +38,8 @@ struct RenderMaterial
 
   ShaderLayout               mShaderLayout     {};
 
-  std::map<std::string, u32> mUniforms         {};
-  std::map<std::string, u32> mBuffers          {};
-
   UniformLayout<Projection>& mUniformProjection{ RegistryGetOrCreate<UniformLayout<Projection>>("uniformProjection") };
+  BufferLayout<Transform>&   mBufferTransform  { RegistryGetOrCreate<BufferLayout<Transform>>("bufferTransform") };
 };
 
 using RenderMaterialLambert          = RenderMaterial<ShaderLambert>;
@@ -33,21 +47,10 @@ using RenderMaterialLambertInstanced = RenderMaterial<ShaderLambertInstanced>;
 using RenderMaterialGizmo            = RenderMaterial<ShaderGizmo>;
 
 /*
-* Render material utilities.
-*/
-
-template<typename RenderMaterial> u32 RenderMaterialGetUniformIndex(RenderMaterial const& renderMaterial, std::string const& uniformName)
-{
-  auto const uniformIt{ renderMaterial.mUniforms.find(uniformName) };
-  assert(uniformIt != renderMaterial.mUniforms.end());
-  return uniformIt->second;
-}
-
-/*
 * Render material management.
 */
 
-template<typename RenderMaterial> void RenderMaterialCreate(RenderMaterial& renderMaterial)
+template<typename RenderMaterial, typename ... Args> void RenderMaterialCreate(RenderMaterial& renderMaterial, Args&& ... args)
 {
   switch (RenderMaterial::sShaderLayout)
   {
@@ -62,6 +65,10 @@ template<typename RenderMaterial> void RenderMaterialCreate(RenderMaterial& rend
     }
     case eShaderLayoutLambertInstanced:
     {
+      BufferLayoutCreate(renderMaterial.mBufferTransform, std::forward<Args>(args) ...);
+      BufferLayoutBind(renderMaterial.mBufferTransform);
+      BufferLayoutMap(renderMaterial.mBufferTransform, 0);
+
       ShaderLayoutCreate(renderMaterial.mShaderLayout, ShaderPaths
       {
         .mVertex{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\LambertInstanced\\LambertInstanced.vert" },
@@ -79,35 +86,31 @@ template<typename RenderMaterial> void RenderMaterialCreate(RenderMaterial& rend
       break;
     }
   }
-
-  ShaderLayoutGetBindingsUniform(renderMaterial.mShaderLayout, renderMaterial.mUniforms);
-  ShaderLayoutGetBindingsBuffer(renderMaterial.mShaderLayout, renderMaterial.mBuffers);
 }
-template<typename RenderMaterial> void RenderMaterialBind(RenderMaterial const& renderMaterial)
+template<typename RenderMaterial>                    void RenderMaterialBind(RenderMaterial const& renderMaterial)
 {
   ShaderLayoutBind(renderMaterial.mShaderLayout);
 
   UniformLayoutBind(renderMaterial.mUniformProjection);
-  u32 projectionIndex{ RenderMaterialGetUniformIndex(renderMaterial, "ProjectionUniform") };
-  UniformLayoutMap(renderMaterial.mUniformProjection, projectionIndex);
+  UniformLayoutMap(renderMaterial.mUniformProjection, 0);
 
   switch (RenderMaterial::sShaderLayout)
   {
     case eShaderLayoutLambert:
+    {
+      break;
+    }
     case eShaderLayoutLambertInstanced:
     {
-
-
       break;
     }
     case eShaderLayoutGizmo:
     {
-
       break;
     }
   }
 }
-template<typename RenderMaterial> void RenderMaterialDestroy(RenderMaterial const& renderMaterial)
+template<typename RenderMaterial>                    void RenderMaterialDestroy(RenderMaterial const& renderMaterial)
 {
   ShaderLayoutDestroy(renderMaterial.mShaderLayout);
 }

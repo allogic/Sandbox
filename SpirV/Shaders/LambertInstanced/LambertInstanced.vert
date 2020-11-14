@@ -14,7 +14,7 @@ layout (binding = 0) uniform ProjectionUniform
   mat4 uView;
   mat4 uTransform;
 };
-layout (binding = 1, std430) buffer TransformBuffer
+layout (binding = 0, std430) buffer TransformBuffer
 {
   Transform transforms[];
 };

@@ -156,7 +156,6 @@
     <ClCompile Include="Source\ShipManager.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Include\Object.h" />
     <ClInclude Include="Include\PlayerManager.h" />
     <ClInclude Include="Include\ShipManager.h" />
     <ClInclude Include="Include\Scenes\Game.h" />

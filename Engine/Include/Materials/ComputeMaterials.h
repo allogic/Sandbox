@@ -9,6 +9,17 @@
 
 /*
 * Compute material layouts.
+* 
+* Bindings
+*   Uniforms
+*     0 -> ProjectionUniform
+*     1 -> SteeringUniform
+*     2 -> NoiseUniform
+*   Buffers
+*     0 -> TransformBuffer
+*     1 -> SteerigBuffer
+*     2 -> PathBuffer
+*     3 -> OctreeBuffer
 */
 
 template<typename ShaderLayout>
@@ -16,13 +27,16 @@ struct ComputeMaterial
 {
   static_assert(ShaderLayout::sLayout == eShaderLayoutCompute);
 
-  template<typename T>
-  static std::vector<UniformLayout<T>> mUniformLayouts{};
+  ComputeMaterial(u32 numThreadX, u32 numThreadY, u32 numThreadZ)
+    : mNumThreadX{ numThreadX }
+    , mNumThreadY{ numThreadY }
+    , mNumThreadZ{ numThreadZ } {}
 
-  ShaderLayout               mShaderLayout{};
+  u32          mNumThreadX  {};
+  u32          mNumThreadY  {};
+  u32          mNumThreadZ  {};
 
-  std::map<std::string, u32> mUniforms    {};
-  std::map<std::string, u32> mBuffers     {};
+  ShaderLayout mShaderLayout{};
 };
 
 using ComputeMaterialDefault = ComputeMaterial<ShaderCompute>;
@@ -35,19 +49,21 @@ template<typename ComputeMaterial> void ComputeMaterialCreate(ComputeMaterial& c
 {
   ShaderLayoutCreate(computeMaterial.mShaderLayout, ShaderPaths
   {
-    .mCompute{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Compute\\" + shaderName + ".vert" }
+    .mCompute{ std::string{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Compute\\" } + shaderName + std::string{ ".comp" } }
   });
-
-  ShaderLayoutGetBindingsUniform(computeMaterial.mShaderLayout, computeMaterial.mUniforms);
-  ShaderLayoutGetBindingsBuffer(computeMaterial.mShaderLayout, computeMaterial.mBuffers);
 }
 template<typename ComputeMaterial> void ComputeMaterialBind(ComputeMaterial const& computeMaterial)
 {
   ShaderLayoutBind(computeMaterial.mShaderLayout);
 }
-template<typename ComputeMaterial> void ComputeMaterialCompute(ComputeMaterial const& computeMaterial, u32 numThreadX, u32 numThreadY, u32 numThreadZ)
+template<typename ComputeMaterial> void ComputeMaterialCompute(ComputeMaterial const& computeMaterial)
 {
-  ShaderLayoutCompute(computeMaterial.mShaderLayout, numThreadX, numThreadY, numThreadZ);
+  ShaderLayoutCompute(
+    computeMaterial.mShaderLayout,
+    computeMaterial.mNumThreadX,
+    computeMaterial.mNumThreadY,
+    computeMaterial.mNumThreadZ
+  );
 }
 template<typename ComputeMaterial> void ComputeMaterialDestroy(ComputeMaterial const& computeMaterial)
 {

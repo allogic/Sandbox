@@ -1,15 +1,7 @@
 #pragma once
 
 #include <Api.h>
-#include <Object.h>
 
-struct ShipTransform
-{
-  r32v3 mPosition          {};
-  r32v3 mRotationLocalRight{};
-  r32v3 mRotationLocalUp   {};
-  r32v3 mRotationLocalFront{};
-};
 struct ShipSteering
 {
   r32v3 mAcceleration{};
@@ -40,7 +32,7 @@ struct Noise
   r32   mFrequency   {};
 };
 
-struct ShipManager : Object
+struct ShipManager
 {
   ShipManager(
     u32 numShips,
@@ -49,10 +41,10 @@ struct ShipManager : Object
     u32 numPathsSub);
   virtual ~ShipManager();
 
-  void OnUpdate(r32 timeDelta) override;
-  void OnUpdateFixed(r32 timeDelta) override;
-  void OnRender(r32 timeDelta) override;
-  void OnGizmos(r32 timeDelta) override;
+  void Update(r32 timeDelta);
+  void UpdatePhysics(r32 timeDelta);
+  void Render();
+  void Debug();
 
   void InitializeShipTransforms();
   void InitializeShipSteerings();
@@ -69,19 +61,19 @@ struct ShipManager : Object
   UniformLayout<Steering>&        mUniformSteering           { RegistryGetOrCreate<UniformLayout<Steering>>("uniformSteering") };
   UniformLayout<Noise>&           mUniformNoise              { RegistryGetOrCreate<UniformLayout<Noise>>("uniformNoise") };
 
-  std::vector<ShipTransform>      mShipTransforms            {};
+  std::vector<Transform>          mShipTransforms            {};
   std::vector<ShipSteering>       mShipSteerings             {};
   std::vector<ShipWaypoint>       mShipPaths                 {};
   std::vector<OctreeNode>         mOctreeNodes               {};
 
-  BufferLayout<ShipTransform>     mBufferTransforms          {};
-  BufferLayout<ShipSteering>      mBufferSteerings           {};
-  BufferLayout<ShipWaypoint>      mBufferPaths               {};
-  BufferLayout<OctreeNode>        mBufferOctreeNodes         {};
+  BufferLayout<Transform>&        mBufferTransform           { RegistryGetOrCreate<BufferLayout<Transform>>("bufferTransform") };
+  BufferLayout<ShipSteering>      mBufferSteering            {};
+  BufferLayout<ShipWaypoint>      mBufferPath                {};
+  BufferLayout<OctreeNode>        mBufferOctreeNode          {};
 
-  ComputeMaterialDefault          mMaterialComputeShipPhysics{};
-  ComputeMaterialDefault          mMaterialComputeShipPaths  {};
-  ComputeMaterialDefault          mMaterialComputeShipOctree {};
+  ComputeMaterialDefault          mMaterialComputeShipPhysics{ mNumShips / 32, 1, 1 };
+  ComputeMaterialDefault          mMaterialComputeShipPaths  { mNumPaths, 1, 1 };
+  ComputeMaterialDefault          mMaterialComputeShipOctree { 1, 1, 1 };
 
   RenderMaterialLambertInstanced& mMaterialLambertInstanced  { RegistryGetOrCreate<RenderMaterialLambertInstanced>("materialLambertInstanced") };
 };

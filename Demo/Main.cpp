@@ -42,9 +42,9 @@ int main(int argc, char** argv)
       GraphicBufferDeferredPassLightEnd(SceneActive()->mGraphicBuffer);
       SANDBOX_ENGINE_MEASURE_END(GraphicBufferDeferredPassLight);
 
-      GizmoLineBatchBind();
-      SceneActive()->OnGizmos(sTimeDelta);
-      GizmoLineBatchRender();
+      //GizmoLineBatchBind();
+      //SceneActive()->OnGizmos(sTimeDelta);
+      //GizmoLineBatchRender();
 
       glfwSwapBuffers(ContextHandle());
 

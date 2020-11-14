@@ -154,6 +154,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\Api.h" />
+    <ClInclude Include="Include\Buffers\Transform.h" />
     <ClInclude Include="Include\Camera.h" />
     <ClInclude Include="Include\Core.h" />
     <ClInclude Include="Include\DepthBuffer.h" />

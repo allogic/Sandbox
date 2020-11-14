@@ -213,48 +213,32 @@ template<typename ShaderLayout> void ShaderLayoutBind(ShaderLayout const& shader
 {
   glUseProgram(shaderLayout.mProgId);
 }
+template<typename ShaderLayout> void ShaderLayoutGetBindings(ShaderLayout const& shaderLayout, u32 bindingType, std::map<std::string, u32>& bindings)
+{
+  u32 numResources{};
+  u32 numResourcesCharsMax{};
+
+  std::string resourceNameBuffer{};
+  resourceNameBuffer.resize(128);
+
+  glGetProgramInterfaceiv(shaderLayout.mProgId, bindingType, GL_ACTIVE_RESOURCES, (s32*)(&numResources));
+
+  for (u32 i{}; i < numResources; i++)
+  {
+    glGetProgramResourceName(shaderLayout.mProgId, bindingType, i, 128, (s32*)(&numResourcesCharsMax), resourceNameBuffer.data());
+
+    std::string resourceName{};
+    resourceName.resize(numResourcesCharsMax);
+    resourceName.assign(resourceNameBuffer.begin(), resourceNameBuffer.begin() + numResourcesCharsMax);
+
+    u32 resourceId{ glGetProgramResourceIndex(shaderLayout.mProgId, bindingType, resourceName.data()) };
+
+    bindings.emplace(resourceName, resourceId);
+  }
+}
 template<typename ShaderLayout> void ShaderLayoutCompute(ShaderLayout const& shaderLayout, u32 numThreadsX, u32 numThreadsY, u32 numThreadsZ)
 {
   glDispatchCompute(numThreadsX, numThreadsY, numThreadsZ);
-}
-
-/*
-* Shader SSBO/UBO bindings.
-*/
-
-template<typename ShaderLayout> void ShaderLayoutGetBindingsUniform(ShaderLayout const& shaderLayout, std::map<std::string, u32>& bindings)
-{
-  u32 numUniforms{};
-  std::string resourceName{};
-
-  glGetProgramInterfaceiv(shaderLayout.mProgId, GL_UNIFORM_BLOCK, GL_ACTIVE_RESOURCES, (s32*)(&numUniforms));
-
-  for (u32 i{}; i < numUniforms; i++)
-  {
-    glGetProgramResourceName(shaderLayout.mProgId, GL_UNIFORM_BLOCK, i, 64, nullptr, resourceName.data());
-    u32 resourceId{ glGetProgramResourceIndex(shaderLayout.mProgId, GL_UNIFORM_BLOCK, resourceName.data()) };
-
-    bindings.emplace(resourceName, resourceId);
-
-    resourceName.clear();
-  }
-}
-template<typename ShaderLayout> void ShaderLayoutGetBindingsBuffer(ShaderLayout const& shaderLayout, std::map<std::string, u32>& bindings)
-{
-  u32 numBuffers{};
-  std::string resourceName{};
-
-  glGetProgramInterfaceiv(shaderLayout.mProgId, GL_SHADER_STORAGE_BLOCK, GL_ACTIVE_RESOURCES, (s32*)(&numBuffers));
-
-  for (u32 i{}; i < numBuffers; i++)
-  {
-    glGetProgramResourceName(shaderLayout.mProgId, GL_SHADER_STORAGE_BLOCK, i, 64, nullptr, resourceName.data());
-    u32 resourceId{ glGetProgramResourceIndex(shaderLayout.mProgId, GL_SHADER_STORAGE_BLOCK, resourceName.data()) };
-
-    bindings.emplace(resourceName, resourceId);
-
-    resourceName.clear();
-  }
 }
 
 /*

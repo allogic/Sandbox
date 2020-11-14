@@ -21,7 +21,7 @@ layout (location = 3) out vec3 oUv;
 void main()
 {
   oPosition = fragIn.position;
-  oAlbedo = texture(uAlbedo, fragIn.uv).rgb;
+  oAlbedo = vec3(1, 0, 0); //texture(uAlbedo, fragIn.uv).rgb;
   oNormal = fragIn.normal;
   oUv = vec3(fragIn.uv, 0.f);
 }

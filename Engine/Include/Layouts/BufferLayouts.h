@@ -32,6 +32,10 @@ template<typename BufferLayout> void BufferLayoutBind(BufferLayout const& buffer
 {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, bufferLayout.mSsbo);
 }
+template<typename BufferLayout> void BufferLayoutUnbind(BufferLayout const& bufferLayout)
+{
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+}
 template<typename BufferLayout> void BufferLayoutMap(BufferLayout const& bufferLayout, u32 mappingIndex)
 {
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, mappingIndex, bufferLayout.mSsbo);
