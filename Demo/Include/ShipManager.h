@@ -14,7 +14,7 @@ struct ShipWaypoint
   r32v3 mPosition{};
 };
 
-struct OctreeNode
+struct ShipOctree
 {
 
 };
@@ -57,6 +57,7 @@ struct ShipManager
   u32 mNumPathsSub;
 
   ModelLambert                    mModelShip                 {};
+  TextureR32RGBA                  mTextureShip               {};
 
   UniformLayout<Steering>&        mUniformSteering           { RegistryGetOrCreate<UniformLayout<Steering>>("uniformSteering") };
   UniformLayout<Noise>&           mUniformNoise              { RegistryGetOrCreate<UniformLayout<Noise>>("uniformNoise") };
@@ -64,16 +65,16 @@ struct ShipManager
   std::vector<Transform>          mShipTransforms            {};
   std::vector<ShipSteering>       mShipSteerings             {};
   std::vector<ShipWaypoint>       mShipPaths                 {};
-  std::vector<OctreeNode>         mOctreeNodes               {};
+  std::vector<ShipOctree>         mOctreeNodes               {};
 
-  BufferLayout<Transform>&        mBufferTransform           { RegistryGetOrCreate<BufferLayout<Transform>>("bufferTransform") };
-  BufferLayout<ShipSteering>      mBufferSteering            {};
-  BufferLayout<ShipWaypoint>      mBufferPath                {};
-  BufferLayout<OctreeNode>        mBufferOctreeNode          {};
+  BufferLayout<Transform>         mBufferShipTransform       {};
+  BufferLayout<ShipSteering>      mBufferShipSteering        {};
+  BufferLayout<ShipWaypoint>      mBufferShipPath            {};
+  BufferLayout<ShipOctree>        mBufferShipOctree          {};
 
-  ComputeMaterialDefault          mMaterialComputeShipPhysics{ mNumShips / 32, 1, 1 };
-  ComputeMaterialDefault          mMaterialComputeShipPaths  { mNumPaths, 1, 1 };
-  ComputeMaterialDefault          mMaterialComputeShipOctree { 1, 1, 1 };
+  ComputeMaterialDefault          mMaterialComputeShipPhysics{ mNumShips / 32 };
+  ComputeMaterialDefault          mMaterialComputeShipPaths  { mNumPaths };
+  ComputeMaterialDefault          mMaterialComputeShipOctree {};
 
-  RenderMaterialLambertInstanced& mMaterialLambertInstanced  { RegistryGetOrCreate<RenderMaterialLambertInstanced>("materialLambertInstanced") };
+  Renderer&                       mRenderer                  { RegistryGetOrCreate<Renderer>("renderer") };
 };

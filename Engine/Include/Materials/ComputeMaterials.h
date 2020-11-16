@@ -27,14 +27,14 @@ struct ComputeMaterial
 {
   static_assert(ShaderLayout::sLayout == eShaderLayoutCompute);
 
-  ComputeMaterial(u32 numThreadX, u32 numThreadY, u32 numThreadZ)
+  ComputeMaterial(u32 numThreadX = 1, u32 numThreadY = 1, u32 numThreadZ = 1)
     : mNumThreadX{ numThreadX }
     , mNumThreadY{ numThreadY }
     , mNumThreadZ{ numThreadZ } {}
 
-  u32          mNumThreadX  {};
-  u32          mNumThreadY  {};
-  u32          mNumThreadZ  {};
+  u32          mNumThreadX;
+  u32          mNumThreadY;
+  u32          mNumThreadZ;
 
   ShaderLayout mShaderLayout{};
 };

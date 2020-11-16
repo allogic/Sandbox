@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 #include <tuple>
+#include <queue>
 #include <variant>
 #include <string>
 #include <cstring>

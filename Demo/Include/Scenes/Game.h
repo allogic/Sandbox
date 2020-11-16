@@ -11,13 +11,13 @@
 
 #include <PlayerManager.h>
 #include <ShipManager.h>
+#include <BackgroundManager.h>
 
 struct SceneGame : Scene
 {
-  SceneGame(u32 width, u32 height) : Scene(width, height) {}
-
-  PlayerManager mPlayerManager{};
-  ShipManager   mShipManager  { 2048 * 32, 5, 32, 256 };
+  PlayerManager     mPlayerManager    {};
+  ShipManager       mShipManager      { 2048 * 32, 5, 32, 256 };
+  BackgroundManager mBackgroundManager{ 2048 * 32 };
 
   void OnEnable() override;
   void OnDisable() override;

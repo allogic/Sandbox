@@ -213,6 +213,10 @@ template<typename ShaderLayout> void ShaderLayoutBind(ShaderLayout const& shader
 {
   glUseProgram(shaderLayout.mProgId);
 }
+static                          void ShaderLayoutUnbind()
+{
+  glUseProgram(0);
+}
 template<typename ShaderLayout> void ShaderLayoutGetBindings(ShaderLayout const& shaderLayout, u32 bindingType, std::map<std::string, u32>& bindings)
 {
   u32 numResources{};

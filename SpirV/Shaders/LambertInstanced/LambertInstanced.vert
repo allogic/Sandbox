@@ -3,9 +3,15 @@
 struct Transform
 {
   float position[3];
-  float rotationLocalRight[3];
-  float rotationLocalUp[3];
-  float rotationLocalFront[3];
+  float rotation[3];
+  float localRight[3];
+  float localUp[3];
+  float localFront[3];
+};
+
+layout (binding = 0, std430) buffer TransformBuffer
+{
+  Transform transforms[];
 };
 
 layout (binding = 0) uniform ProjectionUniform
@@ -13,10 +19,6 @@ layout (binding = 0) uniform ProjectionUniform
   mat4 uProjection;
   mat4 uView;
   mat4 uTransform;
-};
-layout (binding = 0, std430) buffer TransformBuffer
-{
-  Transform transforms[];
 };
 
 layout (location = 0) in vec3 iPosition;
@@ -36,7 +38,13 @@ vec3 ToVec3(in float a[3])
 {
   return vec3(a[0], a[1], a[2]);
 }
-mat4 Rotate3D(vec3 axis, in float angle)
+void SetTo(inout float a[3], in vec3 b)
+{
+  a[0] = b.x;
+  a[1] = b.y;
+  a[2] = b.z;
+}
+mat4 Rotate3D(in vec3 axis, in float angle)
 {
   axis = normalize(axis);
   float s = sin(angle);
@@ -54,14 +62,38 @@ mat4 Rotate3D(vec3 axis, in float angle)
 void main()
 {
   uint objIndex = gl_InstanceID;
+
+  // Transform helper references
   vec3 transformPosition = ToVec3(transforms[objIndex].position);
+  vec3 transformRotation = ToVec3(transforms[objIndex].rotation);
+  vec3 transformLocalRight = ToVec3(transforms[objIndex].localRight);
+  vec3 transformLocalUp = ToVec3(transforms[objIndex].localUp);
+  vec3 transformLocalFront = ToVec3(transforms[objIndex].localFront);
+
+  // Compute transform matrices
   mat4 tp = uProjection * uTransform;
   mat4 tvp = uProjection * uView * uTransform;
 
-  vertOut.position = vec4(tp * vec4(iPosition + transformPosition, 1.f)).xyz;
+  // Compute rotation matrix
+  mat4 localRotation = mat4(1.f);
+  localRotation = Rotate3D(transformLocalRight, transformRotation.x);
+  localRotation = Rotate3D(transformLocalUp, transformRotation.y);
+  localRotation = Rotate3D(transformLocalFront, transformRotation.z);
+
+  // Set transform local rotation vectors; very slow access
+  //SetTo(transforms[objIndex].localRight, vec4(localRotation * vec4(transformLocalRight, 1.f)).xyz);
+  //SetTo(transforms[objIndex].localUp, vec4(localRotation * vec4(transformLocalUp, 1.f)).xyz);
+  //SetTo(transforms[objIndex].localFront, vec4(localRotation * vec4(transformLocalFront, 1.f)).xyz);
+
+  // Compute vertex rotation in local space
+  vec3 vertexPosition = vec4(localRotation * vec4(iPosition, 1.f)).xyz;
+
+  // Forward fragment shader
+  vertOut.position = vec4(tp * vec4(vertexPosition + transformPosition, 1.f)).xyz;
   vertOut.normal = iNormal;
   vertOut.uv = iUv;
   vertOut.color = iColor;
 
-  gl_Position = tvp * vec4(iPosition + transformPosition, 1.f);
+  // Final position
+  gl_Position = tvp * vec4(vertexPosition + transformPosition, 1.f);
 }

@@ -1,0 +1,47 @@
+#version 460 core
+
+layout (local_size_x = 32) in;
+
+struct Transform
+{
+  float position[3];
+  float rotationLocalRight[3];
+  float rotationLocalUp[3];
+  float rotationLocalFront[3];
+};
+
+layout (binding = 0, std430) buffer TransformBuffer
+{
+  Transform transforms[];
+};
+
+layout (binding = 0) uniform ProjectionUniform
+{
+  mat4 uProjection;
+  mat4 uView;
+  mat4 uTransform;
+};
+
+vec3 ToVec3(in float a[3])
+{
+  return vec3(a[0], a[1], a[2]);
+}
+mat4 Rotate3D(vec3 axis, in float angle)
+{
+  axis = normalize(axis);
+  float s = sin(angle);
+  float c = cos(angle);
+  float oc = 1.0f - c;
+
+  return mat4(
+    oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.f,
+    oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.f,
+    oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.f,
+    0.f,                                0.f,                                0.f,                                1.f
+  );
+}
+
+void main()
+{
+  uint objIndex = gl_GlobalInvocationID.x;
+}

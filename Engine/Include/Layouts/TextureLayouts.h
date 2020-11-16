@@ -13,20 +13,30 @@ enum TextureLayoutType : u32
   eTextureLayoutR32,
 };
 
-template<u32 Layout, u32 Channels>
+enum TextureChannelType : u32
+{
+  eRGB,
+  eRGBA,
+  eDepth,
+};
+
+template<u32 Layout, u32 Channel>
 struct TextureLayout
 {
-  constexpr static u32 sLayout  { Layout };
-  constexpr static u32 sChannels{ Channels };
+  constexpr static TextureLayoutType  sLayout { Layout };
+  constexpr static TextureChannelType sChannel{ Channel };
 
   u32 mWidth {};
   u32 mHeight{};
   u32 mTid   {};
 };
 
-using TextureU8RGB   = TextureLayout<eTextureLayoutU8, 3>;
-using TextureU8RGBA  = TextureLayout<eTextureLayoutU8, 4>;
-using TextureR32RGBA = TextureLayout<eTextureLayoutR32, 4>;
+using TextureU8RGB   = TextureLayout<eTextureLayoutU8, eRGB>;
+using TextureU8RGBA  = TextureLayout<eTextureLayoutU8, eRGB>;
+using TextureR32RGB = TextureLayout<eTextureLayoutR32, eRGB>;
+using TextureR32RGBA = TextureLayout<eTextureLayoutR32, eRGBA>;
+
+using DepthR32RGBA   = TextureLayout<eTextureLayoutR32, eDepth>;
 
 /*
 * Texture management.
@@ -43,10 +53,11 @@ template<typename TextureLayout> void TextureLayoutDataSet(TextureLayout const& 
     case eTextureLayoutU8: type = GL_UNSIGNED_BYTE; break;
     case eTextureLayoutR32: type = GL_FLOAT; break;
   }
-  switch (TextureLayout::sChannels)
+  switch (TextureLayout::sChannel)
   {
-    case 3: formatInternal = GL_RGB8UI; format = GL_RGB; break;
-    case 4: formatInternal = GL_RGBA32F; format = GL_RGBA; break;
+    case eRGB: formatInternal = GL_RGB8UI; format = GL_RGB; break;
+    case eRGBA: formatInternal = GL_RGBA32F; format = GL_RGBA; break;
+    case eDepth: formatInternal = GL_DEPTH_COMPONENT32F; format = GL_DEPTH_COMPONENT; break;
   }
 
   glTexImage2D(GL_TEXTURE_2D, 0, formatInternal, textureLayout.mWidth, textureLayout.mHeight, 0, format, type, pImageData);
@@ -58,19 +69,30 @@ template<typename TextureLayout> void TextureLayoutDataSetFrom(TextureLayout con
   s32 channels{};
   s32 type{};
 
-  switch (TextureLayout::sChannels)
+  switch (TextureLayout::sChannel)
   {
-    case 3: type = STBI_rgb; break;
-    case 4: type = STBI_rgb_alpha; break;
+    case eRGB: type = STBI_rgb; break;
+    case eRGBA: type = STBI_rgb_alpha; break;
   }
 
   u8* pBlob = stbi_load(fileName.data(), &width, &height, &channels, type);
 
   assert(textureLayout.mWidth == width);
   assert(textureLayout.mHeight == height);
-  assert(textureLayout.sChannels == channels);
 
-  u32 textureSize{ textureLayout.mWidth * textureLayout.mHeight * TextureLayout::sChannels };
+  switch (TextureLayout::sChannel)
+  {
+    case eRGB: assert(3 == channels); break;
+    case eRGBA: assert(4 == channels); break;
+  }
+
+  u32 textureSize{};
+
+  switch (TextureLayout::sChannel)
+  {
+    case eRGB: textureSize = textureLayout.mWidth * textureLayout.mHeight * 3; break;
+    case eRGBA: textureSize = textureLayout.mWidth * textureLayout.mHeight * 4; break;
+  }
 
   if (TextureLayout::sLayout == eTextureLayoutR32)
   {
@@ -81,11 +103,11 @@ template<typename TextureLayout> void TextureLayoutDataSetFrom(TextureLayout con
     for (u32 i{}; i < textureSize; i++)
       imageData[i] = pBlob[i] / 255.f;
 
-    TextureLayoutData(textureLayout, imageData.data());
+    TextureLayoutDataSet(textureLayout, imageData.data());
   }
   else
   {
-    TextureLayoutData(textureLayout, pBlob);
+    TextureLayoutDataSet(textureLayout, pBlob);
   }
 
   stbi_image_free(pBlob);
@@ -99,10 +121,11 @@ template<typename TextureLayout> void TextureLayoutCreate(TextureLayout& texture
 
   glBindTexture(GL_TEXTURE_2D, textureLayout.mTid);
 
-  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
   TextureLayoutDataSet(textureLayout, nullptr);
 
@@ -122,8 +145,8 @@ template<typename TextureLayout> void TextureLayoutMapTexture(TextureLayout cons
 
   switch (TextureLayout::sLayout)
   {
-  case eTextureLayoutU8: type = GL_RGBA8UI; break;
-  case eTextureLayoutR32: type = GL_RGBA32F; break;
+    case eTextureLayoutU8: type = GL_RGBA8UI; break;
+    case eTextureLayoutR32: type = GL_RGBA32F; break;
   }
 
   glBindImageTexture(mappingIndex, textureLayout.mTid, 0, GL_FALSE, 0, GL_READ_WRITE, type);

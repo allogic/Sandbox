@@ -24,13 +24,17 @@ template<typename UniformLayout> void UniformLayoutCreate(UniformLayout& uniform
   glGenBuffers(1, &uniformLayout.mUbo);
 
   glBindBuffer(GL_UNIFORM_BUFFER, uniformLayout.mUbo);
-  glBufferStorage(GL_UNIFORM_BUFFER, sizeof(UniformLayout::BufferType), nullptr, GL_DYNAMIC_STORAGE_BIT);
+  glBufferStorage(GL_UNIFORM_BUFFER, sizeof(UniformLayout::BufferType), nullptr, GL_DYNAMIC_STORAGE_BIT | GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 template<typename UniformLayout> void UniformLayoutBind(UniformLayout const& uniformLayout)
 {
   glBindBuffer(GL_UNIFORM_BUFFER, uniformLayout.mUbo);
+}
+static                           void UniformLayoutUnbind()
+{
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 template<typename UniformLayout> void UniformLayoutMap(UniformLayout const& uniformLayout, u32 mappingIndex)
 {

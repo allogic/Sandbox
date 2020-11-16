@@ -1,32 +1,26 @@
 #include <Api.h>
 
-GLFWwindow* spWindow{};
+GLFWwindow*         spWindow                               {};
 
-std::vector<Scene*> sScenes      {};
-Scene*              spSceneActive{};
+std::vector<Scene*> sScenes                                {};
+Scene*              spSceneActive                          {};
 
-s32   sStatus{};
-u32   sWidth {};
-u32   sHeight{};
-r32   sAspect{};
+s32                 sStatus                                {};
+u32                 sWidth                                 {};
+u32                 sHeight                                {};
+r32                 sAspect                                {};
 
-r32v2 sMousePosition{};
-r32v2 sMouseScroll  {};
+r32v2               sMousePosition                         {};
+r32v2               sMouseScroll                           {};
 
-Event sMouseKeyStates[GLFW_MOUSE_BUTTON_LAST]{};
-Event sKeyboardKeyStates[GLFW_KEY_LAST]      {};
-
-u32         sGizmoLineBatchVertexBufferSize{ 65535 };
-ShaderGizmo sGizmoLineBatchShader          {};
-MeshGizmo   sGizmoLineBatchMesh            {};
-u32         sGizmoLineBatchOffsetVertex    {};
-u32         sGizmoLineBatchOffsetIndex     {};
+Event               sMouseKeyStates[GLFW_MOUSE_BUTTON_LAST]{};
+Event               sKeyboardKeyStates[GLFW_KEY_LAST]      {};
 
 /*
 * OpenGL context specific.
 */
 
-void        ContextCreate(u32 width, u32 height, std::string const& title)
+void ContextCreate(u32 width, u32 height, std::string const& title)
 {
   sWidth = width;
   sHeight = height;
@@ -67,7 +61,7 @@ void        ContextCreate(u32 width, u32 height, std::string const& title)
 
   gladLoadGL();
 }
-void        ContextRegisterDebugHandler()
+void ContextRegisterDebugHandler()
 {
   glEnable(GL_DEBUG_OUTPUT);
   glDebugMessageCallback([](u32 source, u32 type, u32 id, u32 severity, s32 length, s8 const* msg, void const* userParam)
@@ -81,11 +75,48 @@ void        ContextRegisterDebugHandler()
       }
     }, 0);
 }
-GLFWwindow* ContextHandle()
+void ContextRun()
 {
-  return spWindow;
+  r32 time{};
+  r32 timePrev{};
+  r32 timeDelta{};
+
+  r32 timeRender{ 1.f / 60 };
+  r32 timeRenderPrev{};
+
+  Renderer& renderer{ RegistryGetOrCreate<Renderer>("renderer") };
+
+  RendererCreate(renderer, sWidth, sHeight);
+
+  while (!sStatus)
+  {
+    EventsPoll();
+
+    time = (r32)glfwGetTime();
+    timeDelta = time - timePrev;
+
+    spSceneActive->OnUpdate(timeDelta);
+
+    if ((time - timeRenderPrev) >= timeRender)
+    {
+      spSceneActive->OnUpdateFixed(timeDelta);
+      spSceneActive->OnRender(timeDelta);
+      spSceneActive->OnGizmos(timeDelta);
+
+      RendererRenderDeferred(renderer);
+      RendererRenderGizmo(renderer);
+
+      glfwSwapBuffers(spWindow);
+
+      timeRenderPrev = time;
+    }
+
+    timePrev = time;
+  }
+
+  RendererDestroy(renderer);
 }
-void        ContextDestroy()
+void ContextDestroy()
 {
   glfwDestroyWindow(spWindow);
 }
@@ -228,7 +259,7 @@ u32 KeyUp(u32 key)
 * Scene management.
 */
 
-void   SceneCreate(Scene* pScene)
+void SceneCreate(Scene* pScene)
 {
   sScenes.emplace_back(pScene);
 
@@ -238,19 +269,13 @@ void   SceneCreate(Scene* pScene)
     spSceneActive->OnEnable();
   }
 }
-void   SceneSwitch(u32 index)
+void SceneSwitch(u32 index)
 {
-  GizmoLineBatchClear();
-
   spSceneActive->OnDisable();
   spSceneActive = sScenes[index];
   spSceneActive->OnEnable();
 }
-Scene* SceneActive()
-{
-  return spSceneActive;
-}
-void   SceneDestroyAll()
+void SceneDestroyAll()
 {
   spSceneActive = nullptr;
 
@@ -358,110 +383,4 @@ void ModelRenderInstanced(ModelLambert const& model, u32 numInstances)
 void ModelDestroy(ModelLambert const& model)
 {
   ModelLayoutDestroy(model);
-}
-
-/*
-* 3D debug utilities.
-*/
-
-void GizmoLineBatchCreate()
-{
-  ShaderLayoutCreate(sGizmoLineBatchShader, ShaderPaths{ .mVertex{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Gizmo\\Gizmo.vert" }, .mFragment{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Gizmo\\Gizmo.frag" } });
-  MeshLayoutCreate(sGizmoLineBatchMesh, sGizmoLineBatchVertexBufferSize, sGizmoLineBatchVertexBufferSize * 2);
-}
-void GizmoLineBatchClear()
-{
-  MeshLayoutBind(sGizmoLineBatchMesh);
-  MeshLayoutClear(sGizmoLineBatchMesh);
-
-  sGizmoLineBatchOffsetVertex = 0;
-  sGizmoLineBatchOffsetIndex = 0;
-}
-void GizmoLineBatchBind()
-{
-  MeshLayoutBind(sGizmoLineBatchMesh);
-}
-void GizmoLineBatchPushLine(r32v3 const& p0, r32v3 const& p1, r32v4 const& color)
-{
-  VertexGizmo vertices[2]{ { p0, color }, { p1, color } };
-  u32 indices[2]{ sGizmoLineBatchOffsetVertex + 0, sGizmoLineBatchOffsetVertex + 1 };
-
-  MeshLayoutDataSub(sGizmoLineBatchMesh, vertices, indices, sGizmoLineBatchOffsetVertex, sGizmoLineBatchOffsetIndex, 2, 2);
-  
-  sGizmoLineBatchOffsetVertex += 2;
-  sGizmoLineBatchOffsetIndex += 2;
-}
-void GizmoLineBatchPushBox(r32v3 const& position, r32v3 const& size, r32v4 const& color)
-{
-  r32v3 half{ size / 2.f };
-
-  r32v3 blf{ -half.x, -half.y, -half.z };
-  r32v3 brf{  half.x, -half.y, -half.z };
-  r32v3 tlf{ -half.x,  half.y, -half.z };
-  r32v3 trf{  half.x,  half.y, -half.z };
-
-  r32v3 blb{ -half.x, -half.y,  half.z };
-  r32v3 brb{  half.x, -half.y,  half.z };
-  r32v3 tlb{ -half.x,  half.y,  half.z };
-  r32v3 trb{  half.x,  half.y,  half.z };
-
-  VertexGizmo vertices[8]
-  {
-    // front
-    { position + blf, color },
-    { position + brf, color },
-    { position + tlf, color },
-    { position + trf, color },
-
-    // back
-    { position + blb, color },
-    { position + brb, color },
-    { position + tlb, color },
-    { position + trb, color },
-  };
-  u32 indices[24]
-  {
-    // front
-    sGizmoLineBatchOffsetVertex + 0,
-    sGizmoLineBatchOffsetVertex + 1,
-    sGizmoLineBatchOffsetVertex + 0,
-    sGizmoLineBatchOffsetVertex + 2,
-    sGizmoLineBatchOffsetVertex + 2,
-    sGizmoLineBatchOffsetVertex + 3,
-    sGizmoLineBatchOffsetVertex + 3,
-    sGizmoLineBatchOffsetVertex + 1,
-
-    // back
-    sGizmoLineBatchOffsetVertex + 4,
-    sGizmoLineBatchOffsetVertex + 5,
-    sGizmoLineBatchOffsetVertex + 4,
-    sGizmoLineBatchOffsetVertex + 6,
-    sGizmoLineBatchOffsetVertex + 6,
-    sGizmoLineBatchOffsetVertex + 7,
-    sGizmoLineBatchOffsetVertex + 7,
-    sGizmoLineBatchOffsetVertex + 5,
-
-    // connections
-    sGizmoLineBatchOffsetVertex + 0,
-    sGizmoLineBatchOffsetVertex + 4,
-    sGizmoLineBatchOffsetVertex + 1,
-    sGizmoLineBatchOffsetVertex + 5,
-    sGizmoLineBatchOffsetVertex + 2,
-    sGizmoLineBatchOffsetVertex + 6,
-    sGizmoLineBatchOffsetVertex + 3,
-    sGizmoLineBatchOffsetVertex + 7,
-  };
-
-  MeshLayoutDataSub(sGizmoLineBatchMesh, vertices, indices, sGizmoLineBatchOffsetVertex, sGizmoLineBatchOffsetIndex, 8, 24);
-
-  sGizmoLineBatchOffsetVertex += 8;
-  sGizmoLineBatchOffsetIndex += 24;
-}
-void GizmoLineBatchRender()
-{
-  ShaderLayoutBind(sGizmoLineBatchShader);
-  MeshLayoutRender(sGizmoLineBatchMesh, eRenderModeLine);
-
-  sGizmoLineBatchOffsetVertex = 0;
-  sGizmoLineBatchOffsetIndex = 0;
 }

@@ -2,29 +2,42 @@
 
 PlayerManager::PlayerManager()
 {
+  ModelCreate(mModelCruiser, SANDBOX_ROOT_PATH "Model\\CruiserBerlin.fbx");
+  ModelLayoutTransform(mModelCruiser, { 10.f, 10.f, 10.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f });
+
+  TextureLayoutCreate(mTextureCruiser, 512, 512);
+  TextureLayoutBind(mTextureCruiser);
+  TextureLayoutDataSetFrom(mTextureCruiser, SANDBOX_ROOT_PATH "Texture\\UV.png");
+
   CameraCreate(mCamera, { 0.f, 0.f, 0.f }, WindowAspect(), 45.f, 0.001f, 10000.f);
 }
 PlayerManager::~PlayerManager()
 {
-
+  ModelDestroy(mModelCruiser);
+  TextureLayoutDestroy(mTextureCruiser);
 }
 
 void PlayerManager::Update(r32 timeDelta)
 {
-  //CameraControllerUpdateInputSpace(timeDelta);
-  CameraControllerUpdateInputOrbit(timeDelta);
+  CameraControllerUpdateInputSpace(timeDelta);
+  //CameraControllerUpdateInputOrbit(timeDelta);
 }
 void PlayerManager::UpdatePhysics(r32 timeDelta)
 {
-  //CameraControllerUpdatePhysicsSpace(mCamera, mCameraControllerSpace);
-  CameraControllerUpdatePhysicsOrbit(mCamera, mCameraControllerOrbit);
+  CameraControllerUpdatePhysicsSpace(mCamera, mCameraControllerSpace);
+  //CameraControllerUpdatePhysicsOrbit(mCamera, mCameraControllerOrbit);
+}
+void PlayerManager::Render()
+{
+  RendererSubmitLambert(mRenderer, TaskLambert
+  {
+    &mModelCruiser,
+    &mTextureCruiser,
+  });
+}
+void PlayerManager::Debug()
+{
 
-  UniformLayoutBind(mUniformProjection);
-  Projection projection{};
-  UniformLayoutDataGet(mUniformProjection, 1, &projection);
-  projection.mProjection = mCamera.mProjection;
-  projection.mView = mCamera.mView;
-  UniformLayoutDataSet(mUniformProjection, 1, &projection);
 }
 
 void PlayerManager::CameraControllerUpdateInputSpace(r32 timeDelta)
