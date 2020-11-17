@@ -34,5 +34,13 @@
 #include <glm/gtc/random.hpp>
 #undef GLM_ENABLE_EXPERIMENTAL
 
-#define SANDBOX_ENGINE_MEASURE_BEGIN(NAME) auto NAME##Start = std::chrono::high_resolution_clock::now();
-#define SANDBOX_ENGINE_MEASURE_END(NAME) auto NAME##Duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - NAME##Start).count();
+#define _STR(VAL) #VAL
+#define STR(VAL) _STR(VAL)
+
+#define SANDBOX_ENGINE_MEASURE_BEGIN(NAME)                                                                    \
+auto NAME##Start = std::chrono::high_resolution_clock::now();
+
+#define SANDBOX_ENGINE_MEASURE_END(NAME)                                                                      \
+auto NAME##End = std::chrono::high_resolution_clock::now();                                                   \
+auto NAME##Duration = std::chrono::duration_cast<std::chrono::milliseconds>(NAME##End - NAME##Start).count(); \
+std::printf(STR(NAME) ": %lldms\n", NAME##Duration);

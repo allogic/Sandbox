@@ -49,68 +49,13 @@ static                         void FrameBufferUnbindWrite()
 {
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
-static                         void FrameBufferReadBuffer(u32 textureIndex)
+static                         void FrameBufferSetReadTexture(u32 textureIndex)
 {
   glReadBuffer(GL_COLOR_ATTACHMENT0 + textureIndex);
 }
 template<typename FrameBuffer> void FrameBufferDestroy(FrameBuffer const& frameBuffer)
 {
   glDeleteFramebuffers(1, &frameBuffer.mFbo);
-}
-
-/*
-* Deferred render passes.
-*/
-
-template<typename FrameBuffer> void FrameBufferDeferredPassGeometryBegin(FrameBuffer const& frameBuffer)
-{
-  FrameBufferBindWrite(frameBuffer);
-
-  glDepthMask(GL_TRUE);
-  glClearColor(0.f, 0.f, 0.f, 1.f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glEnable(GL_DEPTH_TEST);
-  //glDisable(GL_BLEND);
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-}
-template<typename FrameBuffer> void FrameBufferDeferredPassGeometryEnd(FrameBuffer const& frameBuffer)
-{
-  glDepthMask(GL_FALSE);
-  glDisable(GL_DEPTH_TEST);
-
-  FrameBufferUnbind();
-}
-template<typename FrameBuffer> void FrameBufferDeferredPassLightBegin(FrameBuffer const& frameBuffer)
-{
-  FrameBufferBindRead(frameBuffer);
-
-  //glClearColor(0.f, 0.f, 0.f, 1.f);
-  //glClear(GL_COLOR_BUFFER_BIT);
-
-  u32 width{ frameBuffer.mWidth };
-  u32 height{ frameBuffer.mHeight };
-  u32 halfWidth{ (u32)(width / 2.f) };
-  u32 halfHeight{ (u32)(height / 2.f) };
-
-  FrameBufferReadBuffer(1);
-  glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-
-  //GraphicBufferReadBuffer(graphicBuffer, 0);
-  //glBlitFramebuffer(0, 0, width, height, 0, 0, halfWidth, halfHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-  //
-  //GraphicBufferReadBuffer(graphicBuffer, 1);
-  //glBlitFramebuffer(0, 0, width, height, 0, halfHeight, halfWidth, height, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-  //
-  //GraphicBufferReadBuffer(graphicBuffer, 2);
-  //glBlitFramebuffer(0, 0, width, height, halfWidth, halfHeight, width, height, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-  //
-  //GraphicBufferReadBuffer(graphicBuffer, 3);
-  //glBlitFramebuffer(0, 0, width, height, halfWidth, 0, width, halfHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-}
-template<typename FrameBuffer> void FrameBufferDeferredPassLightEnd(FrameBuffer const& frameBuffer)
-{
-  FrameBufferUnbind();
 }
 
 /*

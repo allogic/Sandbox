@@ -8,6 +8,9 @@
 #include <Layouts/BufferLayouts.h>
 
 #include <Uniforms/Projection.h>
+#include <Uniforms/Screen.h>
+#include <Uniforms/Light.h>
+
 #include <Buffers/Transform.h>
 
 /*

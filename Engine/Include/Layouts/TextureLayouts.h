@@ -135,6 +135,10 @@ template<typename TextureLayout> void TextureLayoutBind(TextureLayout const& tex
 {
   glBindTexture(GL_TEXTURE_2D, textureLayout.mTid);
 }
+static                           void TextureLayoutUnbind()
+{
+  glBindTexture(GL_TEXTURE_2D, 0);
+}
 template<typename TextureLayout> void TextureLayoutMapSampler(TextureLayout const& textureLayout, u32 mappingIndex)
 {
   glBindTextureUnit(mappingIndex, textureLayout.mTid);

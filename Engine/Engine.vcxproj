@@ -161,17 +161,21 @@
     <ClInclude Include="Include\Events.h" />
     <ClInclude Include="Include\Layouts\BufferLayouts.h" />
     <ClInclude Include="Include\FrameBuffer.h" />
+    <ClInclude Include="Include\Lights.h" />
     <ClInclude Include="Include\Materials\ComputeMaterials.h" />
     <ClInclude Include="Include\Materials\RenderMaterials.h" />
     <ClInclude Include="Include\Layouts\ShaderLayouts.h" />
     <ClInclude Include="Include\Layouts\TextureLayouts.h" />
+    <ClInclude Include="Include\Materials\ScreenMaterials.h" />
     <ClInclude Include="Include\Registry.h" />
     <ClInclude Include="Include\Renderer.h" />
     <ClInclude Include="Include\Scene.h" />
     <ClInclude Include="Include\Types.h" />
     <ClInclude Include="Include\Layouts\UniformLayouts.h" />
     <ClInclude Include="Include\Layouts\VertexLayouts.h" />
+    <ClInclude Include="Include\Uniforms\Light.h" />
     <ClInclude Include="Include\Uniforms\Projection.h" />
+    <ClInclude Include="Include\Uniforms\Screen.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

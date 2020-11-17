@@ -111,8 +111,6 @@ void ShipManager::UpdatePhysics(r32 timeDelta)
 }
 void ShipManager::Render()
 {
-  return;
-
   RendererSubmitLambertInstanced(mRenderer, TaskLambertInstanced
   {
     &mModelShip,

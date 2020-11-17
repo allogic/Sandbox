@@ -5,9 +5,10 @@ layout (local_size_x = 32) in;
 struct Transform
 {
   float position[3];
-  float rotationLocalRight[3];
-  float rotationLocalUp[3];
-  float rotationLocalFront[3];
+  float rotation[3];
+  float localRight[3];
+  float localUp[3];
+  float localFront[3];
 };
 
 layout (binding = 0, std430) buffer TransformBuffer
@@ -17,14 +18,68 @@ layout (binding = 0, std430) buffer TransformBuffer
 
 layout (binding = 0) uniform ProjectionUniform
 {
+  vec3 uCameraPosition;
   mat4 uProjection;
   mat4 uView;
   mat4 uTransform;
+};
+layout (binding = 1) uniform StarFieldUniform
+{
+  vec3 cameraPosition;
 };
 
 vec3 ToVec3(in float a[3])
 {
   return vec3(a[0], a[1], a[2]);
+}
+void SetTo(inout float a[3], in vec3 b)
+{
+  a[0] = b.x;
+  a[1] = b.y;
+  a[2] = b.z;
+}
+float Hash(in float n)
+{
+  return fract(sin(n) * 1e4);
+}
+float Hash(in vec2 p)
+{
+  return fract(1e4 * sin(17.0 * p.x + p.y * 0.1) * (0.1 + abs(sin(p.y * 13.0 + p.x))));
+}
+float Noise(in float x)
+{
+  float i = floor(x);
+  float f = fract(x);
+  float u = f * f * (3.0 - 2.0 * f);
+  return mix(Hash(i), Hash(i + 1.0), u);
+}
+float Noise(in vec2 x)
+{
+  vec2 i = floor(x);
+  vec2 f = fract(x);
+
+  float a = Hash(i);
+  float b = Hash(i + vec2(1.0, 0.0));
+  float c = Hash(i + vec2(0.0, 1.0));
+  float d = Hash(i + vec2(1.0, 1.0));
+
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+}
+float Noise(in vec3 x)
+{
+	const vec3 step = vec3(1004, -484, -8411);
+
+	vec3 i = floor(x);
+	vec3 f = fract(x);
+ 
+  float n = dot(i, step);
+
+	vec3 u = f * f * (3.0 - 2.0 * f);
+	return mix(mix(mix( Hash(n + dot(step, vec3(0, 0, 0))), Hash(n + dot(step, vec3(1, 0, 0))), u.x),
+                 mix( Hash(n + dot(step, vec3(0, 1, 0))), Hash(n + dot(step, vec3(1, 1, 0))), u.x), u.y),
+             mix(mix( Hash(n + dot(step, vec3(0, 0, 1))), Hash(n + dot(step, vec3(1, 0, 1))), u.x),
+                 mix( Hash(n + dot(step, vec3(0, 1, 1))), Hash(n + dot(step, vec3(1, 1, 1))), u.x), u.y), u.z);
 }
 mat4 Rotate3D(vec3 axis, in float angle)
 {
@@ -44,4 +99,16 @@ mat4 Rotate3D(vec3 axis, in float angle)
 void main()
 {
   uint objIndex = gl_GlobalInvocationID.x;
+
+  // Transform helper references
+  vec3 transformPosition = ToVec3(transforms[objIndex].position);
+  vec3 transformRotation = ToVec3(transforms[objIndex].rotation);
+  vec3 transformLocalRight = ToVec3(transforms[objIndex].localRight);
+  vec3 transformLocalUp = ToVec3(transforms[objIndex].localUp);
+  vec3 transformLocalFront = ToVec3(transforms[objIndex].localFront);
+
+  // Set transform local rotation vectors
+  //SetTo(transforms[objIndex].localRight, vec4(localRotation * vec4(transformLocalRight, 1.f)).xyz);
+  //SetTo(transforms[objIndex].localUp, vec4(localRotation * vec4(transformLocalUp, 1.f)).xyz);
+  //SetTo(transforms[objIndex].localFront, vec4(localRotation * vec4(transformLocalFront, 1.f)).xyz);
 }

@@ -16,6 +16,7 @@ layout (binding = 0, std430) buffer TransformBuffer
 
 layout (binding = 0) uniform ProjectionUniform
 {
+  vec3 uCameraPosition;
   mat4 uProjection;
   mat4 uView;
   mat4 uTransform;
@@ -79,11 +80,6 @@ void main()
   localRotation = Rotate3D(transformLocalRight, transformRotation.x);
   localRotation = Rotate3D(transformLocalUp, transformRotation.y);
   localRotation = Rotate3D(transformLocalFront, transformRotation.z);
-
-  // Set transform local rotation vectors; very slow access
-  //SetTo(transforms[objIndex].localRight, vec4(localRotation * vec4(transformLocalRight, 1.f)).xyz);
-  //SetTo(transforms[objIndex].localUp, vec4(localRotation * vec4(transformLocalUp, 1.f)).xyz);
-  //SetTo(transforms[objIndex].localFront, vec4(localRotation * vec4(transformLocalFront, 1.f)).xyz);
 
   // Compute vertex rotation in local space
   vec3 vertexPosition = vec4(localRotation * vec4(iPosition, 1.f)).xyz;

@@ -24,6 +24,7 @@ enum ShaderLayoutType : u32
   eShaderLayoutLambertInstanced,
   eShaderLayoutCompute,
   eShaderLayoutGizmo,
+  eShaderLayoutScreen,
 };
 
 template<ShaderLayoutType Layout>
@@ -41,6 +42,7 @@ using ShaderLambert          = ShaderLayout<eShaderLayoutLambert>;
 using ShaderLambertInstanced = ShaderLayout<eShaderLayoutLambertInstanced>;
 using ShaderCompute          = ShaderLayout<eShaderLayoutCompute>;
 using ShaderGizmo            = ShaderLayout<eShaderLayoutGizmo>;
+using ShaderScreen           = ShaderLayout<eShaderLayoutScreen>;
 
 /*
 * Shader utilities.
@@ -128,6 +130,7 @@ template<typename ShaderLayout> void ShaderLayoutCreate(ShaderLayout& shaderLayo
     case eShaderLayoutLambert:
     case eShaderLayoutLambertInstanced:
     case eShaderLayoutGizmo:
+    case eShaderLayoutScreen:
     {
       shaderLayout.mVertId = glCreateShader(GL_VERTEX_SHADER);
       shaderLayout.mFragId = glCreateShader(GL_FRAGMENT_SHADER);
@@ -147,6 +150,7 @@ template<typename ShaderLayout> void ShaderLayoutCreate(ShaderLayout& shaderLayo
     case eShaderLayoutLambert:
     case eShaderLayoutLambertInstanced:
     case eShaderLayoutGizmo:
+    case eShaderLayoutScreen:
     {
       ShaderLayoutLoadBinary(shaderBytes, shaderPaths.mVertex);
       glShaderBinary(1, &shaderLayout.mVertId, GL_SHADER_BINARY_FORMAT_SPIR_V, shaderBytes.data(), (s32)shaderBytes.size());
@@ -176,6 +180,7 @@ template<typename ShaderLayout> void ShaderLayoutCreate(ShaderLayout& shaderLayo
     case eShaderLayoutLambert:
     case eShaderLayoutLambertInstanced:
     case eShaderLayoutGizmo:
+    case eShaderLayoutScreen:
     {
       glAttachShader(shaderLayout.mProgId, shaderLayout.mVertId);
       glAttachShader(shaderLayout.mProgId, shaderLayout.mFragId);
@@ -197,6 +202,7 @@ template<typename ShaderLayout> void ShaderLayoutCreate(ShaderLayout& shaderLayo
     case eShaderLayoutLambert:
     case eShaderLayoutLambertInstanced:
     case eShaderLayoutGizmo:
+    case eShaderLayoutScreen:
     {
       glDetachShader(shaderLayout.mProgId, shaderLayout.mVertId);
       glDetachShader(shaderLayout.mProgId, shaderLayout.mFragId);

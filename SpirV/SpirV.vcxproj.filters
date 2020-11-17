@@ -25,6 +25,8 @@
     <None Include="Shaders\LambertInstanced\LambertInstanced.vert" />
     <None Include="Shaders\Compute\ShipOctree.comp" />
     <None Include="Shaders\Compute\StarField.comp" />
+    <None Include="Shaders\Screen\DeferredLightPass.frag" />
+    <None Include="Shaders\Screen\Screen.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">

@@ -32,7 +32,10 @@ void BackgroundManager::Update(r32 timeDelta)
 }
 void BackgroundManager::UpdatePhysics(r32 timeDelta)
 {
+  BufferLayoutBind(mBufferStarTransform);
+  BufferLayoutMap(mBufferStarTransform, 0);
 
+  //ComputeMaterialCompute(mMaterialComputeStarField);
 }
 void BackgroundManager::Render()
 {

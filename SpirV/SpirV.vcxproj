@@ -157,6 +157,8 @@
     <None Include="Shaders\Lambert\Lambert.vert" />
     <None Include="Shaders\LambertInstanced\LambertInstanced.frag" />
     <None Include="Shaders\LambertInstanced\LambertInstanced.vert" />
+    <None Include="Shaders\Screen\DeferredLightPass.frag" />
+    <None Include="Shaders\Screen\Screen.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />

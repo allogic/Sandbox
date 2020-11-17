@@ -11,6 +11,7 @@ enum VertexLayoutType : u32
 {
   eVertexLayoutGizmo,
   eVertexLayoutLambert,
+  eVertexLayoutScreen,
 };
 
 struct VertexGizmo
@@ -28,6 +29,13 @@ struct VertexLambert
   r32v3 mNormal  {};
   r32v2 mUv      {};
   r32v4 mColor   {};
+};
+struct VertexScreen
+{
+  constexpr static u32 sType{ eVertexLayoutScreen };
+
+  r32v3 mPosition{};
+  r32v2 mUv      {};
 };
 
 /*
@@ -48,7 +56,8 @@ struct MeshLayout
   r32m4 mTransform       { glm::identity<r32m4>() };
 };
 
-using MeshGizmo = MeshLayout<VertexGizmo, u32>;
+using MeshGizmo  = MeshLayout<VertexGizmo, u32>;
+using MeshScreen = MeshLayout<VertexScreen, u32>;
 
 /*
 * Model layouts.
@@ -189,6 +198,16 @@ template<typename MeshLayout> void MeshLayoutCreate(MeshLayout& meshLayout, u32 
       glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexLambert), (void*)(sizeof(r32v3)));
       glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(VertexLambert), (void*)(sizeof(r32v3) + sizeof(r32v3)));
       glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(VertexLambert), (void*)(sizeof(r32v3) + sizeof(r32v3) + sizeof(r32v2)));
+      break;
+    }
+    case eVertexLayoutScreen:
+    {
+      glBufferStorage(GL_ARRAY_BUFFER, meshLayout.mVertexBufferSize * sizeof(VertexScreen), nullptr, GL_DYNAMIC_STORAGE_BIT);
+      glEnableVertexAttribArray(0);
+      glEnableVertexAttribArray(1);
+      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexScreen), (void*)(0));
+      glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(VertexScreen), (void*)(sizeof(r32v3)));
+
       break;
     }
   }
