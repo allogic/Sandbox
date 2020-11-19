@@ -49,7 +49,7 @@ template<typename ComputeMaterial> void ComputeMaterialCreate(ComputeMaterial& c
 {
   ShaderLayoutCreate(computeMaterial.mShaderLayout, ShaderPaths
   {
-    .mCompute{ std::string{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Compute\\" } + shaderName + std::string{ ".comp" } }
+    .mCompute{ std::string{ SANDBOX_ENGINE_ROOT_PATH "SpirV\\Compiled\\Compute\\" } + shaderName + std::string{ ".comp" } }
   });
 }
 template<typename ComputeMaterial> void ComputeMaterialBind(ComputeMaterial const& computeMaterial)

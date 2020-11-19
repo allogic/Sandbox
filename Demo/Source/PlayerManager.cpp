@@ -2,14 +2,14 @@
 
 PlayerManager::PlayerManager()
 {
-  ModelCreate(mModelCruiser, SANDBOX_ROOT_PATH "Model\\CruiserBerlin.fbx");
+  ModelCreate(mModelCruiser, SANDBOX_ENGINE_ROOT_PATH "Model\\CruiserBerlin.fbx");
   ModelLayoutTransform(mModelCruiser, { 10.f, 10.f, 10.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f });
 
   TextureLayoutCreate(mTextureCruiser, 512, 512);
   TextureLayoutBind(mTextureCruiser);
-  TextureLayoutDataSetFrom(mTextureCruiser, SANDBOX_ROOT_PATH "Texture\\UV.png");
+  TextureLayoutDataSetFrom(mTextureCruiser, SANDBOX_ENGINE_ROOT_PATH "Texture\\UV.png");
 
-  CameraCreate(mCamera, { 0.f, 0.f, 0.f }, WindowAspect(), 45.f, 0.001f, 10000.f);
+  CameraCreate(mCamera, { 0.f, 20.f, 0.f }, WindowAspect(), 45.f, 0.001f, 10000.f);
 }
 PlayerManager::~PlayerManager()
 {
@@ -37,7 +37,32 @@ void PlayerManager::Render()
 }
 void PlayerManager::Debug()
 {
-
+  u32 size{ 32 };
+  
+  for (u32 i{}; i <= size; i++)
+    for (u32 j{}; j <= size; j++)
+    {
+      r32v3 spacing{ 10.f, 10.f, 10.f };
+      r32v3 half{ size / 2, 0.f, size / 2 };
+      r32v3 startP0{ i, 0, 0 };
+      r32v3 startP1{ 0, 0, j };
+      r32v3 endP0{ i, 0, size };
+      r32v3 endP1{ size, 0, j };
+      r32v4 color{ 1.f, 1.f, 0.f, 1.f };
+  
+      startP0 *= spacing;
+      startP1 *= spacing;
+      startP0 += -half * spacing;
+      startP1 += -half * spacing;
+  
+      endP0 *= spacing;
+      endP1 *= spacing;
+      endP0 += -half * spacing;
+      endP1 += -half * spacing;
+  
+      RendererLineBatchPushLine(mRenderer, startP0, endP0, color);
+      RendererLineBatchPushLine(mRenderer, startP1, endP1, color);
+    }
 }
 
 void PlayerManager::CameraControllerUpdateInputSpace(r32 timeDelta)

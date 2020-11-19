@@ -112,7 +112,7 @@ template<typename TextureLayout> void TextureLayoutDataSetFrom(TextureLayout con
 
   stbi_image_free(pBlob);
 }
-template<typename TextureLayout> void TextureLayoutCreate(TextureLayout& textureLayout, u32 width, u32 height)
+template<typename TextureLayout> void TextureLayoutCreate(TextureLayout& textureLayout, u32 width, u32 height, u32 wrapMode = GL_REPEAT, u32 filter = GL_LINEAR)
 {
   textureLayout.mWidth = width;
   textureLayout.mHeight = height;
@@ -121,11 +121,11 @@ template<typename TextureLayout> void TextureLayoutCreate(TextureLayout& texture
 
   glBindTexture(GL_TEXTURE_2D, textureLayout.mTid);
 
-  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_WRAP_S, wrapMode);
+  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_WRAP_T, wrapMode);
 
-  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_MIN_FILTER, filter);
+  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_MAG_FILTER, filter);
 
   TextureLayoutDataSet(textureLayout, nullptr);
 

@@ -7,12 +7,6 @@
 #include <Layouts/UniformLayouts.h>
 #include <Layouts/BufferLayouts.h>
 
-#include <Uniforms/Projection.h>
-#include <Uniforms/Screen.h>
-#include <Uniforms/Light.h>
-
-#include <Buffers/Transform.h>
-
 /*
 * Render materials.
 *
@@ -35,7 +29,11 @@
 template<typename ShaderLayout>
 struct RenderMaterial
 {
-  static_assert(ShaderLayout::sLayout != eShaderLayoutCompute);
+  static_assert
+  (
+    ShaderLayout::sLayout != eShaderLayoutCompute &&
+    ShaderLayout::sLayout != eShaderLayoutScreen
+  );
 
   constexpr static u32 sShaderLayout{ ShaderLayout::sLayout };
 
@@ -58,8 +56,8 @@ template<typename RenderMaterial> void RenderMaterialCreate(RenderMaterial& rend
     {
       ShaderLayoutCreate(renderMaterial.mShaderLayout, ShaderPaths
       {
-        .mVertex{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.vert" },
-        .mFragment{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.frag" }
+        .mVertex{ SANDBOX_ENGINE_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.vert" },
+        .mFragment{ SANDBOX_ENGINE_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.frag" }
       });
       break;
     }
@@ -67,8 +65,8 @@ template<typename RenderMaterial> void RenderMaterialCreate(RenderMaterial& rend
     {
       ShaderLayoutCreate(renderMaterial.mShaderLayout, ShaderPaths
       {
-        .mVertex{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\LambertInstanced\\LambertInstanced.vert" },
-        .mFragment{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\LambertInstanced\\LambertInstanced.frag" },
+        .mVertex{ SANDBOX_ENGINE_ROOT_PATH "SpirV\\Compiled\\LambertInstanced\\LambertInstanced.vert" },
+        .mFragment{ SANDBOX_ENGINE_ROOT_PATH "SpirV\\Compiled\\LambertInstanced\\LambertInstanced.frag" },
       });
       break;
     }
@@ -76,8 +74,8 @@ template<typename RenderMaterial> void RenderMaterialCreate(RenderMaterial& rend
     {
       ShaderLayoutCreate(renderMaterial.mShaderLayout, ShaderPaths
       {
-        .mVertex{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Gizmo\\Gizmo.vert" },
-        .mFragment{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Gizmo\\Gizmo.frag" }
+        .mVertex{ SANDBOX_ENGINE_ROOT_PATH "SpirV\\Compiled\\Gizmo\\Gizmo.vert" },
+        .mFragment{ SANDBOX_ENGINE_ROOT_PATH "SpirV\\Compiled\\Gizmo\\Gizmo.frag" }
       });
       break;
     }
@@ -86,6 +84,10 @@ template<typename RenderMaterial> void RenderMaterialCreate(RenderMaterial& rend
 template<typename RenderMaterial> void RenderMaterialBind(RenderMaterial const& renderMaterial)
 {
   ShaderLayoutBind(renderMaterial.mShaderLayout);
+}
+static                            void RenderMaterialUnbind()
+{
+  ShaderLayoutUnbind();
 }
 template<typename RenderMaterial> void RenderMaterialDestroy(RenderMaterial const& renderMaterial)
 {

@@ -221,6 +221,10 @@ template<typename MeshLayout> void MeshLayoutBind(MeshLayout const& meshLayout)
 {
   glBindVertexArray(meshLayout.mVao);
 }
+static                        void MeshLayoutUnbind()
+{
+  glBindVertexArray(0);
+}
 template<typename MeshLayout> void MeshLayoutTransform(MeshLayout& meshLayout, r32v3 position, r32v3 rotation, r32v3 scale)
 {
   meshLayout.mTransform = glm::translate(glm::identity<r32m4>(), position);
@@ -331,6 +335,10 @@ template<typename ModelLayout> void ModelLayoutCreate(ModelLayout& modelLayout, 
 template<typename ModelLayout> void ModelLayoutBind(ModelLayout const& modelLayout, u32 subMeshIndex)
 {
   glBindVertexArray(modelLayout.mpVaos[subMeshIndex]);
+}
+static                         void ModelLayoutUnbind()
+{
+  glBindVertexArray(0);
 }
 template<typename ModelLayout> void ModelLayoutTransform(ModelLayout& modelLayout, r32v3 position, r32v3 rotation, r32v3 scale)
 {

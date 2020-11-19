@@ -13,6 +13,7 @@ struct Camera
   r32   mAspect    {};
   r32   mFovRad    {};
   r32v3 mRight     {};
+  r32v3 mRotation  {};
   r32v3 mUp        {};
   r32v3 mFront     {};
   r32v3 mLocalRight{};
@@ -30,12 +31,12 @@ struct Camera
 
 struct CameraControllerSpace
 {
-  r32   mPositionAmount         { 10.f };
-  r32   mRotationAmount         { 40.f };
-  r32   mRollAmount             { 40.f };
-  r32   mPositionVelocityDecay  { 20.f };
-  r32   mRotationVelocityDecay  { 30.f };
-  r32   mRollVelocityDecay      { 30.f };
+  r32   mPositionAmount         { 0.2f };
+  r32   mRotationAmount         { 5.f };
+  r32   mRollAmount             { 5.f };
+  r32   mPositionVelocityDecay  { 0.4f };
+  r32   mRotationVelocityDecay  { 0.5f };
+  r32   mRollVelocityDecay      { 0.5f };
   r32v3 mPositionVelocity       {};
   r32v2 mRotationVelocityAngular{};
   r32   mRollVelocityAngular    {};
@@ -47,7 +48,7 @@ struct CameraControllerOrbit
 {
   r32   mPositionAmount         { 10.f };
   r32   mRotationAmount         { 25.f };
-  r32   mScrollAmount           { 1000.f };
+  r32   mScrollAmount           { 10.f };
   r32   mPositionVelocityDecay  { 20.f };
   r32   mRotationVelocityDecay  { 20.f };
   r32   mScrollVelocityDecay    { 10.f };
@@ -107,11 +108,13 @@ template<typename Camera, typename Controller> void CameraControllerUpdatePhysic
   if (controller.mRotationVelocityAngular.x < -180.f) controller.mRotationVelocityAngular.x = 180.f;
   if (controller.mRotationVelocityAngular.y > 180.f) controller.mRotationVelocityAngular.y = -180.f;
   if (controller.mRotationVelocityAngular.y < -180.f) controller.mRotationVelocityAngular.y = 180.f;
+  camera.mRotation += r32v3{ controller.mRotationVelocityAngular.y, controller.mRotationVelocityAngular.x, 0.f };
 
   controller.mRollVelocityAngular += controller.mRollAccel;
   controller.mRollAccel = {};
   if (controller.mRollVelocityAngular > 180.f) controller.mRollVelocityAngular = -180.f;
   if (controller.mRollVelocityAngular < -180.f) controller.mRollVelocityAngular = 180.f;
+  camera.mRotation += r32v3{ 0.f, 0.f, controller.mRollVelocityAngular };
 
   r32m4 localRotation{ glm::identity<r32m4>() };
   localRotation = glm::rotate(localRotation, glm::radians(controller.mRotationVelocityAngular.y), camera.mLocalRight);
@@ -137,6 +140,7 @@ template<typename Camera, typename Controller> void CameraControllerUpdatePhysic
   if (controller.mRotationVelocityAngular.x < -180.f) controller.mRotationVelocityAngular.x = 180.f;
   if (controller.mRotationVelocityAngular.y > 180.f) controller.mRotationVelocityAngular.y = -180.f;
   if (controller.mRotationVelocityAngular.y < -180.f) controller.mRotationVelocityAngular.y = 180.f;
+  camera.mRotation += r32v3{ controller.mRotationVelocityAngular.y, controller.mRotationVelocityAngular.x, 0.f };
 
   controller.mScrollVelocity += controller.mScrollAccel;
   controller.mScrollAccel = {};
@@ -144,8 +148,8 @@ template<typename Camera, typename Controller> void CameraControllerUpdatePhysic
   controller.mScrollDistance = glm::clamp(controller.mScrollDistance, controller.mScrollDistanceMin, controller.mScrollDistanceMax);
 
   r32m4 localRotation{ glm::identity<r32m4>() };
-  localRotation = glm::rotate(localRotation, glm::radians(controller.mRotationVelocityAngular.x), camera.mUp);
   localRotation = glm::rotate(localRotation, glm::radians(controller.mRotationVelocityAngular.y), camera.mLocalRight);
+  localRotation = glm::rotate(localRotation, glm::radians(controller.mRotationVelocityAngular.x), camera.mUp);
 
   camera.mLocalRight = localRotation * r32v4{ camera.mLocalRight, 1.f };
   camera.mLocalUp = localRotation * r32v4{ camera.mLocalUp, 1.f };

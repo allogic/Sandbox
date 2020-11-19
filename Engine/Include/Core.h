@@ -1,6 +1,6 @@
 #pragma once
 
-#define SANDBOX_ROOT_PATH "C:\\Users\\Michael\\Downloads\\Sandbox\\"
+#define SANDBOX_ENGINE_ROOT_PATH "C:\\Users\\Michael\\Downloads\\Sandbox\\"
 
 #include <array>
 #include <vector>

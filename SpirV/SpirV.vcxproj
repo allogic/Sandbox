@@ -159,6 +159,7 @@
     <None Include="Shaders\LambertInstanced\LambertInstanced.vert" />
     <None Include="Shaders\Screen\DeferredLightPass.frag" />
     <None Include="Shaders\Screen\Screen.vert" />
+    <None Include="Shaders\Screen\VolumeCloud.frag" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />

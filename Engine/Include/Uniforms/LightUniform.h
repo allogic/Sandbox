@@ -10,5 +10,5 @@
 
 struct UniformBlockPointLight
 {
-  LightPoint lights[32];
+  LightPoint light;
 };

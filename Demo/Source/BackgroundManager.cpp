@@ -3,12 +3,12 @@
 BackgroundManager::BackgroundManager(u32 numStars)
   : mNumStars{ numStars }
 {
-  ModelCreate(mModelStar, SANDBOX_ROOT_PATH "Model\\Quad.obj");
+  ModelCreate(mModelStar, SANDBOX_ENGINE_ROOT_PATH "Model\\Quad.obj");
   ModelLayoutTransform(mModelStar, { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f });
 
   TextureLayoutCreate(mTextureStar, 256, 256);
   TextureLayoutBind(mTextureStar);
-  TextureLayoutDataSetFrom(mTextureStar, SANDBOX_ROOT_PATH "Texture\\Star.png");
+  TextureLayoutDataSetFrom(mTextureStar, SANDBOX_ENGINE_ROOT_PATH "Texture\\Star.png");
 
   BufferLayoutCreate(mBufferStarTransform, mNumStars);
 

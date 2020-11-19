@@ -150,7 +150,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source\Api.cpp" />
-    <ClCompile Include="Source\Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\Importer.h" />
@@ -173,9 +172,10 @@
     <ClInclude Include="Include\Types.h" />
     <ClInclude Include="Include\Layouts\UniformLayouts.h" />
     <ClInclude Include="Include\Layouts\VertexLayouts.h" />
-    <ClInclude Include="Include\Uniforms\Light.h" />
-    <ClInclude Include="Include\Uniforms\Projection.h" />
-    <ClInclude Include="Include\Uniforms\Screen.h" />
+    <ClInclude Include="Include\Uniforms\CameraUniform.h" />
+    <ClInclude Include="Include\Uniforms\GlobalUniform.h" />
+    <ClInclude Include="Include\Uniforms\LightUniform.h" />
+    <ClInclude Include="Include\Uniforms\ProjectionUniform.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

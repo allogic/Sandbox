@@ -60,9 +60,6 @@
     <ClInclude Include="Include\Materials\ComputeMaterials.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Include\Uniforms\Projection.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Include\Buffers\Transform.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -75,21 +72,24 @@
     <ClInclude Include="Include\Materials\ScreenMaterials.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Include\Uniforms\Screen.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\Uniforms\Light.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Include\Lights.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Uniforms\ProjectionUniform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Uniforms\CameraUniform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Uniforms\LightUniform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Uniforms\GlobalUniform.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Api.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

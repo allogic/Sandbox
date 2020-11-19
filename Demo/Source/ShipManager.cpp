@@ -10,12 +10,12 @@ ShipManager::ShipManager(
   , mNumPaths{ numPaths }
   , mNumPathsSub{ numPathsSub }
 {
-  ModelCreate(mModelShip, SANDBOX_ROOT_PATH "Model\\Cube.obj");
-  ModelLayoutTransform(mModelShip, { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f });
+  ModelCreate(mModelShip, SANDBOX_ENGINE_ROOT_PATH "Model\\Cube.obj");
+  ModelLayoutTransform(mModelShip, { 0.f, 20.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f });
 
   TextureLayoutCreate(mTextureShip, 512, 512);
   TextureLayoutBind(mTextureShip);
-  TextureLayoutDataSetFrom(mTextureShip, SANDBOX_ROOT_PATH "Texture\\UV.png");
+  TextureLayoutDataSetFrom(mTextureShip, SANDBOX_ENGINE_ROOT_PATH "Texture\\UV.png");
 
   BufferLayoutCreate(mBufferShipTransform, mNumShips);
   BufferLayoutCreate(mBufferShipSteering, mNumShips);

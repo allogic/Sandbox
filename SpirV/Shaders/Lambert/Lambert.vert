@@ -2,7 +2,6 @@
 
 layout (binding = 0) uniform ProjectionUniform
 {
-  vec3 uCameraPosition;
   mat4 uProjection;
   mat4 uView;
   mat4 uTransform;

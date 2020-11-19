@@ -77,9 +77,9 @@ void ContextRegisterDebugHandler()
 }
 void ContextRun()
 {
-  r32 time{};
+  r32& time{ RegistryGetOrCreate<r32>("time") };
   r32 timePrev{};
-  r32 timeDelta{};
+  r32& timeDelta{ RegistryGetOrCreate<r32>("timeDelta") };
 
   r32 timeRender{ 1.f / 60 };
   r32 timeRenderPrev{};
@@ -101,10 +101,14 @@ void ContextRun()
     {
       spSceneActive->OnUpdateFixed(timeDelta);
       spSceneActive->OnRender(timeDelta);
-      spSceneActive->OnGizmos(timeDelta);
 
-      RendererRenderDeferred(renderer);
-      RendererRenderGizmo(renderer);
+      MeshLayoutBind(renderer.mMeshGizmoLineBatch);
+      spSceneActive->OnGizmos(timeDelta);
+      MeshLayoutUnbind();
+
+      RendererRenderBegin(renderer);
+      RendererRender(renderer);
+      RendererRenderEnd(renderer);
 
       glfwSwapBuffers(spWindow);
 

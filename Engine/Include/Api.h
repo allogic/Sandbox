@@ -9,9 +9,6 @@
 #include <FrameBuffer.h>
 #include <Renderer.h>
 
-#include <Uniforms/Projection.h>
-#include <Buffers/Transform.h>
-
 #include <Layouts/VertexLayouts.h>
 #include <Layouts/BufferLayouts.h>
 #include <Layouts/TextureLayouts.h>
@@ -20,6 +17,13 @@
 
 #include <Materials/ComputeMaterials.h>
 #include <Materials/RenderMaterials.h>
+
+#include <Uniforms/GlobalUniform.h>
+#include <Uniforms/ProjectionUniform.h>
+#include <Uniforms/CameraUniform.h>
+#include <Uniforms/LightUniform.h>
+
+#include <Buffers/Transform.h>
 
 /*
 * OpenGL context specific.

@@ -14,6 +14,13 @@
 #include <Materials/RenderMaterials.h>
 #include <Materials/ScreenMaterials.h>
 
+#include <Uniforms/GlobalUniform.h>
+#include <Uniforms/ProjectionUniform.h>
+#include <Uniforms/CameraUniform.h>
+#include <Uniforms/LightUniform.h>
+
+#include <Buffers/Transform.h>
+
 /*
 * Render tasks.
 */
@@ -40,17 +47,26 @@ struct Renderer
   u32                                   mWidth                      {};
   u32                                   mHeight                     {};
 
-  Camera&                               mCamera                     { RegistryGetOrCreate<Camera>("camera") };
+  r32 const&                            mTime                       { RegistryGetOrCreate<r32>("time") };
+  r32 const&                            mTimeDelta                  { RegistryGetOrCreate<r32>("timeDelta") };
+  Camera const&                         mCamera                     { RegistryGetOrCreate<Camera>("camera") };
 
+  UniformBlockGlobal                    mUniformBlockGlobal         {};
+  UniformBlockProjection                mUniformBlockProjection     {};
+  UniformBlockCamera                    mUniformBlockCamera         {};
+  UniformBlockPointLight                mUniformBlockPointLights[32]{};
+
+  UniformLayout<UniformBlockGlobal>     mUniformGlobal              {};
   UniformLayout<UniformBlockProjection> mUniformProjection          {};
-  UniformLayout<UniformBlockScreen>     mUniformScreen              {};
-  UniformLayout<UniformBlockPointLight> mUniformPointLight          {};
+  UniformLayout<UniformBlockCamera>     mUniformCamera              {};
+  UniformLayout<UniformBlockPointLight> mUniformPointLights         {};
 
   RenderMaterialLambert                 mMaterialLambert            {};
   RenderMaterialLambertInstanced        mMaterialLambertInstanced   {};
   RenderMaterialGizmo                   mMaterialGizmo              {}; 
 
   ScreenMaterialDefault                 mMaterialDeferredLight      {};
+  ScreenMaterialDefault                 mMaterialVolumeCloud        {};
 
   std::queue<TaskLambert>               mRenderQueueLambert         {};
   std::queue<TaskLambertInstanced>      mRenderQueueLambertInstanced{};
@@ -65,11 +81,123 @@ struct Renderer
   DepthR32RGBA                          mDepthBuffer                {};
 
   MeshScreen                            mMeshScreenPlane            {};
-  MeshGizmo                             mMeshGizmoLineBatch         {};
+
+  TextureR32RGBA                        mTextureNoise               {};
+
+  MeshGizmo&                            mMeshGizmoLineBatch         { RegistryGetOrCreate<MeshGizmo>("meshGizmoLineBatch") };
 
   u32                                   mVertexOffsetGizmoLineBatch {};
   u32                                   mIndexOffsetGizmoLineBatch  {};
 };
+
+/*
+* Render passes.
+*/
+
+template<typename Renderer> void RendererDispatchLambert(Renderer& renderer)
+{
+  UniformLayoutBind(renderer.mUniformProjection);
+  UniformLayoutMap(renderer.mUniformProjection, 0);
+
+  RenderMaterialBind(renderer.mMaterialLambert);
+
+  while (!renderer.mRenderQueueLambert.empty())
+  {
+    TaskLambert const& taskLambert{ renderer.mRenderQueueLambert.front() };
+
+    renderer.mUniformBlockProjection.mTransform = taskLambert.mpModel->mTransform;
+    UniformLayoutDataSet(renderer.mUniformProjection, 1, &renderer.mUniformBlockProjection);
+
+    TextureLayoutBind(*taskLambert.mpTextureAlbedo);
+    TextureLayoutMapSampler(*taskLambert.mpTextureAlbedo, 0);
+
+    for (u32 i{}; i < taskLambert.mpModel->mNumSubMeshes; i++)
+    {
+      ModelLayoutBind(*taskLambert.mpModel, i);
+      ModelLayoutRender(*taskLambert.mpModel, i, eRenderModeTriangle);
+    }
+
+    renderer.mRenderQueueLambert.pop();
+  }
+
+  ModelLayoutUnbind();
+  TextureLayoutUnbind();
+  RenderMaterialUnbind();
+  UniformLayoutUnbind();
+}
+template<typename Renderer> void RendererDispatchLambertInstanced(Renderer& renderer)
+{
+  UniformLayoutBind(renderer.mUniformProjection);
+  UniformLayoutMap(renderer.mUniformProjection, 0);
+
+  while (!renderer.mRenderQueueLambertInstanced.empty())
+  {
+    TaskLambertInstanced const& taskLambertInstanced{ renderer.mRenderQueueLambertInstanced.front() };
+
+    renderer.mUniformBlockProjection.mTransform = taskLambertInstanced.mpModel->mTransform;
+    UniformLayoutDataSet(renderer.mUniformProjection, 1, &renderer.mUniformBlockProjection);
+
+    BufferLayoutBind(*taskLambertInstanced.mpBufferTransform);
+    BufferLayoutMap(*taskLambertInstanced.mpBufferTransform, 0);
+
+    TextureLayoutBind(*taskLambertInstanced.mpTextureAlbedo);
+    TextureLayoutMapSampler(*taskLambertInstanced.mpTextureAlbedo, 0);
+
+    RenderMaterialBind(renderer.mMaterialLambertInstanced);
+
+    for (u32 i{}; i < taskLambertInstanced.mpModel->mNumSubMeshes; i++)
+    {
+      ModelLayoutBind(*taskLambertInstanced.mpModel, i);
+      ModelLayoutRenderInstanced(*taskLambertInstanced.mpModel, i, eRenderModeTriangle, taskLambertInstanced.mNumInstances);
+    }
+
+    renderer.mRenderQueueLambertInstanced.pop();
+  }
+
+  ModelLayoutUnbind();
+  TextureLayoutUnbind();
+  RenderMaterialUnbind();
+  UniformLayoutUnbind();
+  BufferLayoutUnbind();
+}
+template<typename Renderer> void RendererDispatchGizmo(Renderer& renderer)
+{
+  UniformLayoutBind(renderer.mUniformProjection);
+  UniformLayoutMap(renderer.mUniformProjection, 0);
+
+  RenderMaterialBind(renderer.mMaterialGizmo);
+
+  MeshLayoutBind(renderer.mMeshGizmoLineBatch);
+  MeshLayoutRender(renderer.mMeshGizmoLineBatch, eRenderModeLine);
+
+  MeshLayoutUnbind();
+  RenderMaterialUnbind();
+  UniformLayoutUnbind();
+}
+template<typename Renderer> void RendererDispatchScreen(Renderer& renderer)
+{
+  UniformLayoutBind(renderer.mUniformGlobal);
+  UniformLayoutMap(renderer.mUniformGlobal, 0);
+
+  UniformLayoutBind(renderer.mUniformProjection);
+  UniformLayoutMap(renderer.mUniformProjection, 1);
+
+  UniformLayoutBind(renderer.mUniformCamera);
+  UniformLayoutMap(renderer.mUniformCamera, 2);
+
+  TextureLayoutBind(renderer.mTextureNoise);
+  TextureLayoutMapSampler(renderer.mTextureNoise, 0);
+
+  ScreenMaterialBind(renderer.mMaterialVolumeCloud);
+
+  MeshLayoutBind(renderer.mMeshScreenPlane);
+  MeshLayoutRender(renderer.mMeshScreenPlane, eRenderModeTriangle);
+
+  MeshLayoutUnbind();
+  TextureLayoutUnbind();
+  ScreenMaterialUnbind();
+  UniformLayoutUnbind();
+}
 
 /*
 * Renderer management.
@@ -80,23 +208,25 @@ template<typename Renderer> void RendererCreate(Renderer& renderer, u32 width, u
   renderer.mWidth = width;
   renderer.mHeight = height;
 
+  UniformLayoutCreate(renderer.mUniformGlobal);
   UniformLayoutCreate(renderer.mUniformProjection);
-  UniformLayoutCreate(renderer.mUniformScreen);
-  UniformLayoutCreate(renderer.mUniformPointLight);
+  UniformLayoutCreate(renderer.mUniformCamera);
+  UniformLayoutCreate(renderer.mUniformPointLights);
 
   RenderMaterialCreate(renderer.mMaterialLambert);
   RenderMaterialCreate(renderer.mMaterialLambertInstanced);
   RenderMaterialCreate(renderer.mMaterialGizmo);
 
   ScreenMaterialCreate(renderer.mMaterialDeferredLight, "DeferredLightPass");
+  ScreenMaterialCreate(renderer.mMaterialVolumeCloud, "VolumeCloud");
 
   FrameBufferCreate(renderer.mFrameBufferDeferred, renderer.mWidth, renderer.mHeight);
 
-  TextureLayoutCreate(renderer.mTexturePosition, renderer.mWidth, renderer.mHeight);
-  TextureLayoutCreate(renderer.mTextureAlbedo, renderer.mWidth, renderer.mHeight);
-  TextureLayoutCreate(renderer.mTextureNormal, renderer.mWidth, renderer.mHeight);
-  TextureLayoutCreate(renderer.mTextureUv, renderer.mWidth, renderer.mHeight);
-  TextureLayoutCreate(renderer.mDepthBuffer, renderer.mWidth, renderer.mHeight);
+  TextureLayoutCreate(renderer.mTexturePosition, renderer.mWidth, renderer.mHeight, GL_REPEAT, GL_NEAREST);
+  TextureLayoutCreate(renderer.mTextureAlbedo, renderer.mWidth, renderer.mHeight, GL_REPEAT, GL_NEAREST);
+  TextureLayoutCreate(renderer.mTextureNormal, renderer.mWidth, renderer.mHeight, GL_REPEAT, GL_NEAREST);
+  TextureLayoutCreate(renderer.mTextureUv, renderer.mWidth, renderer.mHeight, GL_REPEAT, GL_NEAREST);
+  TextureLayoutCreate(renderer.mDepthBuffer, renderer.mWidth, renderer.mHeight, GL_REPEAT, GL_NEAREST);
 
   MeshLayoutCreate(renderer.mMeshScreenPlane, 4, 6);
   MeshLayoutBind(renderer.mMeshScreenPlane);
@@ -114,6 +244,11 @@ template<typename Renderer> void RendererCreate(Renderer& renderer, u32 width, u
   MeshLayoutData(renderer.mMeshScreenPlane, vertices.data(), indices.data());
 
   MeshLayoutCreate(renderer.mMeshGizmoLineBatch, 65535, 65535 * 2);
+
+  TextureLayoutCreate(renderer.mTextureNoise, 256, 256, GL_REPEAT, GL_LINEAR);
+  TextureLayoutBind(renderer.mTextureNoise);
+  TextureLayoutDataSetFrom(renderer.mTextureNoise, SANDBOX_ENGINE_ROOT_PATH "Texture\\RepeatRGBSimplex.png");
+  TextureLayoutUnbind();
 
   FrameBufferBindWrite(renderer.mFrameBufferDeferred);
 
@@ -138,95 +273,52 @@ template<typename Renderer> void RendererSubmitLambertInstanced(Renderer& render
 {
   renderer.mRenderQueueLambertInstanced.emplace(taskLambertInstanced);
 }
-template<typename Renderer> void RendererDispatchLambert(Renderer& renderer)
+template<typename Renderer> void RendererRenderBegin(Renderer& renderer)
 {
-  UniformBlockProjection projection{};
-  projection.mCameraPosition = renderer.mCamera.mPosition;
-  projection.mProjection = renderer.mCamera.mProjection;
-  projection.mView = renderer.mCamera.mView;
-
-  UniformLayoutBind(renderer.mUniformProjection);
-  UniformLayoutMap(renderer.mUniformProjection, 0);
-
-  RenderMaterialBind(renderer.mMaterialLambert);
-
-  while (!renderer.mRenderQueueLambert.empty())
+  renderer.mUniformBlockGlobal =
   {
-    TaskLambert const& taskLambert{ renderer.mRenderQueueLambert.front() };
-
-    projection.mTransform = taskLambert.mpModel->mTransform;
-    UniformLayoutDataSet(renderer.mUniformProjection, 1, &projection);
-
-    TextureLayoutBind(*taskLambert.mpTextureAlbedo);
-    TextureLayoutMapSampler(*taskLambert.mpTextureAlbedo, 0);
-
-    for (u32 i{}; i < taskLambert.mpModel->mNumSubMeshes; i++)
-    {
-      ModelLayoutBind(*taskLambert.mpModel, i);
-      ModelLayoutRender(*taskLambert.mpModel, i, eRenderModeTriangle);
-    }
-
-    renderer.mRenderQueueLambert.pop();
-  }
-
-  TextureLayoutUnbind();
-}
-template<typename Renderer> void RendererDispatchLambertInstanced(Renderer& renderer)
-{
-  UniformBlockProjection projection{};
-  projection.mCameraPosition = renderer.mCamera.mPosition;
-  projection.mProjection = renderer.mCamera.mProjection;
-  projection.mView = renderer.mCamera.mView;
-
-  while (!renderer.mRenderQueueLambertInstanced.empty())
+    .mTime      { renderer.mTime },
+    .mTimeDelta { renderer.mTimeDelta },
+    .mScreenSize{ renderer.mWidth, renderer.mHeight },
+  };
+  renderer.mUniformBlockProjection =
   {
-    TaskLambertInstanced const& taskLambertInstanced{ renderer.mRenderQueueLambertInstanced.front() };
-
-    BufferLayoutBind(*taskLambertInstanced.mpBufferTransform);
-    BufferLayoutMap(*taskLambertInstanced.mpBufferTransform, 0);
-
-    UniformLayoutBind(renderer.mUniformProjection);
-    UniformLayoutMap(renderer.mUniformProjection, 0);
-
-    TextureLayoutBind(*taskLambertInstanced.mpTextureAlbedo);
-    TextureLayoutMapSampler(*taskLambertInstanced.mpTextureAlbedo, 0);
-
-    RenderMaterialBind(renderer.mMaterialLambertInstanced);
-
-    for (u32 i{}; i < taskLambertInstanced.mpModel->mNumSubMeshes; i++)
-    {
-      ModelLayoutBind(*taskLambertInstanced.mpModel, i);
-      ModelLayoutRenderInstanced(*taskLambertInstanced.mpModel, i, eRenderModeTriangle, taskLambertInstanced.mNumInstances);
-    }
-
-    renderer.mRenderQueueLambertInstanced.pop();
-  }
-
-  TextureLayoutUnbind();
-}
-template<typename Renderer> void RendererDispatchGizmo(Renderer& renderer)
-{
-  UniformBlockProjection projection{};
-  projection.mProjection = renderer.mCamera.mProjection;
-  projection.mView = renderer.mCamera.mView;
-  projection.mTransform = glm::identity<r32m4>();
-
-  UniformLayoutBind(renderer.mUniformProjection);
-  UniformLayoutDataSet(renderer.mUniformProjection, 1, &projection);
-  UniformLayoutMap(renderer.mUniformProjection, 0);
-
-  RenderMaterialBind(renderer.mMaterialGizmo);
-    
-  MeshLayoutBind(renderer.mMeshGizmoLineBatch);
-  MeshLayoutRender(renderer.mMeshGizmoLineBatch, eRenderModeLine);
-
-  renderer.mVertexOffsetGizmoLineBatch = 0;
-  renderer.mIndexOffsetGizmoLineBatch = 0;
-}
-template<typename Renderer> void RendererRenderDeferred(Renderer& renderer)
-{
-  SANDBOX_ENGINE_MEASURE_BEGIN(RendererDeferredPassGeometry);
+    .mProjection{ renderer.mCamera.mProjection },
+    .mView      { renderer.mCamera.mView },
+  };
+  renderer.mUniformBlockCamera =
+  {
+    .mPosition  { renderer.mCamera.mPosition },
+    .mRotation  { renderer.mCamera.mRotation },
+    .mLocalRight{ renderer.mCamera.mLocalRight },
+    .mLocalUp   { renderer.mCamera.mLocalUp },
+    .mLocalFront{ renderer.mCamera.mLocalFront },
+  };
   
+  UniformLayoutBind(renderer.mUniformGlobal);
+  UniformLayoutDataSet(renderer.mUniformGlobal, 1, &renderer.mUniformBlockGlobal);
+  UniformLayoutUnbind();
+
+  UniformLayoutBind(renderer.mUniformProjection);
+  UniformLayoutDataSet(renderer.mUniformProjection, 1, &renderer.mUniformBlockProjection);
+  UniformLayoutUnbind();
+
+  UniformLayoutBind(renderer.mUniformCamera);
+  UniformLayoutDataSet(renderer.mUniformCamera, 1, &renderer.mUniformBlockCamera);
+  UniformLayoutUnbind();
+
+  UniformLayoutBind(renderer.mUniformPointLights);
+  UniformLayoutDataSet(renderer.mUniformPointLights, 1, &renderer.mUniformBlockPointLights[0]);
+  UniformLayoutUnbind();
+
+  MeshLayoutBind(renderer.mMeshGizmoLineBatch);
+  MeshLayoutClear(renderer.mMeshGizmoLineBatch);
+  MeshLayoutUnbind();
+}
+template<typename Renderer> void RendererRender(Renderer& renderer)
+{
+  SANDBOX_ENGINE_MEASURE_BEGIN(RenderPassDeferredGeometry);
+
   FrameBufferBindWrite(renderer.mFrameBufferDeferred);
 
   glDepthMask(GL_TRUE);
@@ -237,8 +329,10 @@ template<typename Renderer> void RendererRenderDeferred(Renderer& renderer)
 
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
   RendererDispatchLambert(renderer);
   RendererDispatchLambertInstanced(renderer);
+
   glDisable(GL_BLEND);
 
   glDepthMask(GL_FALSE);
@@ -246,61 +340,77 @@ template<typename Renderer> void RendererRenderDeferred(Renderer& renderer)
 
   FrameBufferUnbind();
 
-  SANDBOX_ENGINE_MEASURE_END(RendererDeferredPassGeometry);
+  SANDBOX_ENGINE_MEASURE_END(RenderPassDeferredGeometry);
 
-  SANDBOX_ENGINE_MEASURE_BEGIN(RendererDeferredPassLight);
+  SANDBOX_ENGINE_MEASURE_BEGIN(RenderPassDeferredLight);
 
   FrameBufferBindRead(renderer.mFrameBufferDeferred);
 
-  //FrameBufferSetReadTexture(0);
+  //FrameBufferSetReadTexture(1);
   //glBlitFramebuffer(0, 0, 1280, 720, 0, 0, 1280, 720, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
-  TextureLayoutBind(renderer.mTexturePosition);
-  TextureLayoutMapSampler(renderer.mTexturePosition, 0);
-  
-  TextureLayoutBind(renderer.mTextureAlbedo);
-  TextureLayoutMapSampler(renderer.mTextureAlbedo, 1);
-  
-  TextureLayoutBind(renderer.mTextureNormal);
-  TextureLayoutMapSampler(renderer.mTextureNormal, 2);
-  
-  TextureLayoutBind(renderer.mTextureUv);
-  TextureLayoutMapSampler(renderer.mTextureUv, 3);
-  
-  UniformLayoutBind(renderer.mUniformProjection);
-  UniformLayoutMap(renderer.mUniformProjection, 0);
+  //TextureLayoutBind(renderer.mTexturePosition);
+  //TextureLayoutMapSampler(renderer.mTexturePosition, 0);
 
-  UniformLayoutBind(renderer.mUniformPointLight);
-  UniformLayoutMap(renderer.mUniformPointLight, 1);
+  //TextureLayoutBind(renderer.mTextureAlbedo);
+  //TextureLayoutMapSampler(renderer.mTextureAlbedo, 1);
 
-  ScreenMaterialBind(renderer.mMaterialDeferredLight);
-  
-  MeshLayoutBind(renderer.mMeshScreenPlane);
-  MeshLayoutRender(renderer.mMeshScreenPlane, eRenderModeTriangle);
+  //TextureLayoutBind(renderer.mTextureNormal);
+  //TextureLayoutMapSampler(renderer.mTextureNormal, 2);
+
+  //TextureLayoutBind(renderer.mTextureUv);
+  //TextureLayoutMapSampler(renderer.mTextureUv, 3);
+
+  //UniformLayoutBind(renderer.mUniformProjection);
+  //UniformLayoutMap(renderer.mUniformProjection, 0);
+
+  //UniformLayoutBind(renderer.mUniformPointLight);
+  //UniformLayoutMap(renderer.mUniformPointLight, 1);
+
+  //ScreenMaterialBind(renderer.mMaterialDeferredLight);
 
   FrameBufferUnbind();
 
-  SANDBOX_ENGINE_MEASURE_END(RendererDeferredPassLight);
+  SANDBOX_ENGINE_MEASURE_END(RenderPassDeferredLight);
+
+  SANDBOX_ENGINE_MEASURE_BEGIN(RenderPassBlending);
+
+  RendererDispatchScreen(renderer);
+
+  SANDBOX_ENGINE_MEASURE_END(RenderPassBlending);
+
+  SANDBOX_ENGINE_MEASURE_BEGIN(RenderPassGizmo);
+
+  //RendererDispatchGizmo(renderer);
+
+  SANDBOX_ENGINE_MEASURE_END(RenderPassGizmo);
 }
-template<typename Renderer> void RendererRenderGizmo(Renderer& renderer)
+template<typename Renderer> void RendererRenderEnd(Renderer& renderer)
 {
-  SANDBOX_ENGINE_MEASURE_BEGIN(RendererGizmoPass);
+  MeshLayoutUnbind();
+  ModelLayoutUnbind();
+  TextureLayoutUnbind();
+  RenderMaterialUnbind();
+  ScreenMaterialUnbind();
+  UniformLayoutUnbind();
+  BufferLayoutUnbind();
 
-  RendererDispatchGizmo(renderer);
-
-  SANDBOX_ENGINE_MEASURE_END(RendererGizmoPass);
+  renderer.mVertexOffsetGizmoLineBatch = 0;
+  renderer.mIndexOffsetGizmoLineBatch = 0;
 }
 template<typename Renderer> void RendererDestroy(Renderer const& renderer)
 {
+  UniformLayoutDestroy(renderer.mUniformGlobal);
   UniformLayoutDestroy(renderer.mUniformProjection);
-  UniformLayoutDestroy(renderer.mUniformScreen);
-  UniformLayoutDestroy(renderer.mUniformPointLight);
+  UniformLayoutDestroy(renderer.mUniformCamera);
+  UniformLayoutDestroy(renderer.mUniformPointLights);
 
   RenderMaterialDestroy(renderer.mMaterialLambert);
   RenderMaterialDestroy(renderer.mMaterialLambertInstanced);
   RenderMaterialDestroy(renderer.mMaterialGizmo);
 
   ScreenMaterialDestroy(renderer.mMaterialDeferredLight);
+  ScreenMaterialDestroy(renderer.mMaterialVolumeCloud);
 
   FrameBufferDestroy(renderer.mFrameBufferDeferred);
 
@@ -312,6 +422,8 @@ template<typename Renderer> void RendererDestroy(Renderer const& renderer)
 
   MeshLayoutDestroy(renderer.mMeshScreenPlane);
   MeshLayoutDestroy(renderer.mMeshGizmoLineBatch);
+
+  TextureLayoutDestroy(renderer.mTextureNoise);
 }
 
 /*
@@ -328,7 +440,7 @@ template<typename Renderer> void RendererLineBatchPushLine(Renderer& renderer, r
   renderer.mVertexOffsetGizmoLineBatch += 2;
   renderer.mIndexOffsetGizmoLineBatch += 2;
 }
-template<typename Renderer> void RendererLineBatchPushBox(Renderer const& renderer, r32v3 const& position, r32v3 const& size, r32v4 const& color)
+template<typename Renderer> void RendererLineBatchPushBox(Renderer& renderer, r32v3 const& position, r32v3 const& size, r32v4 const& color)
 {
   r32v3 half{ size / 2.f };
 
