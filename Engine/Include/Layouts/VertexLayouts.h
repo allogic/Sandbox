@@ -53,7 +53,6 @@ struct MeshLayout
   u32   mIndexBufferSize {};
   u32   mVbo             {};
   u32   mEbo             {};
-  r32m4 mTransform       { glm::identity<r32m4>() };
 };
 
 using MeshGizmo  = MeshLayout<VertexGizmo, u32>;
@@ -75,7 +74,6 @@ struct ModelLayout
   u32*  mpIndexBufferSizes {};
   u32*  mpVbos             {};
   u32*  mpEbos             {};
-  r32m4 mTransform         { glm::identity<r32m4>() };
 };
 
 using ModelLambert = ModelLayout<VertexLambert, u32>;
@@ -225,16 +223,6 @@ static                        void MeshLayoutUnbind()
 {
   glBindVertexArray(0);
 }
-template<typename MeshLayout> void MeshLayoutTransform(MeshLayout& meshLayout, r32v3 position, r32v3 rotation, r32v3 scale)
-{
-  meshLayout.mTransform = glm::translate(glm::identity<r32m4>(), position);
-
-  meshLayout.mTransform = glm::rotate(meshLayout.mTransform, rotation.x, { 1.f, 0.f, 0.f });
-  meshLayout.mTransform = glm::rotate(meshLayout.mTransform, rotation.y, { 0.f, 1.f, 0.f });
-  meshLayout.mTransform = glm::rotate(meshLayout.mTransform, rotation.z, { 0.f, 0.f, 1.f });
-
-  meshLayout.mTransform = glm::scale(meshLayout.mTransform, scale);
-}
 template<typename MeshLayout> void MeshLayoutClear(MeshLayout const& meshLayout)
 {
   glBindBuffer(GL_ARRAY_BUFFER, meshLayout.mVbo);
@@ -339,16 +327,6 @@ template<typename ModelLayout> void ModelLayoutBind(ModelLayout const& modelLayo
 static                         void ModelLayoutUnbind()
 {
   glBindVertexArray(0);
-}
-template<typename ModelLayout> void ModelLayoutTransform(ModelLayout& modelLayout, r32v3 position, r32v3 rotation, r32v3 scale)
-{
-  modelLayout.mTransform = glm::translate(glm::identity<r32m4>(), position);
-
-  modelLayout.mTransform = glm::rotate(modelLayout.mTransform, rotation.x, { 1.f, 0.f, 0.f });
-  modelLayout.mTransform = glm::rotate(modelLayout.mTransform, rotation.y, { 0.f, 1.f, 0.f });
-  modelLayout.mTransform = glm::rotate(modelLayout.mTransform, rotation.z, { 0.f, 0.f, 1.f });
-
-  modelLayout.mTransform = glm::scale(modelLayout.mTransform, scale);
 }
 template<typename ModelLayout> void ModelLayoutClear(ModelLayout const& modelLayout, u32 subMeshIndex)
 {

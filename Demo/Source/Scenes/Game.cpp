@@ -24,7 +24,7 @@ void SceneGame::OnRender(r32 timeDelta)
 {
   mPlayerManager.Render();
   mShipManager.Render();
-  mBackgroundManager.Render();
+  //mBackgroundManager.Render();
 }
 void SceneGame::OnGizmos(r32 timeDelta)
 {

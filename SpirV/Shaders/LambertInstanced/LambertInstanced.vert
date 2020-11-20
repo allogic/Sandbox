@@ -70,8 +70,7 @@ void main()
   vec3 transformLocalUp = ToVec3(transforms[objIndex].localUp);
   vec3 transformLocalFront = ToVec3(transforms[objIndex].localFront);
 
-  // Compute transform matrices
-  mat4 tp = uProjection * uTransform;
+  // Compute transform matrix
   mat4 tvp = uProjection * uView * uTransform;
 
   // Compute rotation matrix
@@ -84,7 +83,7 @@ void main()
   vec3 vertexPosition = vec4(localRotation * vec4(iPosition, 1.f)).xyz;
 
   // Forward fragment shader
-  vertOut.position = vec4(tp * vec4(vertexPosition + transformPosition, 1.f)).xyz;
+  vertOut.position = vec4(uTransform * vec4(vertexPosition + transformPosition, 1.f)).xyz;
   vertOut.normal = iNormal;
   vertOut.uv = iUv;
   vertOut.color = iColor;

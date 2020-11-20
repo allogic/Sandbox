@@ -76,5 +76,6 @@ struct ShipManager
   ComputeMaterialDefault          mMaterialComputeShipPaths  { mNumPaths };
   ComputeMaterialDefault          mMaterialComputeShipOctree {};
 
+  Context const&                  mContext                   { RegistryGetOrCreate<Context>("context") };
   Renderer&                       mRenderer                  { RegistryGetOrCreate<Renderer>("renderer") };
 };

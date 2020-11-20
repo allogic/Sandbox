@@ -139,21 +139,18 @@ float Clouds(vec3 p)
 {
 	float final = p.y;
     
-  float d0 = SpiralNoiseC(p.zxy*0.3) * 2.;	// large scale terrain features
-  float d1 = SpiralNoiseC(p.zyx*0.3) * 2.;	// large scale terrain features
+  float d0 = SpiralNoiseC(p.zyx*0.2 - 714.);
+  float d1 = SpiralNoiseC(vec3(p.z, 0, p.x) * 0.04 + vec3(0, p.y, 0) * 0.0002);
+  float d2 = SpiralNoiseC(vec3(p.x, 0, p.z) * 0.078 + vec3(0, p.y, 0) * 0.0002 + 323.);
+  float d3 = SpiralNoiseC(vec3(p.x, 0, p.z) * 0.028 + vec3(0, p.y, 0) * 0.0002 - 788.);
+    
+  final -= d0 * 4.0;
+  final += d1 * 8.0;
+  final += d2 * 40.0;
   
-  final += SpiralNoiseC(vec3(p.x, 0, p.z) * 0.1 + vec3(0, p.y, 0) * 0.0002)* 8.0;	// mid-range noise
-
-  //final -= SpiralNoiseC(p.zxy * d0 * 0.2);
-  
-  final -= d1;
-  
-  //if (p.y < d1)
-  //   final += SpiralNoiseC(p.yxz*0.003) * 2.;
-  
-  //final += SpiralNoise3D(p * 0.02 + 20.0) * 2.;	// more large scale features, but 3d, so not just a height map.
-  //final -= SpiralNoise3D(p*49.0)*0.0625*0.125;	// small scale noise for variation
-
+  final -= mix(d3, d1, SpiralNoise3D(p * 0.2)) * 10.0;
+  //final -= SpiralNoise3D(p.yzx * 0.02) * 30.;
+    
   return final;
 }
 
@@ -225,15 +222,15 @@ void main()
    #endif 
    
    // rm loop
-   for (int i=0; i<128; i++) {
+   for (int i=0; i<64; i++) {
 	 
       vec3 pos = ro + t*rd;
        
       // Loop break conditions.
-      if(td>(1.-1./80.) || d<0.0006*t || t>120. || pos.y<-100.0 || pos.y>100.0 || sum.a > 0.99) break;
+      if(td>(1.-1./80.) || d<0.0006*t || t>120. || sum.a > 0.99) break;
        
       // evaluate distance function
-      d = map(pos) * 0.326;
+      d = map(pos) * 0.07;
       
       // fix holes deep inside clouds
       d=max(d,-.4);
@@ -260,7 +257,7 @@ void main()
       	vec3 lin = vec3(0.65,0.68,0.7)*1.3 + 0.5*vec3(0.7, 0.5, 0.3)*ld;
       
       	#ifdef IQCOLOUR
-      	vec4 col = vec4( mix( 1.15*vec3(1.0,0.95,0.8), vec3(0.765), d ), max(kmaxdist,d) );
+      	vec4 col = vec4( mix( 1.25*vec3(1.0,0.95,0.9), vec3(0.765), d ), max(kmaxdist,d) );
       	#else
       	vec4 col = vec4(vec3(1./exp( d * 0.2 ) * 1.05), max(kmaxdist,d));
 	  	#endif
@@ -290,7 +287,7 @@ void main()
    }
  
    	sum = clamp( sum, 0.0, 1.0 );
-    col = vec3(0.6,0.71,0.75) - rd.y*0.2*vec3(1.0,0.5,1.0) + 0.15*0.5;
+    col = vec3(0.4,0.51,0.7) - rd.y*0.2*vec3(1.0,0.5,1.0) + 0.15*0.5;
     col = col*(1.0-sum.w) + sum.xyz;
     
     // sun glare    

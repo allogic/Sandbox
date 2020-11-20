@@ -2,6 +2,7 @@
 
 #include <Core.h>
 #include <Types.h>
+#include <Events.h>
 
 /*
 * Camera layouts.
@@ -9,18 +10,18 @@
 
 struct Camera
 {
-  r32v3 mPosition  {};
-  r32   mAspect    {};
-  r32   mFovRad    {};
-  r32v3 mRight     {};
+  r32v3 mPosition  { 0.f, 30.f, 0.f };
+  r32   mAspect    { 1280.f / 720.f };
+  r32   mFovRad    { glm::radians(45.f) };
   r32v3 mRotation  {};
-  r32v3 mUp        {};
-  r32v3 mFront     {};
-  r32v3 mLocalRight{};
-  r32v3 mLocalUp   {};
-  r32v3 mLocalFront{};
-  r32   mNear      {};
-  r32   mFar       {};
+  r32v3 mRight     { 1.f, 0.f, 0.f };
+  r32v3 mUp        { 0.f, 1.f, 0.f };
+  r32v3 mFront     { 0.f, 0.f, 1.f };
+  r32v3 mLocalRight{ mRight };
+  r32v3 mLocalUp   { mUp };
+  r32v3 mLocalFront{ mFront };
+  r32   mNear      { 0.0001f };
+  r32   mFar       { 10000.f };
   r32m4 mProjection{};
   r32m4 mView      {};
 };
@@ -47,10 +48,10 @@ struct CameraControllerSpace
 struct CameraControllerOrbit
 {
   r32   mPositionAmount         { 10.f };
-  r32   mRotationAmount         { 25.f };
+  r32   mRotationAmount         { 0.2f };
   r32   mScrollAmount           { 10.f };
   r32   mPositionVelocityDecay  { 20.f };
-  r32   mRotationVelocityDecay  { 20.f };
+  r32   mRotationVelocityDecay  { 0.1f };
   r32   mScrollVelocityDecay    { 10.f };
   r32v3 mPositionVelocity       {};
   r32v2 mRotationVelocityAngular{};
@@ -59,37 +60,80 @@ struct CameraControllerOrbit
   r32v2 mRotationAccel          {};
   r32   mScrollAccel            {};
   r32   mScrollDistance         { 10.f };
-  r32   mScrollDistanceMin      { 10.f };
+  r32   mScrollDistanceMin      { 300.f };
   r32   mScrollDistanceMax      { 1000.f };
 };
 
 /*
-* Camera management.
+* Camera physic management.
 */
 
-template<typename Camera> void CameraCreate(Camera& camera, r32v3 const& position, r32 aspect, r32 fov, r32 near, r32 far)
+template<typename Context, typename Camera, typename Controller> void CameraControllerUpdateInputSpace(Context const& context, Camera& camera, Controller& controller, r32 timeDelta)
 {
-  r32 const fovRad{ glm::radians(fov) };
-  r32v3 const right{ 1.f, 0.f, 0.f };
-  r32v3 const up{ 0.f, 1.f, 0.f };
-  r32v3 const front{ 0.f, 0.f, -1.f };
+  if (KeyHeld(context, GLFW_KEY_A)) controller.mPositionAccel += glm::normalize(camera.mLocalRight) * controller.mPositionAmount * timeDelta;
+  if (KeyHeld(context, GLFW_KEY_D)) controller.mPositionAccel += -glm::normalize(camera.mLocalRight) * controller.mPositionAmount * timeDelta;
 
-  camera =
+  if (KeyHeld(context, GLFW_KEY_S)) controller.mPositionAccel += -glm::normalize(camera.mLocalFront) * controller.mPositionAmount * timeDelta;
+  if (KeyHeld(context, GLFW_KEY_W)) controller.mPositionAccel += glm::normalize(camera.mLocalFront) * controller.mPositionAmount * timeDelta;
+
+  if (KeyHeld(context, GLFW_KEY_Q)) controller.mRollAccel += -controller.mRollAmount * timeDelta;
+  if (KeyHeld(context, GLFW_KEY_E)) controller.mRollAccel += controller.mRollAmount * timeDelta;
+
+  static r32v2 mousePositionDown{};
+
+  if (MouseDown(context, GLFW_MOUSE_BUTTON_RIGHT))
   {
-    .mPosition  { position },
-    .mAspect    { aspect },
-    .mFovRad    { fovRad },
-    .mRight     { right },
-    .mUp        { up },
-    .mFront     { front },
-    .mLocalRight{ right },
-    .mLocalUp   { up },
-    .mLocalFront{ front },
-    .mNear      { near },
-    .mFar       { far },
-    .mProjection{ glm::perspective(fovRad, aspect, near, far) },
-    .mView      { glm::lookAt(position, position + front, up) },
-  };
+    mousePositionDown = MousePosition(context);
+  }
+  if (MouseHeld(context, GLFW_MOUSE_BUTTON_RIGHT))
+  {
+    r32v2 mousePosition{ MousePosition(context) };
+    r32v2 mousePositionDelta{ mousePositionDown - mousePosition };
+    r32v2 mousePositionDeltaAligned{ mousePositionDelta.x, -mousePositionDelta.y };
+
+    if (glm::length(mousePositionDeltaAligned) > glm::epsilon<r32>())
+      controller.mRotationAccel += glm::normalize(mousePositionDeltaAligned) * controller.mRotationAmount * timeDelta;
+  }
+
+  controller.mPositionVelocity += -controller.mPositionVelocity * controller.mPositionVelocityDecay * timeDelta;
+  controller.mRotationVelocityAngular += -controller.mRotationVelocityAngular * controller.mRotationVelocityDecay * timeDelta;
+  controller.mRollVelocityAngular += -controller.mRollVelocityAngular * controller.mRollVelocityDecay * timeDelta;
+}
+template<typename Context, typename Camera, typename Controller> void CameraControllerUpdateInputOrbit(Context const& context, Camera& camera, Controller& controller, r32 timeDelta)
+{
+  r32 distanceScaleLog{ glm::log(controller.mScrollDistance) };
+
+  if (KeyHeld(context, GLFW_KEY_A)) controller.mPositionAccel += glm::normalize(camera.mLocalRight) * controller.mPositionAmount * distanceScaleLog * timeDelta;
+  if (KeyHeld(context, GLFW_KEY_D)) controller.mPositionAccel += -glm::normalize(camera.mLocalRight) * controller.mPositionAmount * distanceScaleLog * timeDelta;
+
+  r32v3 localFrontNoXRot{ glm::cross(camera.mUp, camera.mLocalRight) };
+
+  if (KeyHeld(context, GLFW_KEY_S)) controller.mPositionAccel += glm::normalize(localFrontNoXRot) * controller.mPositionAmount * distanceScaleLog * timeDelta;
+  if (KeyHeld(context, GLFW_KEY_W)) controller.mPositionAccel += -glm::normalize(localFrontNoXRot) * controller.mPositionAmount * distanceScaleLog * timeDelta;
+
+  static r32v2 mousePositionDown{};
+
+  if (MouseDown(context, GLFW_MOUSE_BUTTON_RIGHT))
+  {
+    mousePositionDown = MousePosition(context);
+  }
+  if (MouseHeld(context, GLFW_MOUSE_BUTTON_RIGHT))
+  {
+    r32v2 mousePosition{ MousePosition(context) };
+    r32v2 mousePositionDelta{ mousePositionDown - mousePosition };
+    r32v2 mousePositionDeltaAligned{ mousePositionDelta.x, -mousePositionDelta.y };
+
+    if (glm::length(mousePositionDeltaAligned) > glm::epsilon<r32>())
+      controller.mRotationAccel += glm::normalize(mousePositionDeltaAligned) * controller.mRotationAmount * distanceScaleLog * timeDelta;
+  }
+
+  controller.mScrollAccel += -MouseScroll(context).y * controller.mScrollAmount * timeDelta;
+
+  controller.mPositionVelocity += -controller.mPositionVelocity * controller.mPositionVelocityDecay * timeDelta;
+  controller.mRotationVelocityAngular += -controller.mRotationVelocityAngular * controller.mRotationVelocityDecay * timeDelta;
+  controller.mScrollVelocity += -controller.mScrollVelocity * controller.mScrollVelocityDecay * timeDelta;
+
+  controller.mScrollVelocity = glm::clamp(controller.mScrollVelocity, -2.f, 2.f);
 }
 
 /*
@@ -136,11 +180,11 @@ template<typename Camera, typename Controller> void CameraControllerUpdatePhysic
 
   controller.mRotationVelocityAngular += controller.mRotationAccel;
   controller.mRotationAccel = {};
-  if (controller.mRotationVelocityAngular.x > 180.f) controller.mRotationVelocityAngular.x = -180.f;
-  if (controller.mRotationVelocityAngular.x < -180.f) controller.mRotationVelocityAngular.x = 180.f;
-  if (controller.mRotationVelocityAngular.y > 180.f) controller.mRotationVelocityAngular.y = -180.f;
-  if (controller.mRotationVelocityAngular.y < -180.f) controller.mRotationVelocityAngular.y = 180.f;
   camera.mRotation += r32v3{ controller.mRotationVelocityAngular.y, controller.mRotationVelocityAngular.x, 0.f };
+  if (camera.mRotation.x > 180.f) camera.mRotation.x = -180.f;
+  if (camera.mRotation.x < -180.f) camera.mRotation.x = 180.f;
+  if (camera.mRotation.y > 180.f) camera.mRotation.y = -180.f;
+  if (camera.mRotation.y < -180.f) camera.mRotation.y = 180.f;
 
   controller.mScrollVelocity += controller.mScrollAccel;
   controller.mScrollAccel = {};

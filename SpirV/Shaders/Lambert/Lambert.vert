@@ -22,10 +22,9 @@ layout (location = 0) out VertOut
 
 void main()
 {
-  mat4 tp = uProjection * uTransform;
   mat4 tvp = uProjection * uView * uTransform;
 
-  vertOut.position = vec4(tp * vec4(iPosition, 1.f)).xyz;
+  vertOut.position = vec4(uTransform * vec4(iPosition, 1.f)).xyz;
   vertOut.normal = iNormal;
   vertOut.uv = iUv;
   vertOut.color = iColor;

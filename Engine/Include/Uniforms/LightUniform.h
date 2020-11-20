@@ -2,13 +2,17 @@
 
 #include <Core.h>
 #include <Types.h>
-#include <Lights.h>
 
 /*
 * Global uniform layouts.
 */
 
-struct UniformBlockPointLight
+struct alignas(16) UniformBlockPointLight
 {
-  LightPoint light;
+  r32v3 mPosition            {};
+  r32   mRadius              {};
+  r32v4 mColor               {};
+  u32   mEnabled             {};
+  r32   mAttenuationLinear   {};
+  r32   mAttenuationQuadratic{};
 };

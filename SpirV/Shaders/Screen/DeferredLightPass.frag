@@ -3,8 +3,11 @@
 struct LightPoint
 {
   vec3 position;
-  vec4 color;
   float radius;
+  vec4 color;
+  uint enabled;
+  float attenuationLinear;
+  float attenuationQuadratic;
 };
 
 layout (binding = 0) uniform sampler2D uPosition;
@@ -14,17 +17,21 @@ layout (binding = 3) uniform sampler2D uUv;
 
 layout (binding = 0) uniform ProjectionUniform
 {
-  vec3 uCameraPosition;
-  vec2 uScreenSize;
   mat4 uProjection;
   mat4 uView;
   mat4 uTransform;
-  float uTime;
 };
-
-layout (binding = 1) uniform LightUniform
+layout (binding = 1) uniform CameraUniform
 {
-  LightPoint uPointLights[32];
+  vec3 uCameraPosition;
+  vec3 uCameraRotation;
+  vec3 uCameraLocalRight;
+  vec3 uCameraLocalUp;
+  vec3 uCameraLocalFront;
+};
+layout (binding = 2) uniform PointLightsUniform
+{
+  LightPoint uPointLights[1024];
 };
 
 layout (location = 0) in VertOut
@@ -36,21 +43,35 @@ layout (location = 0) out vec4 oColor;
 
 void main()
 {
-  vec3 position = texture(uPosition, fragIn.uv).rgb;
-  vec3 albedo = texture(uAlbedo, fragIn.uv).rgb;
-  vec3 normal = texture(uNormal, fragIn.uv).rgb;
+  vec3 fragPosition = texture(uPosition, fragIn.uv).rgb;
+  vec3 fragAlbedo = texture(uAlbedo, fragIn.uv).rgb;
+  vec3 fragNormal = texture(uNormal, fragIn.uv).rgb;
 
-  vec3 lighting = albedo * 0.1f;
+  vec3 lighting = fragAlbedo * 0.1f;
 
-  vec3 viewDir = normalize(uCameraPosition - position);
+  vec3 viewDir = normalize(uCameraPosition - fragPosition);
 
-  //for (uint i = 0; i < 32; i++)
-  //{
-  //  vec3 lightDir = normalize(uPointLights[i].position - position);
-  //  vec3 diffuse = max(dot(normal, lightDir), 0.f) * albedo * uPointLights[i].color.rgb;
-  //
-  //  lighting += diffuse;
-  //}
+  for (uint i = 0; i < 1024; i++)
+  {
+    if (uPointLights[i].enabled == 0) continue;
+
+    vec3 lightPosDelta = uPointLights[i].position - fragPosition;
+    float lightDist = length(lightPosDelta);
+
+    if (lightDist < uPointLights[i].radius)
+    {
+      // diffuse
+      vec3 lightDir = normalize(lightPosDelta);
+      vec3 albedo = max(dot(fragNormal, lightDir), 0.f) * fragAlbedo * uPointLights[i].color.rgb;
+
+      // attenuation
+      float attenuation = 1.f / (1.f + uPointLights[i].attenuationLinear * lightDist + uPointLights[i].attenuationQuadratic * lightDist * lightDist);
+      
+      albedo *= attenuation;
+
+      lighting += albedo;
+    }
+  }
 
   oColor = vec4(lighting, 1.f);
 }

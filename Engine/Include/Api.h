@@ -2,6 +2,8 @@
 
 #include <Core.h>
 #include <Types.h>
+#include <Context.h>
+#include <Utility.h>
 #include <Registry.h>
 #include <Events.h>
 #include <Camera.h>
@@ -24,48 +26,6 @@
 #include <Uniforms/LightUniform.h>
 
 #include <Buffers/Transform.h>
-
-/*
-* OpenGL context specific.
-*/
-
-extern "C" void ContextCreate(u32 width, u32 height, std::string const& title);
-extern "C" void ContextRegisterDebugHandler();
-extern "C" void ContextRun();
-extern "C" void ContextDestroy();
-
-/*
-* Event dispatching.
-*/
-
-extern "C" void EventsPoll();
-
-/*
-* Mouse/Keyboard/Window state handling.
-*/
-
-extern "C" u32 WindowStatus();
-extern "C" r32 WindowSizeX();
-extern "C" r32 WindowSizeY();
-extern "C" r32 WindowAspect();
-extern "C" r32 MousePositionX();
-extern "C" r32 MousePositionY();
-extern "C" r32 MouseScrollX();
-extern "C" r32 MouseScrollY();
-extern "C" u32 MouseDown(u32 key);
-extern "C" u32 MouseHeld(u32 key);
-extern "C" u32 MouseUp(u32 key);
-extern "C" u32 KeyDown(u32 key);
-extern "C" u32 KeyHeld(u32 key);
-extern "C" u32 KeyUp(u32 key);
-
-/*
-* Scene management.
-*/
-
-extern "C" void SceneCreate(Scene* pScene);
-extern "C" void SceneSwitch(u32 index);
-extern "C" void SceneDestroyAll();
 
 /*
 * Model management.

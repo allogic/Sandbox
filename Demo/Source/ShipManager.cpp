@@ -11,7 +11,6 @@ ShipManager::ShipManager(
   , mNumPathsSub{ numPathsSub }
 {
   ModelCreate(mModelShip, SANDBOX_ENGINE_ROOT_PATH "Model\\Cube.obj");
-  ModelLayoutTransform(mModelShip, { 0.f, 20.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f });
 
   TextureLayoutCreate(mTextureShip, 512, 512);
   TextureLayoutBind(mTextureShip);
@@ -54,7 +53,7 @@ ShipManager::~ShipManager()
 
 void ShipManager::Update(r32 timeDelta)
 {
-  if (KeyDown(GLFW_KEY_O))
+  if (KeyDown(mContext, GLFW_KEY_O))
   {
     ComputeMaterialBind(mMaterialComputeShipOctree);
     ComputeMaterialCompute(mMaterialComputeShipOctree);
@@ -62,7 +61,7 @@ void ShipManager::Update(r32 timeDelta)
     BufferLayoutBind(mBufferShipOctree);
     BufferLayoutDataGet(mBufferShipOctree, mNumOctreeLevels, mOctreeNodes.data());
   }
-  if (KeyDown(GLFW_KEY_P))
+  if (KeyDown(mContext, GLFW_KEY_P))
   {
     ComputeMaterialBind(mMaterialComputeShipPaths);
     ComputeMaterialCompute(mMaterialComputeShipPaths);
@@ -114,6 +113,7 @@ void ShipManager::Render()
   RendererSubmitLambertInstanced(mRenderer, TaskLambertInstanced
   {
     &mModelShip,
+    TransformTo({ 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f }),
     &mBufferShipTransform,
     &mTextureShip,
     mNumShips
@@ -121,6 +121,8 @@ void ShipManager::Render()
 }
 void ShipManager::Debug()
 {
+  return;
+
   for (u32 i{}; i < mNumPaths; i++)
   {
     for (u32 j{ 1 }; j < mNumPathsSub; j++)
@@ -144,7 +146,7 @@ void ShipManager::InitializeShipTransforms()
     mShipTransforms[i] =
     {
       .mPosition          { position },
-      .mRotation          { 45.f, 45.f, 45.f },
+      .mRotation          { 0.f, 0.f, 0.f },
       .mRotationLocalRight{ 1.f, 0.f, 0.f },
       .mRotationLocalUp   { 0.f, 1.f, 0.f },
       .mRotationLocalFront{ 0.f, 0.f, 1.f },

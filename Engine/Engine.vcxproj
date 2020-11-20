@@ -152,6 +152,7 @@
     <ClCompile Include="Source\Api.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Include\Context.h" />
     <ClInclude Include="Include\Importer.h" />
     <ClInclude Include="Include\Api.h" />
     <ClInclude Include="Include\Buffers\Transform.h" />
@@ -160,12 +161,12 @@
     <ClInclude Include="Include\Events.h" />
     <ClInclude Include="Include\Layouts\BufferLayouts.h" />
     <ClInclude Include="Include\FrameBuffer.h" />
-    <ClInclude Include="Include\Lights.h" />
     <ClInclude Include="Include\Materials\ComputeMaterials.h" />
     <ClInclude Include="Include\Materials\RenderMaterials.h" />
     <ClInclude Include="Include\Layouts\ShaderLayouts.h" />
     <ClInclude Include="Include\Layouts\TextureLayouts.h" />
     <ClInclude Include="Include\Materials\ScreenMaterials.h" />
+    <ClInclude Include="Include\Utility.h" />
     <ClInclude Include="Include\Registry.h" />
     <ClInclude Include="Include\Renderer.h" />
     <ClInclude Include="Include\Scene.h" />

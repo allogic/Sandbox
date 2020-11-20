@@ -12,12 +12,10 @@ struct PlayerManager
   void Render();
   void Debug();
 
-  void CameraControllerUpdateInputSpace(r32 timeDelta);
-  void CameraControllerUpdateInputOrbit(r32 timeDelta);
-
   ModelLambert          mModelCruiser         {};
   TextureR32RGBA        mTextureCruiser       {};
 
+  Context const&        mContext              { RegistryGetOrCreate<Context>("context") };
   Camera&               mCamera               { RegistryGetOrCreate<Camera>("camera") };
   Renderer&             mRenderer             { RegistryGetOrCreate<Renderer>("renderer") };
 

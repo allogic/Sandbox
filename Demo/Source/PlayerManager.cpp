@@ -3,13 +3,10 @@
 PlayerManager::PlayerManager()
 {
   ModelCreate(mModelCruiser, SANDBOX_ENGINE_ROOT_PATH "Model\\CruiserBerlin.fbx");
-  ModelLayoutTransform(mModelCruiser, { 10.f, 10.f, 10.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f });
 
   TextureLayoutCreate(mTextureCruiser, 512, 512);
   TextureLayoutBind(mTextureCruiser);
   TextureLayoutDataSetFrom(mTextureCruiser, SANDBOX_ENGINE_ROOT_PATH "Texture\\UV.png");
-
-  CameraCreate(mCamera, { 0.f, 20.f, 0.f }, WindowAspect(), 45.f, 0.001f, 10000.f);
 }
 PlayerManager::~PlayerManager()
 {
@@ -19,8 +16,8 @@ PlayerManager::~PlayerManager()
 
 void PlayerManager::Update(r32 timeDelta)
 {
-  CameraControllerUpdateInputSpace(timeDelta);
-  //CameraControllerUpdateInputOrbit(timeDelta);
+  CameraControllerUpdateInputSpace(mContext, mCamera, mCameraControllerSpace, timeDelta);
+  //CameraControllerUpdateInputOrbit(mContext, mCamera, mCameraControllerOrbit, timeDelta);
 }
 void PlayerManager::UpdatePhysics(r32 timeDelta)
 {
@@ -29,14 +26,30 @@ void PlayerManager::UpdatePhysics(r32 timeDelta)
 }
 void PlayerManager::Render()
 {
-  RendererSubmitLambert(mRenderer, TaskLambert
-  {
-    &mModelCruiser,
-    &mTextureCruiser,
-  });
+  for (u32 i{}; i < 16; i++)
+    for (u32 j{}; j < 16; j++)
+    {
+      RendererSubmitLambert(mRenderer, TaskLambert
+      {
+        &mModelCruiser,
+        TransformTo({ ((r32)i - 8) * 30, 0.f, ((r32)j - 8) * 130 }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f }),
+        &mTextureCruiser,
+      });
+    }
 }
 void PlayerManager::Debug()
 {
+  for (u32 i{}; i < 2; i++)
+  {
+    r32v3 lightPosition{ mRenderer.mUniformBlockPointLights[i].mPosition };
+    r32 lightRadius{ mRenderer.mUniformBlockPointLights[i].mRadius };
+
+    RendererLineBatchPushLine(mRenderer, lightPosition, { lightPosition.x, 0.f, lightPosition.z }, { 1.f, 1.f, 1.f, 1.f });
+    RendererLineBatchPushBox(mRenderer, lightPosition, { lightRadius * 2.f, lightRadius * 2.f, lightRadius * 2.f }, { 1.f, 1.f, 1.f, 1.f });
+  }
+
+  return;
+
   u32 size{ 32 };
   
   for (u32 i{}; i <= size; i++)
@@ -63,72 +76,4 @@ void PlayerManager::Debug()
       RendererLineBatchPushLine(mRenderer, startP0, endP0, color);
       RendererLineBatchPushLine(mRenderer, startP1, endP1, color);
     }
-}
-
-void PlayerManager::CameraControllerUpdateInputSpace(r32 timeDelta)
-{
-  if (KeyHeld(GLFW_KEY_A)) mCameraControllerSpace.mPositionAccel += -glm::normalize(mCamera.mLocalRight) * mCameraControllerSpace.mPositionAmount * timeDelta;
-  if (KeyHeld(GLFW_KEY_D)) mCameraControllerSpace.mPositionAccel += glm::normalize(mCamera.mLocalRight) * mCameraControllerSpace.mPositionAmount * timeDelta;
-
-  if (KeyHeld(GLFW_KEY_S)) mCameraControllerSpace.mPositionAccel += -glm::normalize(mCamera.mLocalFront) * mCameraControllerSpace.mPositionAmount * timeDelta;
-  if (KeyHeld(GLFW_KEY_W)) mCameraControllerSpace.mPositionAccel += glm::normalize(mCamera.mLocalFront) * mCameraControllerSpace.mPositionAmount * timeDelta;
-
-  if (KeyHeld(GLFW_KEY_Q)) mCameraControllerSpace.mRollAccel += -mCameraControllerSpace.mRollAmount * timeDelta;
-  if (KeyHeld(GLFW_KEY_E)) mCameraControllerSpace.mRollAccel += mCameraControllerSpace.mRollAmount * timeDelta;
-
-  static r32v2 mousePositionDown{};
-
-  if (MouseDown(GLFW_MOUSE_BUTTON_RIGHT))
-  {
-    mousePositionDown = { MousePositionX(), MousePositionY() };
-  }
-  if (MouseHeld(GLFW_MOUSE_BUTTON_RIGHT))
-  {
-    r32v2 mousePosition{ MousePositionX(), MousePositionY() };
-    r32v2 mousePositionDelta{ mousePositionDown - mousePosition };
-    r32v2 mousePositionDeltaAligned{ mousePositionDelta.x, mousePositionDelta.y };
-
-    if (glm::length(mousePositionDeltaAligned) > glm::epsilon<r32>())
-      mCameraControllerSpace.mRotationAccel += glm::normalize(mousePositionDeltaAligned) * mCameraControllerSpace.mRotationAmount * timeDelta;
-  }
-
-  mCameraControllerSpace.mPositionVelocity += -mCameraControllerSpace.mPositionVelocity * mCameraControllerSpace.mPositionVelocityDecay * timeDelta;
-  mCameraControllerSpace.mRotationVelocityAngular += -mCameraControllerSpace.mRotationVelocityAngular * mCameraControllerSpace.mRotationVelocityDecay * timeDelta;
-  mCameraControllerSpace.mRollVelocityAngular += -mCameraControllerSpace.mRollVelocityAngular * mCameraControllerSpace.mRollVelocityDecay * timeDelta;
-}
-void PlayerManager::CameraControllerUpdateInputOrbit(r32 timeDelta)
-{
-  r32 distanceScaleLog{ glm::log(mCameraControllerOrbit.mScrollDistance) };
-
-  if (KeyHeld(GLFW_KEY_A)) mCameraControllerOrbit.mPositionAccel += -glm::normalize(mCamera.mLocalRight) * mCameraControllerOrbit.mPositionAmount * distanceScaleLog * timeDelta;
-  if (KeyHeld(GLFW_KEY_D)) mCameraControllerOrbit.mPositionAccel += glm::normalize(mCamera.mLocalRight) * mCameraControllerOrbit.mPositionAmount * distanceScaleLog * timeDelta;
-
-  r32v3 localFrontNoXRot{ glm::cross(mCamera.mUp, mCamera.mLocalRight) };
-
-  if (KeyHeld(GLFW_KEY_S)) mCameraControllerOrbit.mPositionAccel += -glm::normalize(localFrontNoXRot) * mCameraControllerOrbit.mPositionAmount * distanceScaleLog * timeDelta;
-  if (KeyHeld(GLFW_KEY_W)) mCameraControllerOrbit.mPositionAccel += glm::normalize(localFrontNoXRot) * mCameraControllerOrbit.mPositionAmount * distanceScaleLog * timeDelta;
-
-  static r32v2 mousePositionDown{};
-
-  if (MouseDown(GLFW_MOUSE_BUTTON_RIGHT))
-  {
-    mousePositionDown = { MousePositionX(), MousePositionY() };
-  }
-  if (MouseHeld(GLFW_MOUSE_BUTTON_RIGHT))
-  {
-    r32v2 mousePosition{ MousePositionX(), MousePositionY() };
-    r32v2 mousePositionDelta{ mousePositionDown - mousePosition };
-    r32v2 mousePositionDeltaAligned{ mousePositionDelta.x, mousePositionDelta.y };
-
-    if (glm::length(mousePositionDeltaAligned) > glm::epsilon<r32>())
-      mCameraControllerOrbit.mRotationAccel += glm::normalize(mousePositionDeltaAligned) * mCameraControllerOrbit.mRotationAmount * distanceScaleLog * timeDelta;
-  }
-
-  mCameraControllerOrbit.mScrollAccel += -MouseScrollY() * mCameraControllerOrbit.mScrollAmount * timeDelta;
-
-  mCameraControllerOrbit.mPositionVelocity += -mCameraControllerOrbit.mPositionVelocity * mCameraControllerOrbit.mPositionVelocityDecay * timeDelta;
-  mCameraControllerOrbit.mRotationVelocityAngular += -mCameraControllerOrbit.mRotationVelocityAngular * mCameraControllerOrbit.mRotationVelocityDecay * timeDelta;
-  mCameraControllerOrbit.mScrollVelocity += -mCameraControllerOrbit.mScrollVelocity * mCameraControllerOrbit.mScrollVelocityDecay * timeDelta;
-
-  mCameraControllerOrbit.mScrollVelocity = glm::clamp(mCameraControllerOrbit.mScrollVelocity, -2.f, 2.f);
 }

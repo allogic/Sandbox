@@ -6,16 +6,16 @@
 
 int main(int argc, char** argv)
 {
-  ContextCreate(1280, 720, "Sandbox");
+  Context& context{ RegistryGetOrCreate<Context>("context") };
+
+  ContextCreate(context, 1280, 720, "Sandbox");
   ContextRegisterDebugHandler();
 
-  SceneCreate(new SceneGame);
+  ContextSceneCreate(context, new SceneGame);
+  ContextRun(context);
+  ContextSceneDestroyAll(context);
 
-  ContextRun();
-
-  SceneDestroyAll();
-
-  ContextDestroy();
+  ContextDestroy(context);
 
   return 0;
 }

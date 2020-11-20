@@ -4,7 +4,6 @@ BackgroundManager::BackgroundManager(u32 numStars)
   : mNumStars{ numStars }
 {
   ModelCreate(mModelStar, SANDBOX_ENGINE_ROOT_PATH "Model\\Quad.obj");
-  ModelLayoutTransform(mModelStar, { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f });
 
   TextureLayoutCreate(mTextureStar, 256, 256);
   TextureLayoutBind(mTextureStar);
@@ -42,6 +41,7 @@ void BackgroundManager::Render()
   RendererSubmitLambertInstanced(mRenderer, TaskLambertInstanced
   {
     &mModelStar,
+    TransformTo({ 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f }),
     &mBufferStarTransform,
     &mTextureStar,
     mNumStars

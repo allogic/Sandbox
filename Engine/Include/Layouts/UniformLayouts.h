@@ -19,12 +19,12 @@ struct UniformLayout
 * Uniform management.
 */
 
-template<typename UniformLayout> void UniformLayoutCreate(UniformLayout& uniformLayout)
+template<typename UniformLayout> void UniformLayoutCreate(UniformLayout& uniformLayout, u32 bufferSize = 1)
 {
   glGenBuffers(1, &uniformLayout.mUbo);
 
   glBindBuffer(GL_UNIFORM_BUFFER, uniformLayout.mUbo);
-  glBufferStorage(GL_UNIFORM_BUFFER, sizeof(UniformLayout::BufferType), nullptr, GL_DYNAMIC_STORAGE_BIT | GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
+  glBufferStorage(GL_UNIFORM_BUFFER, bufferSize * sizeof(UniformLayout::BufferType), nullptr, GL_DYNAMIC_STORAGE_BIT | GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
