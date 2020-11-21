@@ -10,11 +10,8 @@ ShipManager::ShipManager(
   , mNumPaths{ numPaths }
   , mNumPathsSub{ numPathsSub }
 {
-  ModelCreate(mModelShip, SANDBOX_ENGINE_ROOT_PATH "Model\\Cube.obj");
-
-  TextureLayoutCreate(mTextureShip, 512, 512);
-  TextureLayoutBind(mTextureShip);
-  TextureLayoutDataSetFrom(mTextureShip, SANDBOX_ENGINE_ROOT_PATH "Texture\\UV.png");
+  MeshFrom(mMeshShip, SANDBOX_ENGINE_ROOT_PATH "Model\\Cube.obj");
+  TextureFrom(mTextureShip, SANDBOX_ENGINE_ROOT_PATH "Texture\\UV.png");
 
   BufferLayoutCreate(mBufferShipTransform, mNumShips);
   BufferLayoutCreate(mBufferShipSteering, mNumShips);
@@ -35,7 +32,7 @@ ShipManager::ShipManager(
 }
 ShipManager::~ShipManager()
 {
-  ModelDestroy(mModelShip);
+  MeshLayoutDestroy(mMeshShip);
   TextureLayoutDestroy(mTextureShip);
 
   UniformLayoutDestroy(mUniformSteering);
@@ -112,7 +109,7 @@ void ShipManager::Render()
 {
   RendererSubmitLambertInstanced(mRenderer, TaskLambertInstanced
   {
-    &mModelShip,
+    &mMeshShip,
     TransformTo({ 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f }),
     &mBufferShipTransform,
     &mTextureShip,

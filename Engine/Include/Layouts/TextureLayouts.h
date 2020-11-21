@@ -12,31 +12,38 @@ enum TextureLayoutType : u32
   eTextureLayoutU8,
   eTextureLayoutR32,
 };
-
-enum TextureChannelType : u32
+enum TextureFormatType : u32
 {
-  eRGB,
-  eRGBA,
-  eDepth,
+  eTextureFormatRGB,
+  eTextureFormatRGBA,
+  eTextureFormatDepth,
+};
+enum TextureWrapMode : u32
+{
+  eTextureWrapRepeat = GL_REPEAT,
+};
+enum TextureFilterMode : u32
+{
+  eTextureFilterLinear  = GL_LINEAR,
+  eTextureFilterNearest = GL_NEAREST,
 };
 
-template<u32 Layout, u32 Channel>
+template<u32 Layout, u32 Format>
 struct TextureLayout
 {
-  constexpr static TextureLayoutType  sLayout { Layout };
-  constexpr static TextureChannelType sChannel{ Channel };
+  constexpr static u32 sLayout{ Layout };
+  constexpr static u32 sFormat{ Format };
 
   u32 mWidth {};
   u32 mHeight{};
   u32 mTid   {};
 };
 
-using TextureU8RGB   = TextureLayout<eTextureLayoutU8, eRGB>;
-using TextureU8RGBA  = TextureLayout<eTextureLayoutU8, eRGB>;
-using TextureR32RGB = TextureLayout<eTextureLayoutR32, eRGB>;
-using TextureR32RGBA = TextureLayout<eTextureLayoutR32, eRGBA>;
-
-using DepthR32RGBA   = TextureLayout<eTextureLayoutR32, eDepth>;
+using TextureU8RGB    = TextureLayout<eTextureLayoutU8, eTextureFormatRGB>;
+using TextureU8RGBA   = TextureLayout<eTextureLayoutU8, eTextureFormatRGB>;
+using TextureR32RGB   = TextureLayout<eTextureLayoutR32, eTextureFormatRGB>;
+using TextureR32RGBA  = TextureLayout<eTextureLayoutR32, eTextureFormatRGBA>;
+using TextureR32Depth = TextureLayout<eTextureLayoutR32, eTextureFormatDepth>;
 
 /*
 * Texture management.
@@ -53,66 +60,16 @@ template<typename TextureLayout> void TextureLayoutDataSet(TextureLayout const& 
     case eTextureLayoutU8: type = GL_UNSIGNED_BYTE; break;
     case eTextureLayoutR32: type = GL_FLOAT; break;
   }
-  switch (TextureLayout::sChannel)
+  switch (TextureLayout::sFormat)
   {
-    case eRGB: formatInternal = GL_RGB8UI; format = GL_RGB; break;
-    case eRGBA: formatInternal = GL_RGBA32F; format = GL_RGBA; break;
-    case eDepth: formatInternal = GL_DEPTH_COMPONENT32F; format = GL_DEPTH_COMPONENT; break;
+    case eTextureFormatRGB: formatInternal = GL_RGB8UI; format = GL_RGB; break;
+    case eTextureFormatRGBA: formatInternal = GL_RGBA32F; format = GL_RGBA; break;
+    case eTextureFormatDepth: formatInternal = GL_DEPTH_COMPONENT32F; format = GL_DEPTH_COMPONENT; break;
   }
 
   glTexImage2D(GL_TEXTURE_2D, 0, formatInternal, textureLayout.mWidth, textureLayout.mHeight, 0, format, type, pImageData);
 }
-template<typename TextureLayout> void TextureLayoutDataSetFrom(TextureLayout const& textureLayout, std::string const& fileName)
-{
-  s32 width{};
-  s32 height{};
-  s32 channels{};
-  s32 type{};
-
-  switch (TextureLayout::sChannel)
-  {
-    case eRGB: type = STBI_rgb; break;
-    case eRGBA: type = STBI_rgb_alpha; break;
-  }
-
-  u8* pBlob = stbi_load(fileName.data(), &width, &height, &channels, type);
-
-  assert(textureLayout.mWidth == width);
-  assert(textureLayout.mHeight == height);
-
-  switch (TextureLayout::sChannel)
-  {
-    case eRGB: assert(3 == channels); break;
-    case eRGBA: assert(4 == channels); break;
-  }
-
-  u32 textureSize{};
-
-  switch (TextureLayout::sChannel)
-  {
-    case eRGB: textureSize = textureLayout.mWidth * textureLayout.mHeight * 3; break;
-    case eRGBA: textureSize = textureLayout.mWidth * textureLayout.mHeight * 4; break;
-  }
-
-  if (TextureLayout::sLayout == eTextureLayoutR32)
-  {
-    std::vector<r32> imageData{};
-
-    imageData.resize(textureSize);
-
-    for (u32 i{}; i < textureSize; i++)
-      imageData[i] = pBlob[i] / 255.f;
-
-    TextureLayoutDataSet(textureLayout, imageData.data());
-  }
-  else
-  {
-    TextureLayoutDataSet(textureLayout, pBlob);
-  }
-
-  stbi_image_free(pBlob);
-}
-template<typename TextureLayout> void TextureLayoutCreate(TextureLayout& textureLayout, u32 width, u32 height, u32 wrapMode = GL_REPEAT, u32 filter = GL_LINEAR)
+template<typename TextureLayout> void TextureLayoutCreate(TextureLayout& textureLayout, u32 width, u32 height, TextureWrapMode wrapMode = eTextureWrapRepeat, TextureFilterMode filter = eTextureFilterLinear)
 {
   textureLayout.mWidth = width;
   textureLayout.mHeight = height;
@@ -121,11 +78,11 @@ template<typename TextureLayout> void TextureLayoutCreate(TextureLayout& texture
 
   glBindTexture(GL_TEXTURE_2D, textureLayout.mTid);
 
-  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_WRAP_S, wrapMode);
-  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_WRAP_T, wrapMode);
+  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_WRAP_S, (s32)wrapMode);
+  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_WRAP_T, (s32)wrapMode);
 
-  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_MIN_FILTER, filter);
-  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_MAG_FILTER, filter);
+  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_MIN_FILTER, (s32)filter);
+  glTextureParameteri(textureLayout.mTid, GL_TEXTURE_MAG_FILTER, (s32)filter);
 
   TextureLayoutDataSet(textureLayout, nullptr);
 

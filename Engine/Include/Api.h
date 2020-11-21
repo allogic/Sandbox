@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef SANDBOX_ENGINE_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#endif SANDBOX_ENGINE_IMPLEMENTATION
+
 #include <Core.h>
 #include <Types.h>
 #include <Context.h>
@@ -10,6 +14,7 @@
 #include <Scene.h>
 #include <FrameBuffer.h>
 #include <Renderer.h>
+#include <Importer.h>
 
 #include <Layouts/VertexLayouts.h>
 #include <Layouts/BufferLayouts.h>
@@ -26,12 +31,3 @@
 #include <Uniforms/LightUniform.h>
 
 #include <Buffers/Transform.h>
-
-/*
-* Model management.
-*/
-
-extern "C" void ModelCreate(ModelLambert& model, std::string const& fileName);
-extern "C" void ModelRender(ModelLambert const& model);
-extern "C" void ModelRenderInstanced(ModelLambert const& model, u32 numInstances);
-extern "C" void ModelDestroy(ModelLambert const& model);

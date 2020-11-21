@@ -3,11 +3,8 @@
 BackgroundManager::BackgroundManager(u32 numStars)
   : mNumStars{ numStars }
 {
-  ModelCreate(mModelStar, SANDBOX_ENGINE_ROOT_PATH "Model\\Quad.obj");
-
-  TextureLayoutCreate(mTextureStar, 256, 256);
-  TextureLayoutBind(mTextureStar);
-  TextureLayoutDataSetFrom(mTextureStar, SANDBOX_ENGINE_ROOT_PATH "Texture\\Star.png");
+  MeshFrom(mMeshStar, SANDBOX_ENGINE_ROOT_PATH "Model\\Quad.obj");
+  TextureFrom(mTextureStar, SANDBOX_ENGINE_ROOT_PATH "Texture\\Star.png");
 
   BufferLayoutCreate(mBufferStarTransform, mNumStars);
 
@@ -17,7 +14,7 @@ BackgroundManager::BackgroundManager(u32 numStars)
 }
 BackgroundManager::~BackgroundManager()
 {
-  ModelDestroy(mModelStar);
+  MeshLayoutDestroy(mMeshStar);
   TextureLayoutDestroy(mTextureStar);
 
   BufferLayoutDestroy(mBufferStarTransform);
@@ -40,7 +37,7 @@ void BackgroundManager::Render()
 {
   RendererSubmitLambertInstanced(mRenderer, TaskLambertInstanced
   {
-    &mModelStar,
+    &mMeshStar,
     TransformTo({ 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f }),
     &mBufferStarTransform,
     &mTextureStar,

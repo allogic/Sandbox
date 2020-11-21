@@ -56,7 +56,7 @@ struct ShipManager
   u32 mNumPaths;
   u32 mNumPathsSub;
 
-  ModelLambert                    mModelShip                 {};
+  MeshLambert                     mMeshShip                  {};
   TextureR32RGBA                  mTextureShip               {};
 
   UniformLayout<Steering>&        mUniformSteering           { RegistryGetOrCreate<UniformLayout<Steering>>("uniformSteering") };

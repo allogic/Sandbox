@@ -1,5 +1,4 @@
-#define STB_IMAGE_IMPLEMENTATION
-
+#define SANDBOX_ENGINE_IMPLEMENTATION
 #include <Api.h>
 
 #include <Scenes/Game.h>

@@ -1,12 +1,5 @@
 #pragma once
 
-/*
-* Todo:
-*  - Create clean shader SSBO/UBO mapping API.
-*  - Create SVO/DAG for fast steering lookups.
-*  - Continue deferred rendering pipeline.
-*/
-
 #include <Api.h>
 
 #include <PlayerManager.h>

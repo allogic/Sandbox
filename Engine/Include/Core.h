@@ -17,6 +17,7 @@
 #include <utility>
 #include <cstdint>
 #include <chrono>
+#include <cassert>
 
 #include <glad/glad.h>
 

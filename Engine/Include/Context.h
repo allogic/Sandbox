@@ -190,7 +190,7 @@ template<typename Context> void ContextRun(Context& context)
       context.mpSceneActive->OnUpdateFixed(timeDelta);
       context.mpSceneActive->OnRender(timeDelta);
 
-      MeshLayoutBind(renderer.mMeshGizmoLineBatch);
+      MeshLayoutBind(renderer.mMeshGizmoLineBatch, 0);
       context.mpSceneActive->OnGizmos(timeDelta);
       MeshLayoutUnbind();
 

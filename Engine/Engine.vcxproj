@@ -149,9 +149,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Source\Api.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="Include\Context.h" />
     <ClInclude Include="Include\Importer.h" />
     <ClInclude Include="Include\Api.h" />

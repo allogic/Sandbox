@@ -16,7 +16,7 @@ struct BackgroundManager
 
   u32                     mNumStars                {};
 
-  ModelLambert            mModelStar               {};
+  MeshLambert             mMeshStar                {};
   TextureR32RGBA          mTextureStar             {};
 
   std::vector<Transform>  mStarTransforms          {};

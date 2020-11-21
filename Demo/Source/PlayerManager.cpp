@@ -2,15 +2,12 @@
 
 PlayerManager::PlayerManager()
 {
-  ModelCreate(mModelCruiser, SANDBOX_ENGINE_ROOT_PATH "Model\\CruiserBerlin.fbx");
-
-  TextureLayoutCreate(mTextureCruiser, 512, 512);
-  TextureLayoutBind(mTextureCruiser);
-  TextureLayoutDataSetFrom(mTextureCruiser, SANDBOX_ENGINE_ROOT_PATH "Texture\\UV.png");
+  MeshFrom(mMeshCruiser, SANDBOX_ENGINE_ROOT_PATH "Model\\CruiserBerlin.fbx");
+  TextureFrom(mTextureCruiser, SANDBOX_ENGINE_ROOT_PATH "Texture\\UV.png");
 }
 PlayerManager::~PlayerManager()
 {
-  ModelDestroy(mModelCruiser);
+  MeshLayoutDestroy(mMeshCruiser);
   TextureLayoutDestroy(mTextureCruiser);
 }
 
@@ -31,7 +28,7 @@ void PlayerManager::Render()
     {
       RendererSubmitLambert(mRenderer, TaskLambert
       {
-        &mModelCruiser,
+        &mMeshCruiser,
         TransformTo({ ((r32)i - 8) * 30, 0.f, ((r32)j - 8) * 130 }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f }),
         &mTextureCruiser,
       });

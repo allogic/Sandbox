@@ -12,7 +12,7 @@ struct PlayerManager
   void Render();
   void Debug();
 
-  ModelLambert          mModelCruiser         {};
+  MeshLambert           mMeshCruiser          {};
   TextureR32RGBA        mTextureCruiser       {};
 
   Context const&        mContext              { RegistryGetOrCreate<Context>("context") };
