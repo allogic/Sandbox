@@ -3,12 +3,18 @@
 PlayerManager::PlayerManager()
 {
   MeshFrom(mMeshCruiser, SANDBOX_ENGINE_ROOT_PATH "Model\\CruiserBerlin.fbx");
-  TextureFrom(mTextureCruiser, SANDBOX_ENGINE_ROOT_PATH "Texture\\UV.png");
+
+  TextureFrom(mTextureCruiserAlbedo, SANDBOX_ENGINE_ROOT_PATH "Texture\\Cruiser\\Albedo.png");
+  TextureFrom(mTextureCruiserNormal, SANDBOX_ENGINE_ROOT_PATH "Texture\\Cruiser\\Normal.png");
+  TextureFrom(mTextureCruiserSpecular, SANDBOX_ENGINE_ROOT_PATH "Texture\\Cruiser\\Specular.png");
 }
 PlayerManager::~PlayerManager()
 {
   MeshLayoutDestroy(mMeshCruiser);
-  TextureLayoutDestroy(mTextureCruiser);
+
+  TextureLayoutDestroy(mTextureCruiserAlbedo);
+  TextureLayoutDestroy(mTextureCruiserNormal);
+  TextureLayoutDestroy(mTextureCruiserSpecular);
 }
 
 void PlayerManager::Update(r32 timeDelta)
@@ -30,7 +36,9 @@ void PlayerManager::Render()
       {
         &mMeshCruiser,
         TransformTo({ ((r32)i - 8) * 30, 0.f, ((r32)j - 8) * 130 }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f }),
-        &mTextureCruiser,
+        &mTextureCruiserAlbedo,
+        &mTextureCruiserNormal,
+        &mTextureCruiserSpecular,
       });
     }
 }

@@ -46,6 +46,7 @@ void main()
   vec3 fragPosition = texture(uPosition, fragIn.uv).rgb;
   vec3 fragAlbedo = texture(uAlbedo, fragIn.uv).rgb;
   vec3 fragNormal = texture(uNormal, fragIn.uv).rgb;
+  float fragSpecular = texture(uAlbedo, fragIn.uv).a;
 
   vec3 lighting = fragAlbedo * 0.1f;
 
@@ -64,12 +65,18 @@ void main()
       vec3 lightDir = normalize(lightPosDelta);
       vec3 albedo = max(dot(fragNormal, lightDir), 0.f) * fragAlbedo * uPointLights[i].color.rgb;
 
+      // specular
+      vec3 halfWayDir = normalize(lightDir + viewDir);
+      float specularAmount = pow(max(dot(fragNormal, halfWayDir), 0.f), 16.f);
+      vec3 specular = uPointLights[i].color.rgb * specularAmount * fragSpecular;
+
       // attenuation
       float attenuation = 1.f / (1.f + uPointLights[i].attenuationLinear * lightDist + uPointLights[i].attenuationQuadratic * lightDist * lightDist);
       
       albedo *= attenuation;
+      specular *= attenuation;
 
-      lighting += albedo;
+      lighting += albedo + specular;
     }
   }
 

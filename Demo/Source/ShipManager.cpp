@@ -113,7 +113,9 @@ void ShipManager::Render()
     TransformTo({ 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f }),
     &mBufferShipTransform,
     &mTextureShip,
-    mNumShips
+    nullptr,
+    nullptr,
+    mNumShips,
   });
 }
 void ShipManager::Debug()

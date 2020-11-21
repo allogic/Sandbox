@@ -152,7 +152,7 @@
     <ClInclude Include="Include\Context.h" />
     <ClInclude Include="Include\Importer.h" />
     <ClInclude Include="Include\Api.h" />
-    <ClInclude Include="Include\Buffers\Transform.h" />
+    <ClInclude Include="Include\Buffers\TransformBuffers.h" />
     <ClInclude Include="Include\Camera.h" />
     <ClInclude Include="Include\Core.h" />
     <ClInclude Include="Include\Events.h" />

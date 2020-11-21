@@ -57,17 +57,18 @@ struct ShipManager
   u32 mNumPathsSub;
 
   MeshLambert                     mMeshShip                  {};
+
   TextureR32RGBA                  mTextureShip               {};
 
   UniformLayout<Steering>&        mUniformSteering           { RegistryGetOrCreate<UniformLayout<Steering>>("uniformSteering") };
   UniformLayout<Noise>&           mUniformNoise              { RegistryGetOrCreate<UniformLayout<Noise>>("uniformNoise") };
 
-  std::vector<Transform>          mShipTransforms            {};
+  std::vector<BufferTransform>    mShipTransforms            {};
   std::vector<ShipSteering>       mShipSteerings             {};
   std::vector<ShipWaypoint>       mShipPaths                 {};
   std::vector<ShipOctree>         mOctreeNodes               {};
 
-  BufferLayout<Transform>         mBufferShipTransform       {};
+  BufferLayout<BufferTransform>   mBufferShipTransform       {};
   BufferLayout<ShipSteering>      mBufferShipSteering        {};
   BufferLayout<ShipWaypoint>      mBufferShipPath            {};
   BufferLayout<ShipOctree>        mBufferShipOctree          {};

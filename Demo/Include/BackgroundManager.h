@@ -14,16 +14,17 @@ struct BackgroundManager
 
   void InitializeStarTransforms();
 
-  u32                     mNumStars                {};
+  u32                           mNumStars                {};
 
-  MeshLambert             mMeshStar                {};
-  TextureR32RGBA          mTextureStar             {};
+  MeshLambert                   mMeshStar                {};
 
-  std::vector<Transform>  mStarTransforms          {};
+  TextureR32RGBA                mTextureStar             {};
 
-  BufferLayout<Transform> mBufferStarTransform     {};
+  std::vector<BufferTransform>  mStarTransforms          {};
 
-  ComputeMaterialDefault  mMaterialComputeStarField{ mNumStars / 32 };
+  BufferLayout<BufferTransform> mBufferStarTransform     {};
 
-  Renderer&               mRenderer                { RegistryGetOrCreate<Renderer>("renderer") };
+  ComputeMaterialDefault        mMaterialComputeStarField{ mNumStars / 32 };
+
+  Renderer&                     mRenderer                { RegistryGetOrCreate<Renderer>("renderer") };
 };

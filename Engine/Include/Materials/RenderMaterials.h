@@ -8,22 +8,7 @@
 #include <Layouts/BufferLayouts.h>
 
 /*
-* Render materials.
-*
-* Bindings
-*   Uniforms
-*     0 -> ProjectionUniform
-*     1 -> SteeringUniform
-*     2 -> NoiseUniform
-*     x -> AlbedoUniform
-*     x -> NormalUniform
-*     x -> SpecularUniform
-*     x -> RoughnessUniform
-*   Buffers
-*     0 -> TransformBuffer
-*     1 -> SteerigBuffer
-*     2 -> PathBuffer
-*     3 -> OctreeBuffer
+* Render material layouts.
 */
 
 template<typename ShaderLayout>
@@ -65,8 +50,8 @@ template<typename RenderMaterial> void RenderMaterialCreate(RenderMaterial& rend
     {
       ShaderLayoutCreate(renderMaterial.mShaderLayout, ShaderPaths
       {
-        .mVertex{ SANDBOX_ENGINE_ROOT_PATH "SpirV\\Compiled\\LambertInstanced\\LambertInstanced.vert" },
-        .mFragment{ SANDBOX_ENGINE_ROOT_PATH "SpirV\\Compiled\\LambertInstanced\\LambertInstanced.frag" },
+        .mVertex{ SANDBOX_ENGINE_ROOT_PATH "SpirV\\Compiled\\Lambert\\LambertInstanced.vert" },
+        .mFragment{ SANDBOX_ENGINE_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.frag" },
       });
       break;
     }

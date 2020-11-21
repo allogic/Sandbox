@@ -9,17 +9,6 @@
 
 /*
 * Compute material layouts.
-* 
-* Bindings
-*   Uniforms
-*     0 -> ProjectionUniform
-*     1 -> SteeringUniform
-*     2 -> NoiseUniform
-*   Buffers
-*     0 -> TransformBuffer
-*     1 -> SteerigBuffer
-*     2 -> PathBuffer
-*     3 -> OctreeBuffer
 */
 
 template<typename ShaderLayout>

@@ -12,13 +12,16 @@ struct PlayerManager
   void Render();
   void Debug();
 
-  MeshLambert           mMeshCruiser          {};
-  TextureR32RGBA        mTextureCruiser       {};
+  MeshLambert           mMeshCruiser           {};
 
-  Context const&        mContext              { RegistryGetOrCreate<Context>("context") };
-  Camera&               mCamera               { RegistryGetOrCreate<Camera>("camera") };
-  Renderer&             mRenderer             { RegistryGetOrCreate<Renderer>("renderer") };
+  TextureR32RGBA        mTextureCruiserAlbedo  {};
+  TextureR32RGBA        mTextureCruiserNormal  {};
+  TextureR32RGBA        mTextureCruiserSpecular{};
 
-  CameraControllerSpace mCameraControllerSpace{};
-  CameraControllerOrbit mCameraControllerOrbit{};
+  Context const&        mContext               { RegistryGetOrCreate<Context>("context") };
+  Camera&               mCamera                { RegistryGetOrCreate<Camera>("camera") };
+  Renderer&             mRenderer              { RegistryGetOrCreate<Renderer>("renderer") };
+
+  CameraControllerSpace mCameraControllerSpace {};
+  CameraControllerOrbit mCameraControllerOrbit {};
 };

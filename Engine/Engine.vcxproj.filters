@@ -60,9 +60,6 @@
     <ClInclude Include="Include\Materials\ComputeMaterials.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Include\Buffers\Transform.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Include\Importer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -88,6 +85,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Include\Context.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Buffers\TransformBuffers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

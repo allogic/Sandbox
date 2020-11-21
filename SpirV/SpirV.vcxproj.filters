@@ -21,14 +21,13 @@
     <None Include="Shaders\Gizmo\Gizmo.vert" />
     <None Include="Shaders\Compute\ShipPath.comp" />
     <None Include="Shaders\Compute\ShipPhysic.comp" />
-    <None Include="Shaders\LambertInstanced\LambertInstanced.frag" />
-    <None Include="Shaders\LambertInstanced\LambertInstanced.vert" />
     <None Include="Shaders\Compute\ShipOctree.comp" />
     <None Include="Shaders\Compute\StarField.comp" />
     <None Include="Shaders\Screen\DeferredLightPass.frag" />
     <None Include="Shaders\Screen\Screen.vert" />
     <None Include="Shaders\Screen\VolumeCloud.frag" />
     <None Include="Shaders\Screen\CloudVolumePass.frag" />
+    <None Include="Shaders\Lambert\LambertInstanced.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
