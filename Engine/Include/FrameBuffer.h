@@ -22,37 +22,6 @@ struct FrameBufferDeferred
 };
 
 /*
-* Framebuffer bindings.
-*/
-
-template<typename FrameBuffer> void FrameBufferBind(FrameBuffer const& frameBuffer)
-{
-  glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer.mFbo);
-}
-template<typename FrameBuffer> void FrameBufferBindRead(FrameBuffer const& frameBuffer)
-{
-  glBindFramebuffer(GL_READ_FRAMEBUFFER, frameBuffer.mFbo);
-}
-template<typename FrameBuffer> void FrameBufferBindWrite(FrameBuffer const& frameBuffer)
-{
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBuffer.mFbo);
-}
-
-static                         void FrameBufferUnbind()
-{
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-static                         void FrameBufferUnbindRead()
-{
-  glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-}
-static                         void FrameBufferUnbindWrite()
-{
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-}
-
-
-/*
 * FrameBuffer management.
 */
 
@@ -63,13 +32,13 @@ template<typename FrameBuffer> void FrameBufferCreate(FrameBuffer& frameBuffer, 
 
   glGenFramebuffers(1, &frameBuffer.mFbo);
 
-  TextureLayoutCreate(frameBuffer.mTexturePosition, frameBuffer.mWidth, frameBuffer.mHeight, eTextureWrapRepeat, eTextureFilterNearest);
-  TextureLayoutCreate(frameBuffer.mTextureAlbedo, frameBuffer.mWidth, frameBuffer.mHeight, eTextureWrapRepeat, eTextureFilterNearest);
-  TextureLayoutCreate(frameBuffer.mTextureNormal, frameBuffer.mWidth, frameBuffer.mHeight, eTextureWrapRepeat, eTextureFilterNearest);
-  TextureLayoutCreate(frameBuffer.mTextureUv, frameBuffer.mWidth, frameBuffer.mHeight, eTextureWrapRepeat, eTextureFilterNearest);
-  TextureLayoutCreate(frameBuffer.mTextureDepth, frameBuffer.mWidth, frameBuffer.mHeight, eTextureWrapRepeat, eTextureFilterNearest);
+  TextureLayoutCreate(frameBuffer.mTexturePosition, frameBuffer.mWidth, frameBuffer.mHeight, eTextureClampEdge, eTextureFilterNearest);
+  TextureLayoutCreate(frameBuffer.mTextureAlbedo, frameBuffer.mWidth, frameBuffer.mHeight, eTextureClampEdge, eTextureFilterNearest);
+  TextureLayoutCreate(frameBuffer.mTextureNormal, frameBuffer.mWidth, frameBuffer.mHeight, eTextureClampEdge, eTextureFilterNearest);
+  TextureLayoutCreate(frameBuffer.mTextureUv, frameBuffer.mWidth, frameBuffer.mHeight, eTextureClampEdge, eTextureFilterNearest);
+  TextureLayoutCreate(frameBuffer.mTextureDepth, frameBuffer.mWidth, frameBuffer.mHeight, eTextureClampEdge, eTextureFilterNearest);
 
-  FrameBufferBindWrite(frameBuffer);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBuffer.mFbo);
 
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frameBuffer.mTexturePosition.mTid, 0);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, frameBuffer.mTextureAlbedo.mTid, 0);
@@ -82,7 +51,7 @@ template<typename FrameBuffer> void FrameBufferCreate(FrameBuffer& frameBuffer, 
 
   glDrawBuffers(4, buffers);
 
-  FrameBufferUnbindWrite();
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
 static                         void FrameBufferSetReadTexture(u32 textureIndex)
 {

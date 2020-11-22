@@ -21,6 +21,7 @@ enum TextureFormatType : u32
 enum TextureWrapMode : u32
 {
   eTextureWrapRepeat = GL_REPEAT,
+  eTextureClampEdge = GL_CLAMP_TO_EDGE,
 };
 enum TextureFilterMode : u32
 {
@@ -64,7 +65,7 @@ template<typename TextureLayout> void TextureLayoutDataSet(TextureLayout const& 
   {
     case eTextureFormatRGB: formatInternal = GL_RGB8UI; format = GL_RGB; break;
     case eTextureFormatRGBA: formatInternal = GL_RGBA32F; format = GL_RGBA; break;
-    case eTextureFormatDepth: formatInternal = GL_DEPTH_COMPONENT32F; format = GL_DEPTH_COMPONENT; break;
+    case eTextureFormatDepth: formatInternal = GL_DEPTH_COMPONENT; format = GL_DEPTH_COMPONENT; break;
   }
 
   glTexImage2D(GL_TEXTURE_2D, 0, formatInternal, textureLayout.mWidth, textureLayout.mHeight, 0, format, type, pImageData);

@@ -93,7 +93,7 @@ struct Renderer
 * Render passes.
 */
 
-template<typename Renderer> void RendererDispatchLambert(Renderer& renderer)
+template<typename Renderer> void RendererDispatchGeometry(Renderer& renderer)
 {
   UniformLayoutMap(renderer.mUniformProjection, 0);
 
@@ -120,7 +120,7 @@ template<typename Renderer> void RendererDispatchLambert(Renderer& renderer)
   RenderMaterialUnbind();
   UniformLayoutUnbind();
 }
-template<typename Renderer> void RendererDispatchLambertInstanced(Renderer& renderer)
+template<typename Renderer> void RendererDispatchGeometryInstanced(Renderer& renderer)
 {
   UniformLayoutMap(renderer.mUniformProjection, 0);
 
@@ -150,7 +150,7 @@ template<typename Renderer> void RendererDispatchLambertInstanced(Renderer& rend
   UniformLayoutUnbind();
   BufferLayoutUnbind();
 }
-template<typename Renderer> void RendererDispatchLambertLight(Renderer& renderer)
+template<typename Renderer> void RendererDispatchLight(Renderer& renderer)
 {
   TextureLayoutMapSampler(renderer.mFrameBufferDeferred.mTexturePosition, 0);
   TextureLayoutMapSampler(renderer.mFrameBufferDeferred.mTextureAlbedo, 1);
@@ -170,31 +170,12 @@ template<typename Renderer> void RendererDispatchLambertLight(Renderer& renderer
   ScreenMaterialUnbind();
   UniformLayoutUnbind();
 }
-template<typename Renderer> void RendererDispatchGizmo(Renderer& renderer)
-{
-  UniformLayoutBind(renderer.mUniformProjection);
-  UniformLayoutMap(renderer.mUniformProjection, 0);
-
-  RenderMaterialBind(renderer.mMaterialGizmo);
-
-  MeshLayoutRender(renderer.mMeshGizmoLineBatch, eRenderModeLine);
-
-  MeshLayoutUnbind();
-  RenderMaterialUnbind();
-  UniformLayoutUnbind();
-}
 template<typename Renderer> void RendererDispatchScreen(Renderer& renderer)
 {
-  UniformLayoutBind(renderer.mUniformGlobal);
   UniformLayoutMap(renderer.mUniformGlobal, 0);
-
-  UniformLayoutBind(renderer.mUniformProjection);
   UniformLayoutMap(renderer.mUniformProjection, 1);
-
-  UniformLayoutBind(renderer.mUniformCamera);
   UniformLayoutMap(renderer.mUniformCamera, 2);
 
-  TextureLayoutBind(renderer.mTextureNoise);
   TextureLayoutMapSampler(renderer.mTextureNoise, 0);
 
   ScreenMaterialBind(renderer.mMaterialVolumeCloud);
@@ -204,6 +185,18 @@ template<typename Renderer> void RendererDispatchScreen(Renderer& renderer)
   MeshLayoutUnbind();
   TextureLayoutUnbind();
   ScreenMaterialUnbind();
+  UniformLayoutUnbind();
+}
+template<typename Renderer> void RendererDispatchGizmo(Renderer& renderer)
+{
+  UniformLayoutMap(renderer.mUniformProjection, 0);
+
+  RenderMaterialBind(renderer.mMaterialGizmo);
+
+  MeshLayoutRender(renderer.mMeshGizmoLineBatch, eRenderModeLine);
+
+  MeshLayoutUnbind();
+  RenderMaterialUnbind();
   UniformLayoutUnbind();
 }
 
@@ -331,38 +324,39 @@ template<typename Renderer> void RendererRenderBegin(Renderer& renderer)
 }
 template<typename Renderer> void RendererRender(Renderer& renderer)
 {
-  FrameBufferBindWrite(renderer.mFrameBufferDeferred);
-
-  glDepthMask(GL_TRUE);
   glEnable(GL_DEPTH_TEST);
 
   glClearColor(0.f, 0.f, 0.f, 1.f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+  // Geometry pass
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, renderer.mFrameBufferDeferred.mFbo);
+  glClearColor(0.f, 0.f, 0.f, 1.f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   //glEnable(GL_BLEND);
   //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-  RendererDispatchLambert(renderer);
-  RendererDispatchLambertInstanced(renderer);
-
+  RendererDispatchGeometry(renderer);
+  RendererDispatchGeometryInstanced(renderer);
   //glDisable(GL_BLEND);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-  glDepthMask(GL_FALSE);
-  glDisable(GL_DEPTH_TEST);
+  // Light pass
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, renderer.mFrameBufferDeferred.mFbo);
+  RendererDispatchLight(renderer);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-  FrameBufferUnbind();
+  // Copy geometry depth into default framebuffer
+  //glBindFramebuffer(GL_READ_FRAMEBUFFER, renderer.mFrameBufferDeferred.mFbo);
+  //glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+  //glBlitFramebuffer(0, 0, 1280, 720, 0, 0, 1280, 720, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+  //glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-  FrameBufferBindRead(renderer.mFrameBufferDeferred);
-
-  //FrameBufferSetReadTexture(0);
-  //glBlitFramebuffer(0, 0, 1280, 720, 0, 0, 1280, 720, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-
-  RendererDispatchLambertLight(renderer);
-
-  FrameBufferUnbind();
-
+  // Render background blend geometry
+  //glBindFramebuffer(GL_READ_FRAMEBUFFER, renderer.mFrameBufferDeferred.mFbo);
   //RendererDispatchScreen(renderer);
+  //glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+  // Gizmo pass
   //RendererDispatchGizmo(renderer);
 }
 template<typename Renderer> void RendererRenderEnd(Renderer& renderer)
