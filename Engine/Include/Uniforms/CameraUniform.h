@@ -11,6 +11,9 @@ struct UniformBlockCamera
 {
   r32v3 mPosition  {};
   r32v3 mRotation  {};
+  r32v3 mRight     {};
+  r32v3 mUp        {};
+  r32v3 mFront     {};
   r32v3 mLocalRight{};
   r32v3 mLocalUp   {};
   r32v3 mLocalFront{};

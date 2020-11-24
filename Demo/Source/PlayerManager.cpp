@@ -53,8 +53,6 @@ void PlayerManager::Debug()
     RendererLineBatchPushBox(mRenderer, lightPosition, { lightRadius * 2.f, lightRadius * 2.f, lightRadius * 2.f }, { 1.f, 1.f, 1.f, 1.f });
   }
 
-  return;
-
   u32 size{ 32 };
   
   for (u32 i{}; i <= size; i++)

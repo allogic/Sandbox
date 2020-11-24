@@ -23,7 +23,7 @@ void SceneGame::OnUpdateFixed(r32 timeDelta)
 void SceneGame::OnRender(r32 timeDelta)
 {
   mPlayerManager.Render();
-  mShipManager.Render();
+  //mShipManager.Render();
   //mBackgroundManager.Render();
 }
 void SceneGame::OnGizmos(r32 timeDelta)

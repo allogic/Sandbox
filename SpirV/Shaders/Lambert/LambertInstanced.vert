@@ -18,7 +18,8 @@ layout (binding = 0) uniform ProjectionUniform
 {
   mat4 uProjection;
   mat4 uView;
-  mat4 uTransform;
+  mat4 uTransformCamera;
+  mat4 uTransformModel;
 };
 
 layout (location = 0) in vec3 iPosition;
@@ -70,20 +71,20 @@ void main()
   vec3 transformLocalUp = ToVec3(transforms[objIndex].localUp);
   vec3 transformLocalFront = ToVec3(transforms[objIndex].localFront);
 
-  // Compute transform matrix
-  mat4 tvp = uProjection * uView * uTransform;
-
   // Compute rotation matrix
   mat4 localRotation = mat4(1.f);
   localRotation = Rotate3D(transformLocalRight, transformRotation.x);
   localRotation = Rotate3D(transformLocalUp, transformRotation.y);
   localRotation = Rotate3D(transformLocalFront, transformRotation.z);
 
+    // Compute transform matrix
+  mat4 tvp = uProjection * uView * inverse(uTransformCamera) * uTransformModel;
+
   // Compute vertex rotation in local space
   vec3 vertexPosition = vec4(localRotation * vec4(iPosition, 1.f)).xyz;
 
   // Forward fragment shader
-  vertOut.position = vec4(uTransform * vec4(vertexPosition + transformPosition, 1.f)).xyz;
+  vertOut.position = vec4(uTransformModel * vec4(vertexPosition + transformPosition, 1.f)).xyz;
   vertOut.normal = iNormal;
   vertOut.uv = iUv;
   vertOut.color = iColor;

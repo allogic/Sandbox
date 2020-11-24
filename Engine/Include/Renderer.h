@@ -4,7 +4,8 @@
 #include <Types.h>
 #include <Registry.h>
 #include <Camera.h>
-#include <FrameBuffer.h>
+
+#include <FrameBuffers/FrameBuffer.h>
 
 #include <Layouts/VertexLayouts.h>
 #include <Layouts/UniformLayouts.h>
@@ -28,7 +29,7 @@
 struct TaskLambert
 {
   MeshLambert*    mpMesh           {};
-  r32m4           mTransform       {};
+  r32m4           mTransformModel  {};
   TextureR32RGBA* mpTextureAlbedo  {};
   TextureR32RGBA* mpTextureNormal  {};
   TextureR32RGBA* mpTextureSpecular{};
@@ -36,7 +37,7 @@ struct TaskLambert
 struct TaskLambertInstanced
 {
   MeshLambert*                   mpMesh           {};
-  r32m4                          mTransform       {};
+  r32m4                          mTransformModel  {};
   BufferLayout<BufferTransform>* mpBufferTransform{};
   TextureR32RGBA*                mpTextureAlbedo  {};
   TextureR32RGBA*                mpTextureNormal  {};
@@ -103,7 +104,7 @@ template<typename Renderer> void RendererDispatchGeometry(Renderer& renderer)
   {
     TaskLambert const& taskLambert{ renderer.mRenderQueueLambert.front() };
 
-    renderer.mUniformBlockProjection.mTransform = taskLambert.mTransform;
+    renderer.mUniformBlockProjection.mTransformModel = taskLambert.mTransformModel;
     UniformLayoutDataSet(renderer.mUniformProjection, 1, &renderer.mUniformBlockProjection);
 
     if (taskLambert.mpTextureAlbedo) TextureLayoutMapSampler(*taskLambert.mpTextureAlbedo, 0);
@@ -128,7 +129,7 @@ template<typename Renderer> void RendererDispatchGeometryInstanced(Renderer& ren
   {
     TaskLambertInstanced const& taskLambertInstanced{ renderer.mRenderQueueLambertInstanced.front() };
 
-    renderer.mUniformBlockProjection.mTransform = taskLambertInstanced.mTransform;
+    renderer.mUniformBlockProjection.mTransformModel = taskLambertInstanced.mTransformModel;
     UniformLayoutDataSet(renderer.mUniformProjection, 1, &renderer.mUniformBlockProjection);
 
     BufferLayoutMap(*taskLambertInstanced.mpBufferTransform, 0);
@@ -156,10 +157,12 @@ template<typename Renderer> void RendererDispatchLight(Renderer& renderer)
   TextureLayoutMapSampler(renderer.mFrameBufferDeferred.mTextureAlbedo, 1);
   TextureLayoutMapSampler(renderer.mFrameBufferDeferred.mTextureNormal, 2);
   TextureLayoutMapSampler(renderer.mFrameBufferDeferred.mTextureUv, 3);
+  TextureLayoutMapSampler(renderer.mTextureNoise, 4);
 
-  UniformLayoutMap(renderer.mUniformProjection, 0);
-  UniformLayoutMap(renderer.mUniformCamera, 1);
-  UniformLayoutMap(renderer.mUniformPointLights, 2);
+  UniformLayoutMap(renderer.mUniformGlobal, 0);
+  UniformLayoutMap(renderer.mUniformProjection, 1);
+  UniformLayoutMap(renderer.mUniformCamera, 2);
+  UniformLayoutMap(renderer.mUniformPointLights, 3);
 
   ScreenMaterialBind(renderer.mMaterialDeferredLight);
 
@@ -262,13 +265,18 @@ template<typename Renderer> void RendererRenderBegin(Renderer& renderer)
   };
   renderer.mUniformBlockProjection =
   {
-    .mProjection{ renderer.mCamera.mProjection },
-    .mView      { renderer.mCamera.mView },
+    .mProjection     { renderer.mCamera.mProjection },
+    .mView           { renderer.mCamera.mView },
+    .mTransformCamera{ renderer.mCamera.mTransform },
+    .mTransformModel { glm::identity<r32m4>() },
   };
   renderer.mUniformBlockCamera =
   {
     .mPosition  { renderer.mCamera.mPosition },
     .mRotation  { renderer.mCamera.mRotation },
+    .mRight     { renderer.mCamera.mRight },
+    .mUp        { renderer.mCamera.mUp },
+    .mFront     { renderer.mCamera.mFront },
     .mLocalRight{ renderer.mCamera.mLocalRight },
     .mLocalUp   { renderer.mCamera.mLocalUp },
     .mLocalFront{ renderer.mCamera.mLocalFront },
@@ -357,7 +365,7 @@ template<typename Renderer> void RendererRender(Renderer& renderer)
   //glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   // Gizmo pass
-  //RendererDispatchGizmo(renderer);
+  RendererDispatchGizmo(renderer);
 }
 template<typename Renderer> void RendererRenderEnd(Renderer& renderer)
 {

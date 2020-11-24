@@ -12,9 +12,10 @@
 #include <Events.h>
 #include <Camera.h>
 #include <Scene.h>
-#include <FrameBuffer.h>
 #include <Renderer.h>
 #include <Importer.h>
+
+#include <FrameBuffers/FrameBuffer.h>
 
 #include <Layouts/VertexLayouts.h>
 #include <Layouts/BufferLayouts.h>

@@ -157,7 +157,7 @@
     <ClInclude Include="Include\Core.h" />
     <ClInclude Include="Include\Events.h" />
     <ClInclude Include="Include\Layouts\BufferLayouts.h" />
-    <ClInclude Include="Include\FrameBuffer.h" />
+    <ClInclude Include="Include\FrameBuffers\FrameBuffer.h" />
     <ClInclude Include="Include\Materials\ComputeMaterials.h" />
     <ClInclude Include="Include\Materials\RenderMaterials.h" />
     <ClInclude Include="Include\Layouts\ShaderLayouts.h" />

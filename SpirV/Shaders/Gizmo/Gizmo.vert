@@ -4,7 +4,8 @@ layout (binding = 0) uniform ProjectionUniform
 {
   mat4 uProjection;
   mat4 uView;
-  mat4 uTransform;
+  mat4 uTransformCamera;
+  mat4 uTransformModel;
 };
 
 layout (location = 0) in vec3 iPosition;
