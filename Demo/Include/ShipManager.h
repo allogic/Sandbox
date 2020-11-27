@@ -2,6 +2,8 @@
 
 #include <Api.h>
 
+#include <ShipDatabase.h>
+
 struct ShipSteering
 {
   r32v3 mAcceleration{};
@@ -56,9 +58,7 @@ struct ShipManager
   u32 mNumPaths;
   u32 mNumPathsSub;
 
-  MeshLambert                     mMeshShip                  {};
-
-  TextureR32RGBA                  mTextureShip               {};
+  Ship                            mShipScoutWespe            { ShipDatabaseGet("ScoutWespe") };
 
   UniformLayout<Steering>&        mUniformSteering           { RegistryGetOrCreate<UniformLayout<Steering>>("uniformSteering") };
   UniformLayout<Noise>&           mUniformNoise              { RegistryGetOrCreate<UniformLayout<Noise>>("uniformNoise") };

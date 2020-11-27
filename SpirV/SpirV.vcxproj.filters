@@ -28,6 +28,7 @@
     <None Include="Shaders\Screen\VolumeCloud.frag" />
     <None Include="Shaders\Screen\CloudVolumePass.frag" />
     <None Include="Shaders\Lambert\LambertInstanced.vert" />
+    <None Include="Shaders\Screen\DeferredCopyPass.frag" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">

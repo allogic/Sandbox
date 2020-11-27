@@ -350,7 +350,7 @@ MigrationBackup/
 .ionide/
 
 # Dont ignore wavefront files
-!Model/*.obj
+!Models/*.obj
 
 # Dont ignore some binary files
 !Binary/*.exe

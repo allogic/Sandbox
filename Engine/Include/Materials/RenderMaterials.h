@@ -22,7 +22,9 @@ struct RenderMaterial
 
   constexpr static u32 sShaderLayout{ ShaderLayout::sLayout };
 
-  ShaderLayout               mShaderLayout     {};
+  ShaderLayout               mShaderLayout{};
+  r32                        mMetallic    {};
+  r32                        mRoughness   {};
 };
 
 using RenderMaterialLambert          = RenderMaterial<ShaderLambert>;
@@ -41,8 +43,8 @@ template<typename RenderMaterial> void RenderMaterialCreate(RenderMaterial& rend
     {
       ShaderLayoutCreate(renderMaterial.mShaderLayout, ShaderPaths
       {
-        .mVertex{ SANDBOX_ENGINE_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.vert" },
-        .mFragment{ SANDBOX_ENGINE_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.frag" }
+        .mVertex{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.vert" },
+        .mFragment{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.frag" }
       });
       break;
     }
@@ -50,8 +52,8 @@ template<typename RenderMaterial> void RenderMaterialCreate(RenderMaterial& rend
     {
       ShaderLayoutCreate(renderMaterial.mShaderLayout, ShaderPaths
       {
-        .mVertex{ SANDBOX_ENGINE_ROOT_PATH "SpirV\\Compiled\\Lambert\\LambertInstanced.vert" },
-        .mFragment{ SANDBOX_ENGINE_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.frag" },
+        .mVertex{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Lambert\\LambertInstanced.vert" },
+        .mFragment{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Lambert\\Lambert.frag" },
       });
       break;
     }
@@ -59,8 +61,8 @@ template<typename RenderMaterial> void RenderMaterialCreate(RenderMaterial& rend
     {
       ShaderLayoutCreate(renderMaterial.mShaderLayout, ShaderPaths
       {
-        .mVertex{ SANDBOX_ENGINE_ROOT_PATH "SpirV\\Compiled\\Gizmo\\Gizmo.vert" },
-        .mFragment{ SANDBOX_ENGINE_ROOT_PATH "SpirV\\Compiled\\Gizmo\\Gizmo.frag" }
+        .mVertex{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Gizmo\\Gizmo.vert" },
+        .mFragment{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Gizmo\\Gizmo.frag" }
       });
       break;
     }

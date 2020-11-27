@@ -7,17 +7,17 @@
 * Global instance registry.
 */
 
-template<typename V> std::map<std::string, V> sRegistry{};
+template<typename V> std::map<std::string, V> sInstanceRegistry{};
 
 template<typename V, typename ... Args> V& RegistryGetOrCreate(std::string const& key, Args&& ... args)
 {
-  auto const registryIt{ sRegistry<V>.find(key) };
+  auto const instanceIt{ sInstanceRegistry<V>.find(key) };
 
-  if (registryIt == sRegistry<V>.end())
+  if (instanceIt == sInstanceRegistry<V>.end())
   {
-    auto const [insertIt, _]{ sRegistry<V>.emplace(key, V{ std::forward<Args>(args) ... }) };
+    auto const [insertIt, _]{ sInstanceRegistry<V>.emplace(key, V{ std::forward<Args>(args) ... }) };
     return insertIt->second;
   }
 
-  return registryIt->second;
+  return instanceIt->second;
 }

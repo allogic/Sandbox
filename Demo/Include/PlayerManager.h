@@ -2,6 +2,8 @@
 
 #include <Api.h>
 
+#include <ShipDatabase.h>
+
 struct PlayerManager
 {
   PlayerManager();
@@ -12,16 +14,18 @@ struct PlayerManager
   void Render();
   void Debug();
 
-  MeshLambert           mMeshCruiser           {};
+  Ship&                 mShipCruiserBerlin    { ShipDatabaseGet("CruiserBerlin") };
+  Ship&                 mShipFighterAtlas     { ShipDatabaseGet("FighterAtlas") };
+  Ship&                 mShipFighterLindwurm  { ShipDatabaseGet("FighterLindwurm") };
+  Ship&                 mShipScoutAdler       { ShipDatabaseGet("ScoutAdler") };
+  Ship&                 mShipScoutWespe       { ShipDatabaseGet("ScoutWespe") };
 
-  TextureR32RGBA        mTextureCruiserAlbedo  {};
-  TextureR32RGBA        mTextureCruiserNormal  {};
-  TextureR32RGBA        mTextureCruiserSpecular{};
+  Context const&        mContext              { RegistryGetOrCreate<Context>("context") };
+  Camera&               mCamera               { RegistryGetOrCreate<Camera>("camera") };
+  Renderer&             mRenderer             { RegistryGetOrCreate<Renderer>("renderer") };
 
-  Context const&        mContext               { RegistryGetOrCreate<Context>("context") };
-  Camera&               mCamera                { RegistryGetOrCreate<Camera>("camera") };
-  Renderer&             mRenderer              { RegistryGetOrCreate<Renderer>("renderer") };
+  MeshLambert           mMeshRenderTexture    {};
 
-  CameraControllerSpace mCameraControllerSpace {};
-  CameraControllerOrbit mCameraControllerOrbit {};
+  CameraControllerSpace mCameraControllerSpace{};
+  CameraControllerOrbit mCameraControllerOrbit{};
 };

@@ -188,14 +188,16 @@ template<typename Context> void ContextRun(Context& context)
     if ((time - timeRenderPrev) >= timeRender)
     {
       context.mpSceneActive->OnUpdateFixed(timeDelta);
-      context.mpSceneActive->OnRender(timeDelta);
+      context.mpSceneActive->OnRender();
 
       MeshLayoutBind(renderer.mMeshGizmoLineBatch, 0);
       context.mpSceneActive->OnGizmos(timeDelta);
       MeshLayoutUnbind();
 
       RendererRenderBegin(renderer);
+      context.mpSceneActive->OnRenderPre();
       RendererRender(renderer);
+      context.mpSceneActive->OnRenderPost();
       RendererRenderEnd(renderer);
 
       glfwSwapBuffers(context.mpWindow);

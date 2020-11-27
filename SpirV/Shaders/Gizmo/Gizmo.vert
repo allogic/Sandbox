@@ -22,5 +22,5 @@ void main()
   vertOut.position = iPosition;
   vertOut.color = iColor;
 
-  gl_Position = uProjection * uView * vec4(iPosition, 1.f);
+  gl_Position = uProjection * uView * inverse(uTransformCamera) * vec4(iPosition, 1.f);
 }

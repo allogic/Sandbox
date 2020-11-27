@@ -10,9 +10,6 @@ ShipManager::ShipManager(
   , mNumPaths{ numPaths }
   , mNumPathsSub{ numPathsSub }
 {
-  MeshFrom(mMeshShip, SANDBOX_ENGINE_ROOT_PATH "Model\\Cube.obj");
-  TextureFrom(mTextureShip, SANDBOX_ENGINE_ROOT_PATH "Texture\\UV.png");
-
   BufferLayoutCreate(mBufferShipTransform, mNumShips);
   BufferLayoutCreate(mBufferShipSteering, mNumShips);
   BufferLayoutCreate(mBufferShipPath, mNumPaths * mNumPathsSub);
@@ -32,9 +29,6 @@ ShipManager::ShipManager(
 }
 ShipManager::~ShipManager()
 {
-  MeshLayoutDestroy(mMeshShip);
-  TextureLayoutDestroy(mTextureShip);
-
   UniformLayoutDestroy(mUniformSteering);
   UniformLayoutDestroy(mUniformNoise);
 
@@ -107,12 +101,16 @@ void ShipManager::UpdatePhysics(r32 timeDelta)
 }
 void ShipManager::Render()
 {
+  return;
+
   RendererSubmitLambertInstanced(mRenderer, TaskLambertInstanced
   {
-    &mMeshShip,
+    &mShipScoutWespe.mMesh,
     TransformTo({ 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f }),
     &mBufferShipTransform,
-    &mTextureShip,
+    &mShipScoutWespe.mTextureAlbedo,
+    &mShipScoutWespe.mTextureNormal,
+    &mShipScoutWespe.mTextureSpecular,
     nullptr,
     nullptr,
     mNumShips,
@@ -140,7 +138,7 @@ void ShipManager::InitializeShipTransforms()
 
   for (u32 i{}; i < mNumShips; i++)
   {
-    r32v3 position{ glm::ballRand(500.f) };
+    r32v3 position{ glm::ballRand(200.f) };
 
     mShipTransforms[i] =
     {

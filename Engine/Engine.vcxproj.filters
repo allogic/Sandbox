@@ -90,5 +90,8 @@
     <ClInclude Include="Include\FrameBuffers\FrameBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Include\Uniforms\LambertUniform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

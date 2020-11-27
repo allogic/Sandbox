@@ -42,7 +42,12 @@ layout (binding = 2) uniform CameraUniform
 };
 layout (binding = 3) uniform PointLightsUniform
 {
-  LightPoint uPointLights[1024];
+  LightPoint uPointLights[32];
+};
+layout (binding = 4) uniform LambertUniform
+{
+  float uMetallic;
+  float uRoughness;
 };
 
 layout (location = 0) in VertOut
@@ -55,6 +60,8 @@ layout (location = 0) out vec4 oColor;
 #define IQCOLOUR
 #define IQLIGHT
 #define DITHERING
+
+#define PI 3.14159265359
 
 float pn( in vec3 x )
 {
@@ -99,25 +106,6 @@ float SpiralNoiseC(vec3 p)
         p.xz *= normalizer;
         // increase the frequency
         iter *= 1.733733;
-    }
-    return n;
-}
-float SpiralNoiseCC(vec3 p)
-{
-    float n = 0.0;	// noise amount
-    float iter = 1.0;
-    for (int i = 0; i < 8; i++)
-    {
-        // add sin and cos scaled inverse with the frequency
-        n += -abs(sin(p.y*iter) + cos(p.x*iter)) / iter;	// abs for a ridged look
-        // rotate by adding perpendicular and scaling down
-        p.xy += vec2(p.y, -p.x) * nudge;
-        p.xy *= normalizer;
-        // rotate on other axis
-        p.xz += vec2(p.z, -p.x) * nudge;
-        p.xz *= normalizer;
-        // increase the frequency
-        iter *= 1.333733;
     }
     return n;
 }
@@ -190,6 +178,45 @@ float map(vec3 p)
    vec3 samplePoint = vec4(vec4(p, 1.f)).xyz;
 
    return Clouds(samplePoint) + fpn(samplePoint*50.+uTime*5.);
+}
+
+// PBR functions
+
+float DistributionGGX(vec3 N, vec3 H, float roughness)
+{
+    float a = roughness*roughness;
+    float a2 = a*a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH*NdotH;
+
+    float nom   = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+
+    return nom / max(denom, 0.001); // prevent divide by zero for roughness=0.0 and NdotH=1.0
+}
+float GeometrySchlickGGX(float NdotV, float roughness)
+{
+    float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
+
+    float nom   = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+
+    return nom / denom;
+}
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+{
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
+    return ggx1 * ggx2;
+}
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 vec4 RayMarchCloud(vec3 fragPosition, vec3 fragAlbedo)
@@ -315,24 +342,29 @@ void main()
 {
   vec3 fragPosition = texture(uPosition, fragIn.uv).rgb;
   vec3 fragAlbedo = texture(uAlbedo, fragIn.uv).rgb;
-  vec3 fragNormal = texture(uNormal, fragIn.uv).rgb;
+  vec3 fragNormal = normalize(texture(uNormal, fragIn.uv).rgb);
   float fragSpecular = texture(uAlbedo, fragIn.uv).a;
 
+  // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
+  // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
+  vec3 F0 = vec3(0.04);
+  F0 = mix(F0, fragAlbedo, uMetallic);
+
+  // Lighting
   vec3 lighting = fragAlbedo * 0.1f;
-
-  vec3 viewDir = normalize(uCameraPosition - fragPosition);
-
-  for (uint i = 0; i < 1024; i++)
+  for (uint i = 0; i < 32; i++)
   {
     if (uPointLights[i].enabled == 0) continue;
 
-    vec3 lightPosDelta = uPointLights[i].position - fragPosition;
-    float lightDist = length(lightPosDelta);
+    vec3 lightDelta = uPointLights[i].position - fragPosition;
+    vec3 lightDir = normalize(lightDelta);
+    vec3 viewDir = normalize(uCameraPosition - fragPosition);
+    float lightDist = length(lightDelta);
+    vec3 H = normalize(viewDir + lightDelta);
 
     if (lightDist < uPointLights[i].radius)
     {
       // diffuse
-      vec3 lightDir = normalize(lightPosDelta);
       vec3 albedo = max(dot(fragNormal, lightDir), 0.f) * fragAlbedo * uPointLights[i].color.rgb;
 
       // specular
@@ -346,10 +378,45 @@ void main()
       albedo *= attenuation;
       specular *= attenuation;
 
+      // Cook-Torrance BRDF
+      float NDF = DistributionGGX(fragNormal, H, uRoughness);
+      float G   = GeometrySmith(fragNormal, viewDir, lightDir, uRoughness);
+      vec3 F    = fresnelSchlick(clamp(dot(fragNormal, viewDir), 0.0, 1.0), F0);
+
+      vec3 nominator    = NDF * G * F; 
+      float denominator = 4 * max(dot(fragNormal, viewDir), 0.0) * max(dot(fragNormal, lightDir), 0.0);
+      specular *= nominator / max(denominator, 0.001); // prevent divide by zero for NdotV=0.0 or NdotL=0.0
+
+      // kS is equal to Fresnel
+      vec3 kS = F;
+      // for energy conservation, the diffuse and specular light can't
+      // be above 1.0 (unless the surface emits light); to preserve this
+      // relationship the diffuse component (kD) should equal 1.0 - kS.
+      vec3 kD = vec3(1.0) - kS;
+      // multiply kD by the inverse metalness such that only non-metals 
+      // have diffuse lighting, or a linear blend if partly metal (pure metals
+      // have no diffuse light).
+      kD *= 1.0 - uMetallic;
+
+      // scale light by NdotL
+      float NdotL = max(dot(fragNormal, lightDir), 0.0);
+
+      vec3 radiance = uPointLights[i].color.rgb * attenuation;
+
+      // add to outgoing radiance Lo
+      //lighting += (kD * albedo / PI + specular) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+
       lighting += albedo + specular;
     }
   }
 
-  //oColor = vec4(lighting, 1.f);
-  oColor = RayMarchCloud(fragPosition, fragAlbedo);
+  oColor = vec4(lighting, 1.f);
+  //oColor = RayMarchCloud(fragPosition, fragAlbedo);
+
+  // HDR tonemapping
+  oColor = oColor / (oColor + vec4(1.0));
+  // gamma correct
+  oColor = pow(oColor, vec4(1.0/2.2));
+
+  // USE MIX!
 }

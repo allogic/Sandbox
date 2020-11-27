@@ -29,8 +29,8 @@ template<typename ScreenMaterial> void ScreenMaterialCreate(ScreenMaterial& scre
 {
   ShaderLayoutCreate(screenMaterial.mShaderLayout, ShaderPaths
   {
-    .mVertex  { SANDBOX_ENGINE_ROOT_PATH "SpirV\\Compiled\\Screen\\Screen.vert" },
-    .mFragment{ std::string{ SANDBOX_ENGINE_ROOT_PATH "SpirV\\Compiled\\Screen\\" } + shaderName + std::string{ ".frag" } },
+    .mVertex  { SANDBOX_ROOT_PATH "SpirV\\Compiled\\Screen\\Screen.vert" },
+    .mFragment{ std::string{ SANDBOX_ROOT_PATH "SpirV\\Compiled\\Screen\\" } + shaderName + std::string{ ".frag" } },
   });
 }
 template<typename ScreenMaterial> void ScreenMaterialBind(ScreenMaterial const& screenMaterial)

@@ -27,6 +27,7 @@ template<typename TextureLayout> void TextureFrom(TextureLayout& textureLayout, 
 
   u8* pBlob = stbi_load(fileName.data(), (s32*)&width, (s32*)&height, (s32*)&channels, (s32)type);
 
+  assert(pBlob);
   assert(width > 0 && width % 2 == 0);
   assert(height > 0 && height % 2 == 0);
 
@@ -73,6 +74,8 @@ template<typename MeshLayout> void MeshFrom(MeshLayout& meshLayout, std::string 
   aiScene const* pScene{ importer.ReadFile(fileName, aiProcess_Triangulate | aiProcess_SortByPType) };
 
   assert(pScene);
+  assert(pScene->mNumMeshes > 0);
+  assert(pScene->mNumMaterials > 0);
 
   u32 const numMeshes{ pScene->mNumMeshes };
   u32 const numMaterials{ pScene->mNumMaterials };
@@ -91,7 +94,7 @@ template<typename MeshLayout> void MeshFrom(MeshLayout& meshLayout, std::string 
   for (u32 i{}; i < numMeshes; i++)
   {
     aiMesh const* pMesh{ pScene->mMeshes[i] };
-
+    
     if (!(pMesh->mPrimitiveTypes & aiPrimitiveType_TRIANGLE))
       continue;
 
@@ -113,19 +116,31 @@ template<typename MeshLayout> void MeshFrom(MeshLayout& meshLayout, std::string 
     }
     for (u32 j{}, k{}; j < pMesh->mNumFaces; j++, k += 3)
     {
-      indexBuffers[i][k + 0] = { pMesh->mFaces[j].mIndices[0] };
-      indexBuffers[i][k + 1] = { pMesh->mFaces[j].mIndices[1] };
-      indexBuffers[i][k + 2] = { pMesh->mFaces[j].mIndices[2] };
+      indexBuffers[i][k + 0] = pMesh->mFaces[j].mIndices[0];
+      indexBuffers[i][k + 1] = pMesh->mFaces[j].mIndices[1];
+      indexBuffers[i][k + 2] = pMesh->mFaces[j].mIndices[2];
     }
   }
   for (u32 i{}; i < numMaterials; i++)
   {
     aiMaterial const* pMaterial{ pScene->mMaterials[i] };
 
-    for (u32 j{}; j < pMaterial->mNumProperties; j++)
+    for (u32 i{ aiTextureType_DIFFUSE }; i < aiTextureType_UNKNOWN; i++)
     {
-      //std::printf("%s\n", pMaterial->mProperties[j]->mKey.data);
+      aiString texturePath{};
+      u32 const textureCount{ pMaterial->GetTextureCount((aiTextureType)i) };
+
+      for (u32 j{}; j < textureCount; j++)
+      {
+        pMaterial->GetTexture((aiTextureType)i, j, &texturePath);
+        std::printf("%s\n", texturePath.C_Str());
+      }
     }
+
+    //for (u32 j{}; j < pMaterial->mNumProperties; j++)
+    //{
+    //  std::printf("%s\n", pMaterial->mProperties[j]->mKey.data);
+    //}
   }
   for (u32 i{}; i < numTextures; i++)
   {

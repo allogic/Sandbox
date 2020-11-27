@@ -22,8 +22,8 @@ struct Camera
   r32v3 mLocalRight   { mRight };
   r32v3 mLocalUp      { mUp };
   r32v3 mLocalFront   { mFront };
-  r32   mNear         { 0.01f };
-  r32   mFar          { 10000.f };
+  r32   mNear         { 0.1f };
+  r32   mFar          { 100000.f };
   r32m4 mProjection   {};
   r32m4 mView         {};
   r32m4 mTransform    {};

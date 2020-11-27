@@ -3,8 +3,8 @@
 BackgroundManager::BackgroundManager(u32 numStars)
   : mNumStars{ numStars }
 {
-  MeshFrom(mMeshStar, SANDBOX_ENGINE_ROOT_PATH "Model\\Quad.obj");
-  TextureFrom(mTextureStar, SANDBOX_ENGINE_ROOT_PATH "Texture\\Star.png");
+  MeshFrom(mMeshStar, SANDBOX_ROOT_PATH "Models\\Primitives\\Quad.obj");
+  TextureFrom(mTextureStar, SANDBOX_ROOT_PATH "Textures\\Star.png");
 
   BufferLayoutCreate(mBufferStarTransform, mNumStars);
 
@@ -35,16 +35,18 @@ void BackgroundManager::UpdatePhysics(r32 timeDelta)
 }
 void BackgroundManager::Render()
 {
-  RendererSubmitLambertInstanced(mRenderer, TaskLambertInstanced
-  {
-    &mMeshStar,
-    TransformTo({ 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f }),
-    &mBufferStarTransform,
-    &mTextureStar,
-    nullptr,
-    nullptr,
-    mNumStars,
-  });
+  //RendererSubmitLambertInstanced(mRenderer, TaskLambertInstanced
+  //{
+  //  &mMeshStar,
+  //  TransformTo({ 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f }),
+  //  &mBufferStarTransform,
+  //  &mTextureStar,
+  //  nullptr,
+  //  nullptr,
+  //  nullptr,
+  //  nullptr,
+  //  mNumStars,
+  //});
 }
 void BackgroundManager::Debug()
 {

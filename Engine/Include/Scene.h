@@ -13,6 +13,8 @@ struct Scene
   virtual void OnDisable() = 0;
   virtual void OnUpdate(r32 timeDelta) = 0;
   virtual void OnUpdateFixed(r32 timeDelta) {}
-  virtual void OnRender(r32 timeDelta) = 0;
+  virtual void OnRenderPre() {};
+  virtual void OnRender() = 0;
+  virtual void OnRenderPost() {};
   virtual void OnGizmos(r32 timeDelta) {}
 };

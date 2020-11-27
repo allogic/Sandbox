@@ -28,6 +28,7 @@
 
 #include <Uniforms/GlobalUniform.h>
 #include <Uniforms/ProjectionUniform.h>
+#include <Uniforms/LambertUniform.h>
 #include <Uniforms/CameraUniform.h>
 #include <Uniforms/LightUniform.h>
 

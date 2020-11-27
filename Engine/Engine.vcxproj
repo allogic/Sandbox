@@ -163,6 +163,7 @@
     <ClInclude Include="Include\Layouts\ShaderLayouts.h" />
     <ClInclude Include="Include\Layouts\TextureLayouts.h" />
     <ClInclude Include="Include\Materials\ScreenMaterials.h" />
+    <ClInclude Include="Include\Uniforms\LambertUniform.h" />
     <ClInclude Include="Include\Utility.h" />
     <ClInclude Include="Include\Registry.h" />
     <ClInclude Include="Include\Renderer.h" />
