@@ -135,12 +135,54 @@ void PlayerManager::Render()
   RendererSubmitLambert(mRenderer, TaskLambert
   {
     &mMeshRenderTexture,
-    TransformTo({ 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 10.f, 10.f, 10.f }),
+    TransformTo({ 0.f, 0.f, 25.f }, { 90.f, 0.f, 0.f }, { 10.f, 10.f, 10.f }),
     &mRenderer.mFrameBufferDeferred.mTexturePosition,
+  });
+  RendererSubmitLambert(mRenderer, TaskLambert
+  {
+    &mMeshRenderTexture,
+    TransformTo({ 20.f, 0.f, 25.f }, { 90.f, 0.f, 0.f }, { 10.f, 10.f, 10.f }),
+    &mRenderer.mFrameBufferDeferred.mTextureAlbedo,
+  });
+  RendererSubmitLambert(mRenderer, TaskLambert
+  {
+    &mMeshRenderTexture,
+    TransformTo({ 40.f, 0.f, 25.f }, { 90.f, 0.f, 0.f }, { 10.f, 10.f, 10.f }),
+    &mRenderer.mFrameBufferDeferred.mTextureNormal,
+  });
+  RendererSubmitLambert(mRenderer, TaskLambert
+  {
+    &mMeshRenderTexture,
+    TransformTo({ 60.f, 0.f, 25.f }, { 90.f, 0.f, 0.f }, { 10.f, 10.f, 10.f }),
+    &mRenderer.mFrameBufferDeferred.mTextureSpecular,
+  });
+  RendererSubmitLambert(mRenderer, TaskLambert
+  {
+    &mMeshRenderTexture,
+    TransformTo({ 80.f, 0.f, 25.f }, { 90.f, 0.f, 0.f }, { 10.f, 10.f, 10.f }),
+    &mRenderer.mFrameBufferDeferred.mTextureMetallic,
+  });
+  RendererSubmitLambert(mRenderer, TaskLambert
+  {
+    &mMeshRenderTexture,
+    TransformTo({ 100.f, 0.f, 25.f }, { 90.f, 0.f, 0.f }, { 10.f, 10.f, 10.f }),
+    &mRenderer.mFrameBufferDeferred.mTextureRoughness,
+  });
+  RendererSubmitLambert(mRenderer, TaskLambert
+  {
+    &mMeshRenderTexture,
+    TransformTo({ 120.f, 0.f, 25.f }, { 90.f, 0.f, 0.f }, { 10.f, 10.f, 10.f }),
+    &mRenderer.mFrameBufferDeferred.mTextureDepth,
   });
 }
 void PlayerManager::Debug()
 {
+  RendererLineBatchPushLine(mRenderer, { 0.f, 0.f, 0.f }, { 10.f, 0.f, 0.f }, { 1.f, 0.f, 0.f, 1.f });
+  RendererLineBatchPushLine(mRenderer, { 0.f, 0.f, 0.f }, { 0.f, 10.f, 0.f }, { 0.f, 1.f, 0.f, 1.f });
+  RendererLineBatchPushLine(mRenderer, { 0.f, 0.f, 0.f }, { 0.f, 0.f, 10.f }, { 0.f, 0.f, 1.f, 1.f });
+
+  return;
+
   for (u32 i{}; i < 2; i++)
   {
     r32v3 lightPosition{ mRenderer.mUniformBlockPointLights[i].mPosition };

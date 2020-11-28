@@ -3,17 +3,14 @@
 #include <Core.h>
 #include <Types.h>
 #include <Events.h>
+#include <ACS.h>
 
 /*
-* Camera layouts.
+* Camera components.
 */
 
-struct Camera
+struct Camera : Component
 {
-  r32v3 mPosition     { 0.f, 30.f, 0.f };
-  r32v3 mRotation     {};
-  r32v3 mRotationDelta{};
-  r32v3 mRotationPrev {};
   r32   mAspect       { 1280.f / 720.f };
   r32   mFovRad       { glm::radians(45.f) };
   r32v3 mRight        { 1.f, 0.f, 0.f };
@@ -30,10 +27,10 @@ struct Camera
 };
 
 /*
-* Camera controller layouts.
+* Camera controller components.
 */
 
-struct CameraControllerSpace
+struct CameraControllerSpace : Component
 {
   r32   mPositionAmount{ 5.f };
   r32   mRotationAmount{ 5.f };
@@ -42,7 +39,7 @@ struct CameraControllerSpace
   r32v3 mPositionAccel {};
   r32v3 mRotationAccel {};
 };
-struct CameraControllerOrbit
+struct CameraControllerOrbit : Component
 {
   r32   mPositionAmount         { 10.f };
   r32   mRotationAmount         { 0.2f };
@@ -62,7 +59,7 @@ struct CameraControllerOrbit
 };
 
 /*
-* Camera physic management.
+* Camera controller managmenet.
 */
 
 template<typename Context, typename Camera, typename Controller> void CameraControllerUpdateInputSpace(Context const& context, Camera& camera, Controller& controller, r32 timeDelta)
@@ -133,38 +130,40 @@ template<typename Context, typename Camera, typename Controller> void CameraCont
 }
 
 /*
-* Camera controller managmenet.
+* Camera physic management.
 */
 
-template<typename Camera, typename Controller> void CameraControllerUpdatePhysicsSpace(Camera& camera, Controller& controller)
+template<typename Transform, typename Camera, typename Controller> void CameraControllerUpdatePhysicsSpace(Transform& transform, Camera& camera, Controller& controller)
 {
-  camera.mPosition += controller.mPositionAccel;
+  transform.mPosition += controller.mPositionAccel;
 
-  camera.mRotation += controller.mRotationAccel;
-  if (camera.mRotation.x > 180.f) camera.mRotation.x = -180.f;
-  if (camera.mRotation.x < -180.f) camera.mRotation.x = 180.f;
-  if (camera.mRotation.y > 180.f) camera.mRotation.y = -180.f;
-  if (camera.mRotation.y < -180.f) camera.mRotation.y = 180.f;
-  if (camera.mRotation.z > 180.f) camera.mRotation.z = -180.f;
-  if (camera.mRotation.z < -180.f) camera.mRotation.z = 180.f;
+  transform.mRotation += controller.mRotationAccel;
+  if (transform.mRotation.x > 180.f) transform.mRotation.x = -180.f;
+  if (transform.mRotation.x < -180.f) transform.mRotation.x = 180.f;
+  if (transform.mRotation.y > 180.f) transform.mRotation.y = -180.f;
+  if (transform.mRotation.y < -180.f) transform.mRotation.y = 180.f;
+  if (transform.mRotation.z > 180.f) transform.mRotation.z = -180.f;
+  if (transform.mRotation.z < -180.f) transform.mRotation.z = 180.f;
 
-  camera.mRotationDelta = camera.mRotation - camera.mRotationPrev;
-  camera.mRotationPrev = camera.mRotation;
+  static r32v3 rotationPrev{};
+
+  r32v3 rotationDelta = transform.mRotation - rotationPrev;
+  rotationPrev = transform.mRotation;
 
   r32m4 localRotation = glm::identity<r32m4>();
-  localRotation = glm::rotate(localRotation, glm::radians(camera.mRotationDelta.y), camera.mLocalRight);
-  localRotation = glm::rotate(localRotation, glm::radians(camera.mRotationDelta.x), camera.mLocalUp);
-  localRotation = glm::rotate(localRotation, glm::radians(camera.mRotationDelta.z), camera.mLocalFront);
+  localRotation = glm::rotate(localRotation, glm::radians(rotationDelta.y), camera.mLocalRight);
+  localRotation = glm::rotate(localRotation, glm::radians(rotationDelta.x), camera.mLocalUp);
+  localRotation = glm::rotate(localRotation, glm::radians(rotationDelta.z), camera.mLocalFront);
 
   camera.mLocalRight = glm::normalize(localRotation * r32v4{ camera.mLocalRight, 1.f });
   camera.mLocalUp = glm::normalize(localRotation * r32v4{ camera.mLocalUp, 1.f });
   camera.mLocalFront = glm::normalize(localRotation * r32v4{ camera.mLocalFront, 1.f });
 
-  camera.mTransform = glm::translate(glm::identity<r32m4>(), camera.mPosition);
+  camera.mTransform = glm::translate(glm::identity<r32m4>(), transform.mPosition);
   camera.mProjection = glm::perspective(camera.mFovRad, camera.mAspect, camera.mNear, camera.mFar);
   camera.mView = glm::lookAt({}, camera.mLocalFront, camera.mLocalUp);
 }
-template<typename Camera, typename Controller> void CameraControllerUpdatePhysicsOrbit(Camera& camera, Controller& controller)
+template<typename Transform, typename Camera, typename Controller> void CameraControllerUpdatePhysicsOrbit(Transform& transform, Camera& camera, Controller& controller)
 {
   controller.mPositionVelocity += controller.mPositionAccel;
   controller.mPositionAccel = {};

@@ -3,9 +3,12 @@
 #include <Core.h>
 #include <Types.h>
 #include <Events.h>
+#include <ACS.h>
 #include <Registry.h>
 #include <Renderer.h>
-#include <Scene.h>
+
+#include <Components/TransformComponents.h>
+#include <Components/RenderComponents.h>
 
 /*
 * Global context.
@@ -13,16 +16,14 @@
 
 struct Context
 {
-  GLFWwindow*         mpWindow                               {};
-  u32                 mStatus                                {};
-  u32                 mWidth                                 {};
-  u32                 mHeight                                {};
-  r32v2               mMousePosition                         {};
-  r32v2               mMouseScroll                           {};
-  Event               mMouseKeyStates[GLFW_MOUSE_BUTTON_LAST]{};
-  Event               mKeyboardKeyStates[GLFW_KEY_LAST]      {};
-  std::vector<Scene*> mScenes                                {};
-  Scene*              mpSceneActive                          {};
+  GLFWwindow* mpWindow                               {};
+  u32         mStatus                                {};
+  u32         mWidth                                 {};
+  u32         mHeight                                {};
+  r32v2       mMousePosition                         {};
+  r32v2       mMouseScroll                           {};
+  Event       mMouseKeyStates[GLFW_MOUSE_BUTTON_LAST]{};
+  Event       mKeyboardKeyStates[GLFW_KEY_LAST]      {};
 };
 
 /*
@@ -117,32 +118,32 @@ template<typename Context> void ContextCreate(Context& context, u32 width, u32 h
   glfwSetWindowUserPointer(context.mpWindow, &context);
 
   glfwSetWindowCloseCallback(context.mpWindow, [](GLFWwindow* pWindow)
-    {
-      Context* pContext = (Context*)glfwGetWindowUserPointer(pWindow);
+  {
+    Context* pContext = (Context*)glfwGetWindowUserPointer(pWindow);
 
-      pContext->mStatus = 1;
-    });
+    pContext->mStatus = 1;
+  });
   glfwSetWindowSizeCallback(context.mpWindow, [](GLFWwindow* pWindow, s32 width, s32 height)
-    {
-      Context* pContext = (Context*)glfwGetWindowUserPointer(pWindow);
+  {
+    Context* pContext = (Context*)glfwGetWindowUserPointer(pWindow);
 
-      pContext->mWidth = (u32)width;
-      pContext->mHeight = (u32)height;
+    pContext->mWidth = (u32)width;
+    pContext->mHeight = (u32)height;
 
-      glViewport(0, 0, width, height);
-    });
+    glViewport(0, 0, width, height);
+  });
   glfwSetCursorPosCallback(context.mpWindow, [](GLFWwindow* pWindow, r64 x, r64 y)
-    {
-      Context* pContext = (Context*)glfwGetWindowUserPointer(pWindow);
+  {
+    Context* pContext = (Context*)glfwGetWindowUserPointer(pWindow);
 
-      pContext->mMousePosition = { (r32)x, (r32)y };
-    });
+    pContext->mMousePosition = { (r32)x, (r32)y };
+  });
   glfwSetScrollCallback(context.mpWindow, [](GLFWwindow* pWindow, r64 xOffset, r64 yOffset)
-    {
-      Context* pContext = (Context*)glfwGetWindowUserPointer(pWindow);
+  {
+    Context* pContext = (Context*)glfwGetWindowUserPointer(pWindow);
 
-      pContext->mMouseScroll = { (r32)xOffset, (r32)yOffset };
-    });
+    pContext->mMouseScroll = { (r32)xOffset, (r32)yOffset };
+  });
 
   glfwMakeContextCurrent(context.mpWindow);
   glfwSwapInterval(0);
@@ -153,21 +154,21 @@ static                     void ContextRegisterDebugHandler()
 {
   glEnable(GL_DEBUG_OUTPUT);
   glDebugMessageCallback([](u32 source, u32 type, u32 id, u32 severity, s32 length, s8 const* msg, void const* userParam)
+  {
+    switch (severity)
     {
-      switch (severity)
-      {
       case GL_DEBUG_SEVERITY_NOTIFICATION: break;
       case GL_DEBUG_SEVERITY_LOW: std::printf("Severity:Low Type:0x%x Message:%s\n", type, msg); break;
       case GL_DEBUG_SEVERITY_MEDIUM: std::printf("Severity:Medium Type:0x%x Message:%s\n", type, msg); break;
       case GL_DEBUG_SEVERITY_HIGH: std::printf("Severity:High Type:0x%x Message:%s\n", type, msg); break;
-      }
-    }, 0);
+    }
+  }, 0);
 }
 template<typename Context> void ContextRun(Context& context)
 {
-  r32& time{ RegistryGetOrCreate<r32>("time") };
+  r32 time{};
   r32 timePrev{};
-  r32& timeDelta{ RegistryGetOrCreate<r32>("timeDelta") };
+  r32 timeDelta{};
 
   r32 timeRender{ 1.f / 60 };
   r32 timeRenderPrev{};
@@ -183,21 +184,34 @@ template<typename Context> void ContextRun(Context& context)
     time = (r32)glfwGetTime();
     timeDelta = time - timePrev;
 
-    context.mpSceneActive->OnUpdate(timeDelta);
+    ACS::DispatchIf<Transform>([=](Actor* pActor)
+    {
+      pActor->OnUpdate(timeDelta);
+    });
 
     if ((time - timeRenderPrev) >= timeRender)
     {
-      context.mpSceneActive->OnUpdateFixed(timeDelta);
-      context.mpSceneActive->OnRender();
+      ACS::DispatchIf<Transform>([=](Actor* pActor)
+      {
+        pActor->OnUpdateFixed(timeDelta);
+      });
+
+      ACS::DispatchFor<Transform, Renderable>([=](Transform* pTransform, Renderable* pRenderable)
+      {
+        
+      });
+
+      //context.mpSceneActive->OnRender();
 
       MeshLayoutBind(renderer.mMeshGizmoLineBatch, 0);
-      context.mpSceneActive->OnGizmos(timeDelta);
+      ACS::DispatchIf<Transform>([=](Actor* pActor)
+      {
+        pActor->OnGizmos(timeDelta);
+      });
       MeshLayoutUnbind();
 
-      RendererRenderBegin(renderer);
-      context.mpSceneActive->OnRenderPre();
+      RendererRenderBegin(renderer, time, timeDelta);
       RendererRender(renderer);
-      context.mpSceneActive->OnRenderPost();
       RendererRenderEnd(renderer);
 
       glfwSwapBuffers(context.mpWindow);
@@ -213,37 +227,4 @@ template<typename Context> void ContextRun(Context& context)
 template<typename Context> void ContextDestroy(Context const& context)
 {
   glfwDestroyWindow(context.mpWindow);
-}
-
-/*
-* Context scene management.
-*/
-
-template<typename Context> void ContextSceneCreate(Context& context, Scene* pScene)
-{
-  context.mScenes.emplace_back(pScene);
-
-  if (!context.mpSceneActive)
-  {
-    context.mpSceneActive = context.mScenes.back();
-    context.mpSceneActive->OnEnable();
-  }
-}
-template<typename Context> void ContextSceneSwitch(Context& context, u32 index)
-{
-  context.mpSceneActive->OnDisable();
-  context.mpSceneActive = context.mScenes[index];
-  context.mpSceneActive->OnEnable();
-}
-template<typename Context> void ContextSceneDestroyAll(Context& context)
-{
-  context.mpSceneActive = nullptr;
-
-  for (auto pScene : context.mScenes)
-  {
-    pScene->OnDisable();
-    delete pScene;
-  }
-
-  context.mScenes.clear();
 }

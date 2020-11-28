@@ -151,20 +151,12 @@
   <ItemGroup>
     <ClCompile Include="..\Source\glad.c" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="Source\BackgroundManager.cpp" />
-    <ClCompile Include="Source\MapManager.cpp" />
-    <ClCompile Include="Source\PlayerManager.cpp" />
-    <ClCompile Include="Source\Scenes\Game.cpp" />
-    <ClCompile Include="Source\ShipManager.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Include\BackgroundManager.h" />
+    <ClInclude Include="Include\Actors\Enemy.h" />
+    <ClInclude Include="Include\Actors\Player.h" />
     <ClInclude Include="Include\SystemDatabase.h" />
-    <ClInclude Include="Include\MapManager.h" />
-    <ClInclude Include="Include\PlayerManager.h" />
     <ClInclude Include="Include\ShipDatabase.h" />
-    <ClInclude Include="Include\ShipManager.h" />
-    <ClInclude Include="Include\Scenes\Game.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

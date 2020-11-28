@@ -3,7 +3,7 @@
 #include <Core.h>
 #include <Types.h>
 
-#include <Layouts/TextureLayouts.h>
+#include <Components/TextureComponents.h>
 
 /*
 * FrameBuffer layouts.
@@ -11,16 +11,16 @@
 
 struct FrameBufferDeferred
 {
-  u32             mWidth           {};
-  u32             mHeight          {};
-  u32             mFbo             {};
-  TextureR32RGBA  mTexturePosition {};
-  TextureR32RGBA  mTextureAlbedo   {};
-  TextureR32RGBA  mTextureNormal   {};
-  TextureR32RGBA  mTextureSpecular {};
-  TextureR32RGBA  mTextureMetallic {};
-  TextureR32RGBA  mTextureRoughness{};
-  TextureR32Depth mTextureDepth    {};
+  u32            mWidth           {};
+  u32            mHeight          {};
+  u32            mFbo             {};
+  TextureR32RGBA mTexturePosition {};
+  TextureR32RGBA mTextureAlbedo   {};
+  TextureR32RGBA mTextureNormal   {};
+  TextureR32RGBA mTextureSpecular {};
+  TextureR32RGBA mTextureMetallic {};
+  TextureR32RGBA mTextureRoughness{};
+  TextureR32RGBA mTextureDepth    {};
 };
 
 /*
@@ -34,13 +34,13 @@ template<typename FrameBuffer> void FrameBufferCreate(FrameBuffer& frameBuffer, 
 
   glGenFramebuffers(1, &frameBuffer.mFbo);
 
-  TextureLayoutCreate(frameBuffer.mTexturePosition, frameBuffer.mWidth, frameBuffer.mHeight, eTextureClampEdge, eTextureFilterNearest);
-  TextureLayoutCreate(frameBuffer.mTextureAlbedo, frameBuffer.mWidth, frameBuffer.mHeight, eTextureClampEdge, eTextureFilterNearest);
-  TextureLayoutCreate(frameBuffer.mTextureNormal, frameBuffer.mWidth, frameBuffer.mHeight, eTextureClampEdge, eTextureFilterNearest);
-  TextureLayoutCreate(frameBuffer.mTextureSpecular, frameBuffer.mWidth, frameBuffer.mHeight, eTextureClampEdge, eTextureFilterNearest);
-  TextureLayoutCreate(frameBuffer.mTextureMetallic, frameBuffer.mWidth, frameBuffer.mHeight, eTextureClampEdge, eTextureFilterNearest);
-  TextureLayoutCreate(frameBuffer.mTextureRoughness, frameBuffer.mWidth, frameBuffer.mHeight, eTextureClampEdge, eTextureFilterNearest);
-  TextureLayoutCreate(frameBuffer.mTextureDepth, frameBuffer.mWidth, frameBuffer.mHeight, eTextureClampEdge, eTextureFilterNearest);
+  TextureLayoutCreate(frameBuffer.mTexturePosition, frameBuffer.mWidth, frameBuffer.mHeight, 0, eTextureClampEdge, eTextureFilterNearest);
+  TextureLayoutCreate(frameBuffer.mTextureAlbedo, frameBuffer.mWidth, frameBuffer.mHeight, 0, eTextureClampEdge, eTextureFilterNearest);
+  TextureLayoutCreate(frameBuffer.mTextureNormal, frameBuffer.mWidth, frameBuffer.mHeight, 0, eTextureClampEdge, eTextureFilterNearest);
+  TextureLayoutCreate(frameBuffer.mTextureSpecular, frameBuffer.mWidth, frameBuffer.mHeight, 0, eTextureClampEdge, eTextureFilterNearest);
+  TextureLayoutCreate(frameBuffer.mTextureMetallic, frameBuffer.mWidth, frameBuffer.mHeight, 0, eTextureClampEdge, eTextureFilterNearest);
+  TextureLayoutCreate(frameBuffer.mTextureRoughness, frameBuffer.mWidth, frameBuffer.mHeight, 0, eTextureClampEdge, eTextureFilterNearest);
+  TextureLayoutCreate(frameBuffer.mTextureDepth, frameBuffer.mWidth, frameBuffer.mHeight, 1, eTextureClampEdge, eTextureFilterNearest);
 
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBuffer.mFbo);
 

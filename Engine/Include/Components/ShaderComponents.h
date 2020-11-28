@@ -2,6 +2,7 @@
 
 #include <Core.h>
 #include <Types.h>
+#include <ACS.h>
 
 /*
 * Shader sources.
@@ -15,7 +16,7 @@ struct ShaderPaths
 };
 
 /*
-* Shader layouts.
+* Shader components.
 */
 
 enum ShaderLayoutType : u32
@@ -28,7 +29,7 @@ enum ShaderLayoutType : u32
 };
 
 template<ShaderLayoutType Layout>
-struct ShaderLayout
+struct ShaderLayout : Component
 {
   constexpr static u32 sLayout{ Layout };
 

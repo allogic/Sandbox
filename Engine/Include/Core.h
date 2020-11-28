@@ -19,6 +19,7 @@
 #include <chrono>
 #include <cassert>
 #include <random>
+#include <type_traits>
 
 #include <glad/glad.h>
 

@@ -3,8 +3,8 @@
 #include <Core.h>
 #include <Types.h>
 
-#include <Layouts/TextureLayouts.h>
-#include <Layouts/VertexLayouts.h>
+#include <Components/TextureComponents.h>
+#include <Components/VertexComponents.h>
 
 /*
 * Texture loading utilities.
@@ -12,8 +12,6 @@
 
 template<typename TextureLayout> void TextureFrom(TextureLayout& textureLayout, std::string const& fileName)
 {
-  static_assert(TextureLayout::sFormat != eTextureFormatDepth);
-
   u32 width{};
   u32 height{};
   u32 channels{};
@@ -37,7 +35,7 @@ template<typename TextureLayout> void TextureFrom(TextureLayout& textureLayout, 
     case eTextureFormatRGBA: assert(channels == 4); break;
   }
 
-  TextureLayoutCreate(textureLayout, width, height);
+  TextureLayoutCreate(textureLayout, width, height, 0);
   TextureLayoutBind(textureLayout);
 
   if (TextureLayout::sLayout == eTextureLayoutR32)
@@ -49,11 +47,11 @@ template<typename TextureLayout> void TextureFrom(TextureLayout& textureLayout, 
     for (u32 i{}; i < imageData.size(); i++)
       imageData[i] = pBlob[i] / 255.f;
 
-    TextureLayoutDataSet(textureLayout, imageData.data());
+    TextureLayoutDataSet(textureLayout, 0, imageData.data());
   }
   else
   {
-    TextureLayoutDataSet(textureLayout, pBlob);
+    TextureLayoutDataSet(textureLayout, 0, pBlob);
   }
 
   stbi_image_free(pBlob);

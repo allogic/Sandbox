@@ -2,9 +2,10 @@
 
 #include <Core.h>
 #include <Types.h>
+#include <ACS.h>
 
 /*
-* Texture layouts.
+* Texture components.
 */
 
 enum TextureLayoutType : u32
@@ -16,7 +17,6 @@ enum TextureFormatType : u32
 {
   eTextureFormatRGB,
   eTextureFormatRGBA,
-  eTextureFormatDepth,
 };
 enum TextureWrapMode : u32
 {
@@ -30,7 +30,7 @@ enum TextureFilterMode : u32
 };
 
 template<u32 Layout, u32 Format>
-struct TextureLayout
+struct TextureLayout : Component
 {
   constexpr static u32 sLayout{ Layout };
   constexpr static u32 sFormat{ Format };
@@ -40,17 +40,16 @@ struct TextureLayout
   u32 mTid   {};
 };
 
-using TextureU8RGB    = TextureLayout<eTextureLayoutU8, eTextureFormatRGB>;
-using TextureU8RGBA   = TextureLayout<eTextureLayoutU8, eTextureFormatRGB>;
-using TextureR32RGB   = TextureLayout<eTextureLayoutR32, eTextureFormatRGB>;
-using TextureR32RGBA  = TextureLayout<eTextureLayoutR32, eTextureFormatRGBA>;
-using TextureR32Depth = TextureLayout<eTextureLayoutR32, eTextureFormatDepth>;
+using TextureU8RGB   = TextureLayout<eTextureLayoutU8, eTextureFormatRGB>;
+using TextureU8RGBA  = TextureLayout<eTextureLayoutU8, eTextureFormatRGB>;
+using TextureR32RGB  = TextureLayout<eTextureLayoutR32, eTextureFormatRGB>;
+using TextureR32RGBA = TextureLayout<eTextureLayoutR32, eTextureFormatRGBA>;
 
 /*
 * Texture management.
 */
 
-template<typename TextureLayout> void TextureLayoutDataSet(TextureLayout const& textureLayout, void* pImageData)
+template<typename TextureLayout> void TextureLayoutDataSet(TextureLayout const& textureLayout, u32 isDepthTexture, void* pImageData)
 {
   s32 formatInternal{};
   s32 format{};
@@ -65,12 +64,18 @@ template<typename TextureLayout> void TextureLayoutDataSet(TextureLayout const& 
   {
     case eTextureFormatRGB: formatInternal = GL_RGB8UI; format = GL_RGB; break;
     case eTextureFormatRGBA: formatInternal = GL_RGBA32F; format = GL_RGBA; break;
-    case eTextureFormatDepth: formatInternal = GL_DEPTH_COMPONENT; format = GL_DEPTH_COMPONENT; break;
   }
 
-  glTexImage2D(GL_TEXTURE_2D, 0, formatInternal, textureLayout.mWidth, textureLayout.mHeight, 0, format, type, pImageData);
+  if (isDepthTexture)
+  {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, textureLayout.mWidth, textureLayout.mHeight, 0, GL_DEPTH_COMPONENT, type, pImageData);
+  }
+  else
+  {
+    glTexImage2D(GL_TEXTURE_2D, 0, formatInternal, textureLayout.mWidth, textureLayout.mHeight, 0, format, type, pImageData);
+  }
 }
-template<typename TextureLayout> void TextureLayoutCreate(TextureLayout& textureLayout, u32 width, u32 height, TextureWrapMode wrapMode = eTextureWrapRepeat, TextureFilterMode filter = eTextureFilterLinear)
+template<typename TextureLayout> void TextureLayoutCreate(TextureLayout& textureLayout, u32 width, u32 height, u32 isDepthTexture, TextureWrapMode wrapMode = eTextureWrapRepeat, TextureFilterMode filter = eTextureFilterLinear)
 {
   textureLayout.mWidth = width;
   textureLayout.mHeight = height;
@@ -85,7 +90,7 @@ template<typename TextureLayout> void TextureLayoutCreate(TextureLayout& texture
   glTextureParameteri(textureLayout.mTid, GL_TEXTURE_MIN_FILTER, (s32)filter);
   glTextureParameteri(textureLayout.mTid, GL_TEXTURE_MAG_FILTER, (s32)filter);
 
-  TextureLayoutDataSet(textureLayout, nullptr);
+  TextureLayoutDataSet(textureLayout, isDepthTexture, nullptr);
 
   glBindTexture(GL_TEXTURE_2D, 0);
 }

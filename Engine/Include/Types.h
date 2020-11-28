@@ -6,6 +6,7 @@ using s32 = int;
 using  s8 = char;
 using  u8 = char unsigned;
 using u32 = int unsigned;
+using u64 = long long int unsigned;
 
 using r32 = float;
 using r64 = double;

@@ -2,6 +2,7 @@
 
 #include <Core.h>
 #include <Types.h>
+#include <ACS.h>
 
 /*
 * Vertex layouts.
@@ -39,11 +40,11 @@ struct VertexScreen
 };
 
 /*
-* Mesh layouts.
+* Mesh components.
 */
 
 template<typename Vertex, typename Index>
-struct MeshLayout
+struct MeshLayout : Component
 {
   using VertexType = Vertex;
   using IndexType  = Index;

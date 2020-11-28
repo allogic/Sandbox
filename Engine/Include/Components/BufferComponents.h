@@ -2,13 +2,14 @@
 
 #include <Core.h>
 #include <Types.h>
+#include <ACS.h>
 
 /*
-* SSBO layouts.
+* SSBO components.
 */
 
 template<typename Buffer>
-struct BufferLayout
+struct BufferLayout : Component
 {
   using BufferType = Buffer;
 
