@@ -139,10 +139,11 @@ template<typename Transform, typename Camera, typename Controller> void CameraCo
 
   transform.mRotation += controller.mRotationAccel;
   if (transform.mRotation.x > 180.f) transform.mRotation.x = -180.f;
-  if (transform.mRotation.x < -180.f) transform.mRotation.x = 180.f;
   if (transform.mRotation.y > 180.f) transform.mRotation.y = -180.f;
-  if (transform.mRotation.y < -180.f) transform.mRotation.y = 180.f;
   if (transform.mRotation.z > 180.f) transform.mRotation.z = -180.f;
+
+  if (transform.mRotation.x < -180.f) transform.mRotation.x = 180.f;
+  if (transform.mRotation.y < -180.f) transform.mRotation.y = 180.f;
   if (transform.mRotation.z < -180.f) transform.mRotation.z = 180.f;
 
   static r32v3 rotationPrev{};

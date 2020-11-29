@@ -18,7 +18,7 @@ struct Enemy : Actor
 
   Transform&  mTransform { ACS::Attach<Transform>(this) };
   LightPoint& mLightPoint{ ACS::Attach<LightPoint>(this) };
-  Renderable& mRenderable{ ACS::Attach<Renderable>(this, &ShipDatabaseGet(mShipName).mMesh, &ShipDatabaseGet(mShipName).mTextureAlbedo, nullptr, nullptr, nullptr, nullptr) };
+  Renderable& mRenderable{ ACS::Attach<Renderable>(this, &ShipDatabaseGet(mShipName).mMesh, &ShipDatabaseGet(mShipName).mTextureAlbedo, &ShipDatabaseGet(mShipName).mTextureSpecular, nullptr, nullptr, nullptr) };
 
   void OnUpdate(r32 timeDelta) override
   {

@@ -22,27 +22,27 @@ struct Identity
 struct Actor;
 
 struct Component
-  {
+{
   
-  };
+};
 struct Object
-  {
-    Actor*      mpActor       {};
-    u64         mComponentMask{};
-    Component** mppComponents {};
-  };
+{
+  Actor*      mpActor       {};
+  u64         mComponentMask{};
+  Component** mppComponents {};
+};
 struct Actor
-  {
-    Actor(Object* pObject) : mpObject{ pObject } {}
+{
+  Actor(Object* pObject) : mpObject{ pObject } {}
   
-    Object* mpObject{};
+  Object* mpObject{};
   
-    virtual void OnEnable() {};
-    virtual void OnDisable() {};
-    virtual void OnUpdate(r32 timeDelta) {};
-    virtual void OnUpdateFixed(r32 timeDelta) {}
-    virtual void OnGizmos(r32 timeDelta) {}
-  };
+  virtual void OnEnable() {};
+  virtual void OnDisable() {};
+  virtual void OnUpdate(r32 timeDelta) {};
+  virtual void OnUpdateFixed(r32 timeDelta) {}
+  virtual void OnGizmos(r32 timeDelta) {}
+};
 
 static std::map<std::string, Object*> sObjectRegistry  {};
 static u64                            sUniqueTypeCount {};
@@ -62,7 +62,7 @@ namespace ACS
   
     if (identityIt == sIdentityRegistry.end())
     {
-      auto const [insertIt, _]{ sIdentityRegistry.emplace(typeid(C).hash_code(), sUniqueTypeCount) };
+      auto const [insertIt, _]{ sIdentityRegistry.emplace(typeid(C).hash_code(), sUniqueTypeCount++) };
       return AsMaskBit ? (u64)1 << insertIt->second : insertIt->second;
     }
   
@@ -127,7 +127,7 @@ namespace ACS
   requires (std::is_base_of_v<Component, typename Identity<Comps>::Type> && ...)
   void DispatchIf(std::function<void(Actor*)>&& predicate)
   {
-    u64 const mask{ (((u64)1 << ComponentToIdentity<typename Identity<Comps>::Type>()) | ... | (u64)0) };
+    u64 const mask{ (ComponentToIdentity<typename Identity<Comps>::Type, 1>() | ... | (u64)0) };
   
     for (auto const [name, pObject] : sObjectRegistry)
     {

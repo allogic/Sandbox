@@ -16,17 +16,14 @@ struct Player : Actor
   Transform&             mTransform { ACS::Attach<Transform>(this) };
   Camera&                mCamera    { ACS::Attach<Camera>(this) };
   CameraControllerSpace& mController{ ACS::Attach<CameraControllerSpace>(this) };
-  //CameraControllerOrbit& mController{ AcsAttach<CameraControllerOrbit>(this) };
 
   void OnUpdate(r32 timeDelta) override
   {
     CameraControllerUpdateInputSpace(mContext, mCamera, mController, timeDelta);
-    //CameraControllerUpdateInputOrbit(mContext, mCamera, mController, timeDelta);
   }
   void OnUpdateFixed(r32 timeDelta) override
   {
     CameraControllerUpdatePhysicsSpace(mTransform, mCamera, mController);
-    //CameraControllerUpdatePhysicsOrbit(mTransform, mCamera, mController);
   }
   void OnGizmos(r32 timeDelta) override
   {

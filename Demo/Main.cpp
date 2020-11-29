@@ -13,10 +13,10 @@ int main(int argc, char** argv)
 
   ACS::Create<Player>("Player");
 
-  for (u32 i{}; i < 32; i++)
-  {
-    ACS::Create<Enemy>("Enemy_" + std::to_string(i), "CruiserBerlin");
-  }
+  //for (u32 i{}; i < 32; i++)
+  //{
+  //  ACS::Create<Enemy>("Enemy_" + std::to_string(i), "CruiserBerlin");
+  //}
   
   ContextRun(context);
 
