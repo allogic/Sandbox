@@ -16,10 +16,14 @@ struct Identity
   };
 
 /*
-* Actor component system.
+* Forward decls.
 */
 
 struct Actor;
+
+/*
+* Actor component system.
+*/
 
 struct Component
 {
@@ -27,9 +31,9 @@ struct Component
 };
 struct Object
 {
-  Actor*      mpActor       {};
-  u64         mComponentMask{};
-  Component** mppComponents {};
+  Actor*      mpActor      {};
+  u64         mMask        {};
+  Component** mppComponents{};
 };
 struct Actor
 {
@@ -42,6 +46,7 @@ struct Actor
   virtual void OnUpdate(r32 timeDelta) {};
   virtual void OnUpdateFixed(r32 timeDelta) {}
   virtual void OnGizmos(r32 timeDelta) {}
+  virtual void OnImGui(r32 timeDelta) {}
 };
 
 static std::map<std::string, Object*> sObjectRegistry  {};
@@ -54,21 +59,26 @@ namespace ACS
   * Component helper utlities.
   */
   
-  template<typename C, u32 AsMaskBit = 0>
+  template<typename C>
   requires std::is_base_of_v<Component, C>
-  u64 ComponentToIdentity()
+  s64 ComponentToIndex()
   {
     auto const identityIt{ sIdentityRegistry.find(typeid(C).hash_code()) };
   
     if (identityIt == sIdentityRegistry.end())
     {
       auto const [insertIt, _]{ sIdentityRegistry.emplace(typeid(C).hash_code(), sUniqueTypeCount++) };
-      return AsMaskBit ? (u64)1 << insertIt->second : insertIt->second;
+      return insertIt->second;
     }
   
-    return AsMaskBit ? (u64)1 << identityIt->second : identityIt->second;
+    return identityIt->second;
   }
   
+  constexpr static u64 ContainsComponentBits(s64 entityMask, s64 componentMask)
+  {
+    return (~(entityMask ^ componentMask) & componentMask) == componentMask;
+  }
+
   /*
   * Actor management.
   */
@@ -83,7 +93,7 @@ namespace ACS
     {
       Object* pObject{ new Object };
   
-      pObject->mComponentMask = 0;
+      pObject->mMask = 0;
       pObject->mppComponents = (Component**)std::malloc(sizeof(Component*) * 64);
       
       std::memset(pObject->mppComponents, 0, sizeof(Component*) * 64);
@@ -103,23 +113,19 @@ namespace ACS
   requires std::is_base_of_v<Component, C>
   C& Attach(Actor* pActor, Args&& ... args)
   {
-    u64 const index{ ComponentToIdentity<C, 0>() };
-    u64 const mask{ ComponentToIdentity<C, 1>() };
+    s64 const componentIndex{ ComponentToIndex<C>() };
+    s64 const componentMask{ (s64)1 << componentIndex };
   
-    if (pActor->mpObject->mComponentMask & mask)
-    {
-      // component exists
-  
-      return *((C*)pActor->mpObject->mppComponents[index]);
+    if (ContainsComponentBits(pActor->mpObject->mMask, componentMask))
+    {  
+      return *((C*)pActor->mpObject->mppComponents[componentIndex]);
     }
     else
-    {
-      // component does not exist
+    {  
+      pActor->mpObject->mMask |= componentMask;
+      pActor->mpObject->mppComponents[componentIndex] = new C{ std::forward<Args>(args) ... };
   
-      pActor->mpObject->mComponentMask |= mask;
-      pActor->mpObject->mppComponents[index] = new C{ std::forward<Args>(args) ... };
-  
-      return *((C*)pActor->mpObject->mppComponents[index]);
+      return *((C*)pActor->mpObject->mppComponents[componentIndex]);
     }
   }
   
@@ -127,11 +133,11 @@ namespace ACS
   requires (std::is_base_of_v<Component, typename Identity<Comps>::Type> && ...)
   void DispatchIf(std::function<void(Actor*)>&& predicate)
   {
-    u64 const mask{ (ComponentToIdentity<typename Identity<Comps>::Type, 1>() | ... | (u64)0) };
+    s64 const componentMask{ (((s64)1 << ComponentToIndex<typename Identity<Comps>::Type>()) | ... | (s64)0) };
   
     for (auto const [name, pObject] : sObjectRegistry)
     {
-      if (pObject->mComponentMask & mask)
+      if (ContainsComponentBits(pObject->mMask, componentMask))
       {
         predicate(pObject->mpActor);
       }
@@ -141,16 +147,16 @@ namespace ACS
   template<typename ... Comps>
   requires (std::is_base_of_v<Component, typename Identity<Comps>::Type> && ...)
   void DispatchFor(std::function<void(typename Identity<Comps>::Ptr ...)>&& predicate)
-  {  
-    u64 const mask{ (ComponentToIdentity<typename Identity<Comps>::Type, 1>() | ... | (u64)0) };
-  
+  {
+    s64 const componentMask{ (((s64)1 << ComponentToIndex<typename Identity<Comps>::Type>()) | ... | (s64)0) };
+
     for (auto const [name, pObject] : sObjectRegistry)
     {
-      if (pObject->mComponentMask & mask)
+      if (ContainsComponentBits(pObject->mMask, componentMask))
       {
         predicate
         (
-          (typename Identity<Comps>::Ptr)(pObject->mppComponents[ComponentToIdentity<typename Identity<Comps>::Type, 0>()])
+          (typename Identity<Comps>::Ptr)(pObject->mppComponents[ComponentToIndex<typename Identity<Comps>::Type>()])
           ...
         );
       }

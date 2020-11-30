@@ -4,6 +4,8 @@
 #include <Types.h>
 #include <ACS.h>
 
+#include <Components/TransformComponents.h>
+
 /*
 * Vertex layouts.
 */
@@ -49,6 +51,7 @@ struct MeshLayout : Component
   using VertexType = Vertex;
   using IndexType  = Index;
 
+  Transform        mTransform        {};
   u32              mNumSubMeshes     {};
   std::vector<u32> mVaos             {};
   std::vector<u32> mVbos             {};

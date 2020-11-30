@@ -2,8 +2,10 @@
 
 #include <Core.h>
 
-using s32 = int;
 using  s8 = char;
+using s32 = int;
+using s64 = long long int;
+
 using  u8 = char unsigned;
 using u32 = int unsigned;
 using u64 = long long int unsigned;

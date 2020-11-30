@@ -156,7 +156,7 @@
     <ClInclude Include="Include\Actors\Enemy.h" />
     <ClInclude Include="Include\Actors\Player.h" />
     <ClInclude Include="Include\SystemDatabase.h" />
-    <ClInclude Include="Include\ShipDatabase.h" />
+    <ClInclude Include="Include\ModelDatabase.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

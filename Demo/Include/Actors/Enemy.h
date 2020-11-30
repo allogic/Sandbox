@@ -2,7 +2,7 @@
 
 #include <Api.h>
 
-#include <ShipDatabase.h>
+#include <ModelDatabase.h>
 
 /*
 * Cruiser berlin actor.
@@ -10,15 +10,18 @@
 
 struct Enemy : Actor
 {
-  Enemy(Object* pObject, std::string const& shipName)
-    : mShipName{ shipName }
-    , Actor(pObject) {}
+  std::string const mModelName;
 
-  std::string const& mShipName;
+  Transform&        mTransform { ACS::Attach<Transform>(this) };
+  LightPoint&       mLightPoint{ ACS::Attach<LightPoint>(this) };
+  Renderable&       mRenderable{ ACS::Attach<Renderable>(this, &ModelDatabaseGet(mModelName).mMesh, &ModelDatabaseGet(mModelName).mTextureAlbedo, &ModelDatabaseGet(mModelName).mTextureSpecular, nullptr, nullptr, nullptr) };
 
-  Transform&  mTransform { ACS::Attach<Transform>(this) };
-  LightPoint& mLightPoint{ ACS::Attach<LightPoint>(this) };
-  Renderable& mRenderable{ ACS::Attach<Renderable>(this, &ShipDatabaseGet(mShipName).mMesh, &ShipDatabaseGet(mShipName).mTextureAlbedo, &ShipDatabaseGet(mShipName).mTextureSpecular, nullptr, nullptr, nullptr) };
+  Enemy(Object* pObject, std::string const& modelName)
+    : mModelName{ modelName }
+    , Actor(pObject)
+  {
+    mRenderable.mpMeshLambert->mTransform.mScale = { 5.f, 5.f, 5.f };
+  }
 
   void OnUpdate(r32 timeDelta) override
   {

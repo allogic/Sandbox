@@ -196,13 +196,6 @@ template<typename Context> void ContextRun(Context& context)
         pActor->OnUpdateFixed(timeDelta);
       });
 
-      ACS::DispatchFor<Transform, Renderable>([=](Transform* pTransform, Renderable* pRenderable)
-      {
-        
-      });
-
-      //context.mpSceneActive->OnRender();
-
       MeshLayoutBind(renderer.mMeshGizmoLineBatch, 0);
       ACS::DispatchIf<Transform>([=](Actor* pActor)
       {

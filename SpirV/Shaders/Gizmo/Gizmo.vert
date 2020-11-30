@@ -13,14 +13,12 @@ layout (location = 1) in vec4 iColor;
 
 layout (location = 0) out VertOut
 {
-  vec3 position;
   vec4 color;
 } vertOut;
 
 void main()
 {
-  vertOut.position = iPosition;
   vertOut.color = iColor;
 
-  gl_Position = uProjection * uView * inverse(uTransformCamera) * vec4(iPosition, 1.f);
+  gl_Position = uProjection * uView * uTransformModel * uTransformCamera * vec4(iPosition, 1.f);
 }

@@ -13,7 +13,8 @@ struct BufferLayout : Component
 {
   using BufferType = Buffer;
 
-  u32 mSsbo{};
+  u32 mSsbo      {};
+  u32 mBufferSize{};
 };
 
 /*
@@ -22,10 +23,12 @@ struct BufferLayout : Component
 
 template<typename BufferLayout> void BufferLayoutCreate(BufferLayout& bufferLayout, u32 bufferSize)
 {
+  bufferLayout.mBufferSize = bufferSize;
+
   glGenBuffers(1, &bufferLayout.mSsbo);
 
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, bufferLayout.mSsbo);
-  glBufferStorage(GL_SHADER_STORAGE_BUFFER, bufferSize * sizeof(BufferLayout::BufferType), nullptr, GL_DYNAMIC_STORAGE_BIT | GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
+  glBufferStorage(GL_SHADER_STORAGE_BUFFER, bufferLayout.mBufferSize * sizeof(BufferLayout::BufferType), nullptr, GL_DYNAMIC_STORAGE_BIT | GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }

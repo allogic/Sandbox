@@ -2,7 +2,6 @@
 
 layout (location = 0) in VertOut
 {
-  vec3 position;
   vec4 color;
 } fragIn;
 

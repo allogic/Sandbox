@@ -3,6 +3,8 @@
 #include <Core.h>
 #include <Types.h>
 #include <Registry.h>
+#include <ACS.h>
+#include <Utility.h>
 
 #include <FrameBuffers/FrameBufferDeferred.h>
 
@@ -14,41 +16,13 @@
 #include <Components/CameraComponents.h>
 #include <Components/LightComponents.h>
 #include <Components/TransformComponents.h>
+#include <Components/RenderComponents.h>
 
 #include <Uniforms/GlobalUniform.h>
 #include <Uniforms/ProjectionUniform.h>
 #include <Uniforms/LambertUniform.h>
 #include <Uniforms/CameraUniform.h>
 #include <Uniforms/LightUniform.h>
-
-#include <Buffers/TransformBuffers.h>
-
-/*
-* Render tasks.
-*/
-
-struct TaskLambert
-{
-  MeshLambert*    mpMesh            {};
-  r32m4           mTransformModel   {};
-  TextureR32RGBA* mpTextureAlbedo   {};
-  TextureR32RGBA* mpTextureNormal   {};
-  TextureR32RGBA* mpTextureSpecular {};
-  TextureR32RGBA* mpTextureMetallic {};
-  TextureR32RGBA* mpTextureRoughness{};
-};
-struct TaskLambertInstanced
-{
-  MeshLambert*                   mpMesh            {};
-  r32m4                          mTransformModel   {};
-  BufferLayout<BufferTransform>* mpBufferTransform {};
-  TextureR32RGBA*                mpTextureAlbedo   {};
-  TextureR32RGBA*                mpTextureNormal   {};
-  TextureR32RGBA*                mpTextureSpecular {};
-  TextureR32RGBA*                mpTextureMetallic {};
-  TextureR32RGBA*                mpTextureRoughness{};
-  u32                            mNumInstances     {};
-};
 
 /*
 * Renderer.
@@ -80,9 +54,6 @@ struct Renderer
   ShaderScreen                           mShaderDeferredLight        {};
   ShaderScreen                           mShaderVolumeCloud          {};
 
-  std::queue<TaskLambert>                mRenderQueueLambert         {};
-  std::queue<TaskLambertInstanced>       mRenderQueueLambertInstanced{};
-
   FrameBufferDeferred                    mFrameBufferDeferred        {};
 
   MeshScreen                             mMeshScreenPlane            {};
@@ -101,31 +72,30 @@ struct Renderer
 
 template<typename Renderer> void RendererPassGeometry(Renderer& renderer)
 {
-  UniformLayoutMap(renderer.mUniformProjection, 1);
+  UniformLayoutMap(renderer.mUniformProjection, 0);
 
   ShaderLayoutBind(renderer.mShaderLambert);
 
-  while (!renderer.mRenderQueueLambert.empty())
+  ACS::DispatchFor<Transform, Renderable>([&](Transform* pTransform, Renderable* pRenderable)
   {
-    TaskLambert const& task{ renderer.mRenderQueueLambert.front() };
+    r32m4 worldTransform{ TransformTo(pTransform->mPosition, pTransform->mRotation, pTransform->mScale) };
+    r32m4 localTransform{ TransformTo(pRenderable->mpMeshLambert->mTransform.mPosition, pRenderable->mpMeshLambert->mTransform.mRotation, pRenderable->mpMeshLambert->mTransform.mScale) };
 
-    renderer.mUniformBlockProjection.mTransformModel = task.mTransformModel;
+    renderer.mUniformBlockProjection.mTransformModel = worldTransform * localTransform;
     UniformLayoutDataSet(renderer.mUniformProjection, 1, &renderer.mUniformBlockProjection);
 
-    for (u32 i{}; i < task.mpMesh->mNumSubMeshes; i++)
+    for (u32 i{}; i < pRenderable->mpMeshLambert->mNumSubMeshes; i++)
     {
-      if (task.mpTextureAlbedo) TextureLayoutMapSampler(*task.mpTextureAlbedo, 0);
-      if (task.mpTextureNormal) TextureLayoutMapSampler(*task.mpTextureNormal, 1);
-      if (task.mpTextureSpecular) TextureLayoutMapSampler(*task.mpTextureSpecular, 2);
-      if (task.mpTextureMetallic) TextureLayoutMapSampler(*task.mpTextureMetallic, 3);
-      if (task.mpTextureRoughness) TextureLayoutMapSampler(*task.mpTextureRoughness, 4);
+      if (pRenderable->mpTextureAlbedo) TextureLayoutMapSampler(*pRenderable->mpTextureAlbedo, 0);
+      if (pRenderable->mpTextureNormal) TextureLayoutMapSampler(*pRenderable->mpTextureNormal, 1);
+      if (pRenderable->mpTextureSpecular) TextureLayoutMapSampler(*pRenderable->mpTextureSpecular, 2);
+      if (pRenderable->mpTextureMetallic) TextureLayoutMapSampler(*pRenderable->mpTextureMetallic, 3);
+      if (pRenderable->mpTextureRoughness) TextureLayoutMapSampler(*pRenderable->mpTextureRoughness, 4);
 
-      MeshLayoutBind(*task.mpMesh, i);
-      MeshLayoutRenderPartial(*task.mpMesh, i, eRenderModeTriangle);
+      MeshLayoutBind(*pRenderable->mpMeshLambert, i);
+      MeshLayoutRenderPartial(*pRenderable->mpMeshLambert, i, eRenderModeTriangle);
     }
-
-    renderer.mRenderQueueLambert.pop();
-  }
+  });
 
   MeshLayoutUnbind();
   TextureLayoutUnbind();
@@ -136,31 +106,32 @@ template<typename Renderer> void RendererPassGeometryInstanced(Renderer& rendere
 {
   UniformLayoutMap(renderer.mUniformProjection, 0);
 
-  while (!renderer.mRenderQueueLambertInstanced.empty())
+  ACS::DispatchFor<Transform, RenderableInstanced>([&](Transform* pTransform, RenderableInstanced* pRenderable)
   {
-    TaskLambertInstanced const& task{ renderer.mRenderQueueLambertInstanced.front() };
-
-    renderer.mUniformBlockProjection.mTransformModel = task.mTransformModel;
+    renderer.mUniformBlockProjection.mTransformModel = TransformTo
+    (
+      pTransform->mPosition,
+      pTransform->mRotation,
+      pTransform->mScale
+    );
     UniformLayoutDataSet(renderer.mUniformProjection, 1, &renderer.mUniformBlockProjection);
 
-    BufferLayoutMap(*task.mpBufferTransform, 0);
+    BufferLayoutMap(*pRenderable->mpBufferTransform, 0);
 
     ShaderLayoutBind(renderer.mShaderLambertInstanced);
 
-    for (u32 i{}; i < task.mpMesh->mNumSubMeshes; i++)
+    for (u32 i{}; i < pRenderable->mpMeshLambert->mNumSubMeshes; i++)
     {
-      if (task.mpTextureAlbedo) TextureLayoutMapSampler(*task.mpTextureAlbedo, 0);
-      if (task.mpTextureNormal) TextureLayoutMapSampler(*task.mpTextureNormal, 1);
-      if (task.mpTextureSpecular) TextureLayoutMapSampler(*task.mpTextureSpecular, 2);
-      if (task.mpTextureMetallic) TextureLayoutMapSampler(*task.mpTextureMetallic, 3);
-      if (task.mpTextureRoughness) TextureLayoutMapSampler(*task.mpTextureRoughness, 4);
+      if (pRenderable->mpTextureAlbedo) TextureLayoutMapSampler(*pRenderable->mpTextureAlbedo, 0);
+      if (pRenderable->mpTextureNormal) TextureLayoutMapSampler(*pRenderable->mpTextureNormal, 1);
+      if (pRenderable->mpTextureSpecular) TextureLayoutMapSampler(*pRenderable->mpTextureSpecular, 2);
+      if (pRenderable->mpTextureMetallic) TextureLayoutMapSampler(*pRenderable->mpTextureMetallic, 3);
+      if (pRenderable->mpTextureRoughness) TextureLayoutMapSampler(*pRenderable->mpTextureRoughness, 4);
 
-      MeshLayoutBind(*task.mpMesh, i);
-      MeshLayoutRenderInstancedPartial(*task.mpMesh, i, eRenderModeTriangle, task.mNumInstances);
+      MeshLayoutBind(*pRenderable->mpMeshLambert, i);
+      MeshLayoutRenderInstancedPartial(*pRenderable->mpMeshLambert, i, eRenderModeTriangle, pRenderable->mpBufferTransform->mBufferSize);
     }
-
-    renderer.mRenderQueueLambertInstanced.pop();
-  }
+  });
 
   MeshLayoutUnbind();
   TextureLayoutUnbind();
@@ -186,6 +157,7 @@ template<typename Renderer> void RendererPassLight(Renderer& renderer)
 
   ShaderLayoutBind(renderer.mShaderDeferredLight);
 
+  MeshLayoutBind(renderer.mMeshScreenPlane, 0);
   MeshLayoutRender(renderer.mMeshScreenPlane, eRenderModeTriangle);
 
   MeshLayoutUnbind();
@@ -212,8 +184,12 @@ template<typename Renderer> void RendererPassScreen(Renderer& renderer)
 }
 template<typename Renderer> void RendererPassGizmo(Renderer& renderer)
 {
-  UniformLayoutBind(renderer.mUniformProjection);
   UniformLayoutMap(renderer.mUniformProjection, 0);
+
+  r32m4 worldTransform{ TransformTo({ 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f }) };
+
+  renderer.mUniformBlockProjection.mTransformModel = worldTransform;
+  UniformLayoutDataSet(renderer.mUniformProjection, 1, &renderer.mUniformBlockProjection);
 
   ShaderLayoutBind(renderer.mShaderGizmo);
 
@@ -223,19 +199,6 @@ template<typename Renderer> void RendererPassGizmo(Renderer& renderer)
   MeshLayoutUnbind();
   ShaderLayoutUnbind();
   UniformLayoutUnbind();
-}
-
-/*
-* Render commands.
-*/
-
-template<typename Renderer> void RendererSubmitLambert(Renderer& renderer, TaskLambert const& task)
-{
-  renderer.mRenderQueueLambert.emplace(task);
-}
-template<typename Renderer> void RendererSubmitLambertInstanced(Renderer& renderer, TaskLambertInstanced const& task)
-{
-  renderer.mRenderQueueLambertInstanced.emplace(task);
 }
 
 /*
@@ -317,15 +280,18 @@ template<typename Renderer> void RendererRenderBegin(Renderer& renderer, r32 tim
   // update camera parameters
   ACS::DispatchFor<Transform, Camera>([&](Transform* pTransform, Camera* pCamera)
   {
+    r32m4 worldTransform{ TransformTo(pTransform->mPosition, pTransform->mRotation, pTransform->mScale) };
+    r32m4 localTransform{ TransformTo(pCamera->mTransform.mPosition, pCamera->mTransform.mRotation, pCamera->mTransform.mScale) };
+
     renderer.mUniformBlockProjection =
     {
-      .mProjection     { pCamera->mProjection },
-      .mView           { pCamera->mView },
-      .mTransformCamera{ pCamera->mTransform },
+      .mProjection     { glm::perspective(pCamera->mFovRad, pCamera->mAspect, pCamera->mNear, pCamera->mFar) },
+      .mView           { localTransform },
+      .mTransformCamera{ worldTransform },
     };
     renderer.mUniformBlockCamera =
     {
-      .mPosition  { pTransform->mPosition },
+      .mPosition  { pTransform->mPosition + pCamera->mTransform.mPosition },
       .mRotation  { pTransform->mRotation },
       .mRight     { pCamera->mRight },
       .mUp        { pCamera->mUp },

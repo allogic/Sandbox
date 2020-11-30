@@ -54,9 +54,6 @@
     <ClInclude Include="Include\Context.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Include\Buffers\TransformBuffers.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Include\Uniforms\LambertUniform.h">
       <Filter>Header Files</Filter>
     </ClInclude>

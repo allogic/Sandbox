@@ -23,7 +23,7 @@ layout (location = 0) out VertOut
 
 void main()
 {
-  mat4 tvp = uProjection * uView * inverse(uTransformCamera) * uTransformModel;
+  mat4 tvp = uProjection * uView * uTransformModel * uTransformCamera;
 
   vertOut.position = vec4(uTransformModel * vec4(iPosition, 1.f)).xyz;
   vertOut.normal = iNormal;
