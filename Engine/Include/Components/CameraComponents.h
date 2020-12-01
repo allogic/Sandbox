@@ -5,23 +5,17 @@
 #include <Events.h>
 #include <ACS.h>
 
-#include <Components/TransformComponents.h>
-
 /*
 * Camera components.
 */
 
 struct Camera : Component
 {
-  Transform mTransform     {};
   r32       mAspect        { 1280.f / 720.f };
   r32       mFovRad        { glm::radians(45.f) };
   r32v3     mRight         { 1.f, 0.f, 0.f };
   r32v3     mUp            { 0.f, 1.f, 0.f };
   r32v3     mFront         { 0.f, 0.f, -1.f };
-  r32v3     mLocalRight    { mRight };
-  r32v3     mLocalUp       { mUp };
-  r32v3     mLocalFront    { mFront };
   r32       mNear          { 0.1f };
   r32       mFar           { 100000.f };
 };
@@ -32,8 +26,8 @@ struct Camera : Component
 
 struct CameraControllerSpace : Component
 {
-  r32   mPositionAmount{ 1.f };
-  r32   mRotationAmount{ 0.08f };
+  r32   mPositionAmount{ 0.2f };
+  r32   mRotationAmount{ 1.8f };
   r32   mPositionDecay { 0.4f };
   r32   mRotationDecay { 1.5f };
   r32v3 mPositionAccel {};

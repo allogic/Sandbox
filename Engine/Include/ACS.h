@@ -2,6 +2,7 @@
 
 #include <Core.h>
 #include <Types.h>
+#include <Transform.h>
 
 /*
 * Type deduction utility.
@@ -37,15 +38,20 @@ struct Object
 };
 struct Actor
 {
+  Actor*    mpParent     {};
+  Actor*    mppChilds[64]{};
+
+  Transform mTransform   {};
+
+  Object*   mpObject;
+
   Actor(Object* pObject) : mpObject{ pObject } {}
-  
-  Object* mpObject{};
   
   virtual void OnEnable() {};
   virtual void OnDisable() {};
   virtual void OnUpdate(r32 timeDelta) {};
   virtual void OnUpdateFixed(r32 timeDelta) {}
-  virtual void OnGizmos(r32 timeDelta) {}
+  virtual void OnGizmo() {}
   virtual void OnImGui(r32 timeDelta) {}
 };
 
@@ -94,9 +100,7 @@ namespace ACS
       Object* pObject{ new Object };
   
       pObject->mMask = 0;
-      pObject->mppComponents = (Component**)std::malloc(sizeof(Component*) * 64);
-      
-      std::memset(pObject->mppComponents, 0, sizeof(Component*) * 64);
+      pObject->mppComponents = new Component*[64];
   
       auto const [insertIt, _] { sObjectRegistry.emplace(actorName, pObject) };
   
@@ -109,6 +113,16 @@ namespace ACS
     return *((A*)objectIt->second->mpActor);
   }
   
+  template<typename A, typename ... Args>
+  requires std::is_base_of_v<Actor, A>
+  A& CreateChild(Actor* pActor, u64 subActorIndex, std::string const& actorName, Args&& ... args)
+  {
+    pActor->mppChilds[subActorIndex] = &Create<A>(actorName, std::forward<Args>(args) ...);
+    pActor->mppChilds[subActorIndex]->mpParent = pActor;
+
+    return *((A*)pActor->mppChilds[subActorIndex]);
+  }
+
   template<typename C, typename ... Args>
   requires std::is_base_of_v<Component, C>
   C& Attach(Actor* pActor, Args&& ... args)
@@ -131,22 +145,17 @@ namespace ACS
   
   template<typename ... Comps>
   requires (std::is_base_of_v<Component, typename Identity<Comps>::Type> && ...)
-  void DispatchIf(std::function<void(Actor*)>&& predicate)
+  void Dispatch(std::function<void(Actor*)>&& predicate)
   {
-    s64 const componentMask{ (((s64)1 << ComponentToIndex<typename Identity<Comps>::Type>()) | ... | (s64)0) };
-  
     for (auto const [name, pObject] : sObjectRegistry)
     {
-      if (ContainsComponentBits(pObject->mMask, componentMask))
-      {
-        predicate(pObject->mpActor);
-      }
+      predicate(pObject->mpActor);
     }
   }
   
   template<typename ... Comps>
   requires (std::is_base_of_v<Component, typename Identity<Comps>::Type> && ...)
-  void DispatchFor(std::function<void(typename Identity<Comps>::Ptr ...)>&& predicate)
+  void DispatchFor(std::function<void(Actor*, typename Identity<Comps>::Ptr ...)>&& predicate)
   {
     s64 const componentMask{ (((s64)1 << ComponentToIndex<typename Identity<Comps>::Type>()) | ... | (s64)0) };
 
@@ -156,6 +165,7 @@ namespace ACS
       {
         predicate
         (
+          pObject->mpActor,
           (typename Identity<Comps>::Ptr)(pObject->mppComponents[ComponentToIndex<typename Identity<Comps>::Type>()])
           ...
         );

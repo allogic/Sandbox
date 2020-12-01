@@ -8,6 +8,7 @@
 #include <Types.h>
 #include <ACS.h>
 #include <Context.h>
+#include <Transform.h>
 #include <Utility.h>
 #include <Registry.h>
 #include <Events.h>
@@ -20,7 +21,6 @@
 #include <Components/ShaderComponents.h>
 #include <Components/UniformComponents.h>
 #include <Components/LightComponents.h>
-#include <Components/TransformComponents.h>
 #include <Components/CameraComponents.h>
 #include <Components/RenderComponents.h>
 

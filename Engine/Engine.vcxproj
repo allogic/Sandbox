@@ -160,9 +160,9 @@
     <ClInclude Include="Include\Components\BufferComponents.h" />
     <ClInclude Include="Include\FrameBuffers\FrameBufferDeferred.h" />
     <ClInclude Include="Include\Components\LightComponents.h" />
-    <ClInclude Include="Include\Components\TransformComponents.h" />
     <ClInclude Include="Include\Components\ShaderComponents.h" />
     <ClInclude Include="Include\Components\TextureComponents.h" />
+    <ClInclude Include="Include\Transform.h" />
     <ClInclude Include="Include\Uniforms\LambertUniform.h" />
     <ClInclude Include="Include\Utility.h" />
     <ClInclude Include="Include\Registry.h" />

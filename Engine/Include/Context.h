@@ -7,7 +7,6 @@
 #include <Registry.h>
 #include <Renderer.h>
 
-#include <Components/TransformComponents.h>
 #include <Components/RenderComponents.h>
 
 /*
@@ -184,24 +183,17 @@ template<typename Context> void ContextRun(Context& context)
     time = (r32)glfwGetTime();
     timeDelta = time - timePrev;
 
-    ACS::DispatchIf<Transform>([=](Actor* pActor)
+    ACS::Dispatch([=](Actor* pActor)
     {
       pActor->OnUpdate(timeDelta);
     });
 
     if ((time - timeRenderPrev) >= timeRender)
     {
-      ACS::DispatchIf<Transform>([=](Actor* pActor)
+      ACS::Dispatch([=](Actor* pActor)
       {
         pActor->OnUpdateFixed(timeDelta);
       });
-
-      MeshLayoutBind(renderer.mMeshGizmoLineBatch, 0);
-      ACS::DispatchIf<Transform>([=](Actor* pActor)
-      {
-        pActor->OnGizmos(timeDelta);
-      });
-      MeshLayoutUnbind();
 
       RendererRenderBegin(renderer, time, timeDelta);
       RendererRender(renderer);

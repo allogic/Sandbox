@@ -2,13 +2,12 @@
 
 #include <Core.h>
 #include <Types.h>
-#include <ACS.h>
 
 /*
-* Transform components.
+* Transform layout.
 */
 
-struct Transform : Component
+struct Transform
 {
   r32v3 mPosition{};
   r32v3 mRotation{};

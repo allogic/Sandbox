@@ -15,7 +15,6 @@
 #include <Components/ShaderComponents.h>
 #include <Components/CameraComponents.h>
 #include <Components/LightComponents.h>
-#include <Components/TransformComponents.h>
 #include <Components/RenderComponents.h>
 
 #include <Uniforms/GlobalUniform.h>
@@ -60,6 +59,8 @@ struct Renderer
 
   TextureR32RGBA                         mTextureNoise               {};
 
+  r32m4                                  mTransformGizmo             {};
+
   MeshGizmo                              mMeshGizmoLineBatch         {};
 
   u32                                    mVertexOffsetGizmoLineBatch {};
@@ -76,10 +77,16 @@ template<typename Renderer> void RendererPassGeometry(Renderer& renderer)
 
   ShaderLayoutBind(renderer.mShaderLambert);
 
-  ACS::DispatchFor<Transform, Renderable>([&](Transform* pTransform, Renderable* pRenderable)
+  ACS::DispatchFor<Renderable>([&](Actor* pActor, Renderable* pRenderable)
   {
-    r32m4 worldTransform{ TransformTo(pTransform->mPosition, pTransform->mRotation, pTransform->mScale) };
-    r32m4 localTransform{ TransformTo(pRenderable->mpMeshLambert->mTransform.mPosition, pRenderable->mpMeshLambert->mTransform.mRotation, pRenderable->mpMeshLambert->mTransform.mScale) };
+    r32m4 worldTransform{ glm::identity<r32m4>() };
+
+    if (pActor->mpParent)
+    {
+      worldTransform = TransformTo(pActor->mpParent->mTransform.mPosition, pActor->mpParent->mTransform.mRotation, pActor->mpParent->mTransform.mScale);
+    }
+    
+    r32m4 localTransform{ TransformTo(pActor->mTransform.mPosition, pActor->mTransform.mRotation, pActor->mTransform.mScale) };
 
     renderer.mUniformBlockProjection.mTransformModel = worldTransform * localTransform;
     UniformLayoutDataSet(renderer.mUniformProjection, 1, &renderer.mUniformBlockProjection);
@@ -106,14 +113,9 @@ template<typename Renderer> void RendererPassGeometryInstanced(Renderer& rendere
 {
   UniformLayoutMap(renderer.mUniformProjection, 0);
 
-  ACS::DispatchFor<Transform, RenderableInstanced>([&](Transform* pTransform, RenderableInstanced* pRenderable)
+  ACS::DispatchFor<RenderableInstanced>([&](Actor* pActor, RenderableInstanced* pRenderable)
   {
-    renderer.mUniformBlockProjection.mTransformModel = TransformTo
-    (
-      pTransform->mPosition,
-      pTransform->mRotation,
-      pTransform->mScale
-    );
+    renderer.mUniformBlockProjection.mTransformModel = glm::identity<r32m4>();
     UniformLayoutDataSet(renderer.mUniformProjection, 1, &renderer.mUniformBlockProjection);
 
     BufferLayoutMap(*pRenderable->mpBufferTransform, 0);
@@ -184,6 +186,18 @@ template<typename Renderer> void RendererPassScreen(Renderer& renderer)
 }
 template<typename Renderer> void RendererPassGizmo(Renderer& renderer)
 {
+  MeshLayoutBind(renderer.mMeshGizmoLineBatch, 0);
+
+  RendererLineBatchPopMatrix(renderer);
+  RendererLineBatchPushLine(renderer, { 0.f, 0.f, 0.f }, { 10.f, 0.f, 0.f }, { 1.f, 0.f, 0.f, 1.f });
+  RendererLineBatchPushLine(renderer, { 0.f, 0.f, 0.f }, { 0.f, 10.f, 0.f }, { 0.f, 1.f, 0.f, 1.f });
+  RendererLineBatchPushLine(renderer, { 0.f, 0.f, 0.f }, { 0.f, 0.f, 10.f }, { 0.f, 0.f, 1.f, 1.f });
+
+  ACS::Dispatch([=](Actor* pActor)
+  {
+    pActor->OnGizmo();
+  });
+
   UniformLayoutMap(renderer.mUniformProjection, 0);
 
   r32m4 worldTransform{ TransformTo({ 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f }) };
@@ -278,32 +292,38 @@ template<typename Renderer> void RendererRenderBegin(Renderer& renderer, r32 tim
   };
 
   // update camera parameters
-  ACS::DispatchFor<Transform, Camera>([&](Transform* pTransform, Camera* pCamera)
+  ACS::DispatchFor<Camera>([&](Actor* pActor, Camera* pCamera)
   {
-    r32m4 worldTransform{ TransformTo(pTransform->mPosition, pTransform->mRotation, pTransform->mScale) };
-    r32m4 localTransform{ TransformTo(pCamera->mTransform.mPosition, pCamera->mTransform.mRotation, pCamera->mTransform.mScale) };
+    r32m4 worldTransform{ glm::identity<r32m4>() };
+
+    if (pActor->mpParent)
+    {
+      worldTransform = TransformTo(pActor->mpParent->mTransform.mPosition, pActor->mpParent->mTransform.mRotation, pActor->mpParent->mTransform.mScale);
+    }
+
+    r32m4 localTransform{ TransformTo(pActor->mTransform.mPosition, pActor->mTransform.mRotation, pActor->mTransform.mScale) };
 
     renderer.mUniformBlockProjection =
     {
       .mProjection     { glm::perspective(pCamera->mFovRad, pCamera->mAspect, pCamera->mNear, pCamera->mFar) },
-      .mView           { localTransform },
-      .mTransformCamera{ worldTransform },
+      .mView           { localTransform * glm::inverse(worldTransform) },
+      .mTransformCamera{ glm::identity<r32m4>() },
     };
     renderer.mUniformBlockCamera =
     {
-      .mPosition  { pTransform->mPosition + pCamera->mTransform.mPosition },
-      .mRotation  { pTransform->mRotation },
-      .mRight     { pCamera->mRight },
-      .mUp        { pCamera->mUp },
-      .mFront     { pCamera->mFront },
-      .mLocalRight{ pCamera->mLocalRight },
-      .mLocalUp   { pCamera->mLocalUp },
-      .mLocalFront{ pCamera->mLocalFront },
+      .mPosition  { 0.f, 0.f, 0.f },
+      .mRotation  { 0.f, 0.f, 0.f },
+      .mRight     { 1.f, 0.f, 0.f },
+      .mUp        { 0.f, 1.f, 0.f },
+      .mFront     { 0.f, 0.f, 1.f },
+      .mLocalRight{ 1.f, 0.f, 0.f },
+      .mLocalUp   { 0.f, 1.f, 0.f },
+      .mLocalFront{ 0.f, 0.f, 1.f },
     };
   });
 
   // update light parameters
-  ACS::DispatchFor<Transform, LightPoint>([&](Transform* pTransform, LightPoint* pLightPoint)
+  ACS::DispatchFor<LightPoint>([&](Actor* pActor, LightPoint* pLightPoint)
   {
     renderer.mUniformBlockPointLights[0] =
     {
@@ -412,12 +432,23 @@ template<typename Renderer> void RendererDestroy(Renderer const& renderer)
 }
 
 /*
-* Renderer debug utilities.
+* Renderer gizmo management.
 */
 
+template<typename Renderer> void RendererLineBatchPushMatrix(Renderer& renderer, r32m4 const& transform)
+{
+  renderer.mTransformGizmo = transform;
+}
+template<typename Renderer> void RendererLineBatchPopMatrix(Renderer& renderer)
+{
+  renderer.mTransformGizmo = glm::identity<r32m4>();
+}
 template<typename Renderer> void RendererLineBatchPushLine(Renderer& renderer, r32v3 const& p0, r32v3 const& p1, r32v4 const& color)
 {
-  VertexGizmo vertices[2]{ { p0, color }, { p1, color } };
+  r32v3 v0{ renderer.mTransformGizmo * r32v4{ p0, 1.f } };
+  r32v3 v1{ renderer.mTransformGizmo * r32v4{ p1, 1.f } };
+
+  VertexGizmo vertices[2]{ { v0, color }, { v1, color } };
   u32 indices[2]{ renderer.mVertexOffsetGizmoLineBatch + 0, renderer.mVertexOffsetGizmoLineBatch + 1 };
 
   MeshLayoutDataSub(renderer.mMeshGizmoLineBatch, 0, vertices, indices, renderer.mVertexOffsetGizmoLineBatch, renderer.mIndexOffsetGizmoLineBatch, 2, 2);
@@ -427,17 +458,17 @@ template<typename Renderer> void RendererLineBatchPushLine(Renderer& renderer, r
 }
 template<typename Renderer> void RendererLineBatchPushBox(Renderer& renderer, r32v3 const& position, r32v3 const& size, r32v4 const& color)
 {
-  r32v3 half{ size / 2.f };
+  r32v3 half{ size };
 
-  r32v3 blf{ -half.x, -half.y, -half.z };
-  r32v3 brf{ half.x, -half.y, -half.z };
-  r32v3 tlf{ -half.x,  half.y, -half.z };
-  r32v3 trf{ half.x,  half.y, -half.z };
+  r32v3 blf{ renderer.mTransformGizmo * r32v4{ -half.x, -half.y, -half.z, 1.f } };
+  r32v3 brf{ renderer.mTransformGizmo * r32v4{ half.x, -half.y, -half.z, 1.f } };
+  r32v3 tlf{ renderer.mTransformGizmo * r32v4{ -half.x,  half.y, -half.z, 1.f } };
+  r32v3 trf{ renderer.mTransformGizmo * r32v4{ half.x,  half.y, -half.z, 1.f } };
 
-  r32v3 blb{ -half.x, -half.y,  half.z };
-  r32v3 brb{ half.x, -half.y,  half.z };
-  r32v3 tlb{ -half.x,  half.y,  half.z };
-  r32v3 trb{ half.x,  half.y,  half.z };
+  r32v3 blb{ renderer.mTransformGizmo * r32v4{ -half.x, -half.y,  half.z, 1.f } };
+  r32v3 brb{ renderer.mTransformGizmo * r32v4{ half.x, -half.y,  half.z, 1.f } };
+  r32v3 tlb{ renderer.mTransformGizmo * r32v4{ -half.x,  half.y,  half.z, 1.f } };
+  r32v3 trb{ renderer.mTransformGizmo * r32v4{ half.x,  half.y,  half.z, 1.f } };
 
   VertexGizmo vertices[8]
   {

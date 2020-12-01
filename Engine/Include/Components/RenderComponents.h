@@ -6,7 +6,6 @@
 
 #include <Components/VertexComponents.h>
 #include <Components/TextureComponents.h>
-#include <Components/TransformComponents.h>
 #include <Components/BufferComponents.h>
 
 /*

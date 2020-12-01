@@ -69,7 +69,7 @@ template<typename MeshLayout> void MeshFrom(MeshLayout& meshLayout, std::string 
 
   Assimp::Importer importer{};
 
-  aiScene const* pScene{ importer.ReadFile(fileName, aiProcess_Triangulate | aiProcess_SortByPType) };
+  aiScene const* pScene{ importer.ReadFile(fileName, aiProcess_Triangulate | aiProcess_SortByPType | aiProcess_MakeLeftHanded | aiProcess_FlipUVs | aiProcess_FlipWindingOrder) };
 
   assert(pScene);
   assert(pScene->mNumMeshes > 0);

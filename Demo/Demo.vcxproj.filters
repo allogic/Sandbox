@@ -29,10 +29,19 @@
     <ClInclude Include="Include\Actors\Player.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Include\Actors\Enemy.h">
+    <ClInclude Include="Include\ModelDatabase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Include\ModelDatabase.h">
+    <ClInclude Include="Include\Actors\PlayerController.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Actors\ScoutWespe.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Actors\Patrol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Actors\FighterLindwurm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
