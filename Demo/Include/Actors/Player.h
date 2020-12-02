@@ -13,17 +13,17 @@
 
 struct Player : Actor
 {
-  Renderer&         mRenderer        { RegistryGetOrCreate<Renderer>("renderer") };
+  Renderer&         mRenderer         { RegistryGetOrCreate<Renderer>("renderer") };
 
-  //FighterLindwurm&  mFighterLindwurm { ACS::CreateChild<FighterLindwurm>(this, 0, "PlayerFighterLindwurm") };
-  PlayerController& mPlayerController{ ACS::CreateChild<PlayerController>(this, 1, "PlayerCameraController") };
+  FighterLindwurm*  mpFighterLindwurm { ACS::CreateChild<FighterLindwurm>(this, "PlayerFighterLindwurm") };
+  PlayerController* mpPlayerController{ ACS::CreateChild<PlayerController>(this, "PlayerCameraController") };
 
-  Player(Object* pObject)
-    : Actor(pObject)
+  Player(std::string const& name, Object* pObject)
+    : Actor(name, pObject)
   {
     mTransform.mRotation = { 0.f, 0.f, 45.f };
 
-    mPlayerController.mTransform.mPosition = { 0.f, 0.f, -10.f };
+    mpPlayerController->mTransform.mPosition = { 0.f, 1.f, -200.f };
   }
 
   void OnGizmo() override
@@ -35,5 +35,9 @@ struct Player : Actor
     RendererLineBatchPushLine(mRenderer, { 0.f, 0.f, 0.f }, { 0.f, 10.f, 0.f }, { 0.f, 1.f, 0.f, 1.f });
     RendererLineBatchPushLine(mRenderer, { 0.f, 0.f, 0.f }, { 0.f, 0.f, 10.f }, { 0.f, 0.f, 1.f, 1.f });
     RendererLineBatchPopMatrix(mRenderer);
+  }
+  void OnImGui() override
+  {
+    ACS::DebugTreeActors();
   }
 };

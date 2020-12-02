@@ -114,6 +114,25 @@ template<typename Context> void ContextCreate(Context& context, u32 width, u32 h
 
   context.mpWindow = glfwCreateWindow((s32)context.mWidth, (s32)context.mHeight, title.data(), nullptr, nullptr);
 
+  assert(context.mpWindow);
+
+  glfwMakeContextCurrent(context.mpWindow);
+  glfwSwapInterval(0);
+
+  gladLoadGL();
+
+  IMGUI_CHECKVERSION();
+
+  ImGui::CreateContext();
+
+  ImGuiIO& io{ ImGui::GetIO() };
+  ImGuiStyle& style{ ImGui::GetStyle() };
+  style.WindowRounding = 0.f;
+  style.WindowBorderSize = 0.f;
+
+  ImGui_ImplGlfw_InitForOpenGL(context.mpWindow, 1);
+  ImGui_ImplOpenGL3_Init("#version 460 core");
+
   glfwSetWindowUserPointer(context.mpWindow, &context);
 
   glfwSetWindowCloseCallback(context.mpWindow, [](GLFWwindow* pWindow)
@@ -143,11 +162,6 @@ template<typename Context> void ContextCreate(Context& context, u32 width, u32 h
 
     pContext->mMouseScroll = { (r32)xOffset, (r32)yOffset };
   });
-
-  glfwMakeContextCurrent(context.mpWindow);
-  glfwSwapInterval(0);
-
-  gladLoadGL();
 }
 static                     void ContextRegisterDebugHandler()
 {
@@ -185,14 +199,14 @@ template<typename Context> void ContextRun(Context& context)
 
     ACS::Dispatch([=](Actor* pActor)
     {
-      pActor->OnUpdate(timeDelta);
+      pActor->OnUpdate(time, timeDelta);
     });
 
     if ((time - timeRenderPrev) >= timeRender)
     {
       ACS::Dispatch([=](Actor* pActor)
       {
-        pActor->OnUpdateFixed(timeDelta);
+        pActor->OnUpdateFixed(time, timeDelta);
       });
 
       RendererRenderBegin(renderer, time, timeDelta);
@@ -204,6 +218,8 @@ template<typename Context> void ContextRun(Context& context)
       timeRenderPrev = time;
     }
 
+    ACS::Update();
+
     timePrev = time;
   }
 
@@ -211,5 +227,7 @@ template<typename Context> void ContextRun(Context& context)
 }
 template<typename Context> void ContextDestroy(Context const& context)
 {
+  ImGui::DestroyContext();
+
   glfwDestroyWindow(context.mpWindow);
 }

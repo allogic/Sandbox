@@ -351,7 +351,7 @@ void main()
   F0 = mix(F0, fragAlbedo, uMetallic);
 
   // Lighting
-  vec3 lighting = fragAlbedo * 0.1f;
+  vec3 lighting = fragAlbedo * 1.f;
   for (uint i = 0; i < 32; i++)
   {
     if (uPointLights[i].enabled == 0) continue;

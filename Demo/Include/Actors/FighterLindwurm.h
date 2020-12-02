@@ -10,15 +10,22 @@
 
 struct FighterLindwurm : Actor
 {
-  Renderer&   mRenderer{ RegistryGetOrCreate<Renderer>("renderer") };
+  Renderer&   mRenderer   { RegistryGetOrCreate<Renderer>("renderer") };
 
-  Renderable& mRenderable{ ACS::Attach<Renderable>(this, &ModelDatabaseGet("FighterLindwurm").mMesh, &ModelDatabaseGet("FighterLindwurm").mTextureAlbedo, &ModelDatabaseGet("FighterLindwurm").mTextureSpecular, nullptr, nullptr, nullptr) };
+  Renderable* mpRenderable{ ACS::Attach<Renderable>(this, &ModelDatabaseGet("FighterLindwurm").mMesh, &ModelDatabaseGet("FighterLindwurm").mTextureAlbedo, &ModelDatabaseGet("FighterLindwurm").mTextureSpecular, nullptr, nullptr, nullptr) };
 
-  FighterLindwurm(Object* pObject) : Actor(pObject) {}
+  FighterLindwurm(std::string const& name, Object* pObject)
+    : Actor(name, pObject) {}
 
   void OnGizmo() override
   {
-    r32m4 worldTransform{ TransformTo(mpParent->mTransform.mPosition, mpParent->mTransform.mRotation, mpParent->mTransform.mScale) };
+    r32m4 worldTransform{ glm::identity<r32m4>() };
+
+    if (mpParent)
+    {
+      worldTransform = TransformTo(mpParent->mTransform.mPosition, mpParent->mTransform.mRotation, mpParent->mTransform.mScale);
+    }
+
     r32m4 localTransform{ TransformTo(mTransform.mPosition, mTransform.mRotation, mTransform.mScale) };
 
     RendererLineBatchPushMatrix(mRenderer, worldTransform * localTransform);

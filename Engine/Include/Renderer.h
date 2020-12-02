@@ -214,6 +214,21 @@ template<typename Renderer> void RendererPassGizmo(Renderer& renderer)
   ShaderLayoutUnbind();
   UniformLayoutUnbind();
 }
+template<typename Renderer> void RendererPassImGui(Renderer& renderer)
+{
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+
+  ImGui::NewFrame();
+  ACS::Dispatch([=](Actor* pActor)
+  {
+    pActor->OnImGui();
+  });
+  ImGui::EndFrame();
+  ImGui::Render();
+
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
 
 /*
 * Renderer management.
@@ -275,8 +290,8 @@ template<typename Renderer> void RendererCreate(Renderer& renderer, u32 width, u
   MeshLayoutData(renderer.mMeshScreenPlane, 0, screenVertices.data(), screenIndices.data());
   MeshLayoutUnbind();
 
-  std::vector<u32> gizmoVertexBufferSizes{ 65535 };
-  std::vector<u32> gizmoIndexBufferSizes{ 65535 * 2 };
+  std::vector<u32> gizmoVertexBufferSizes{ 131070 };
+  std::vector<u32> gizmoIndexBufferSizes{ 131070 * 2 };
   MeshLayoutCreate(renderer.mMeshGizmoLineBatch, 1, gizmoVertexBufferSizes.data(), gizmoIndexBufferSizes.data());
 
   TextureFrom(renderer.mTextureNoise, SANDBOX_ROOT_PATH "Textures\\Noise.png");
@@ -301,7 +316,12 @@ template<typename Renderer> void RendererRenderBegin(Renderer& renderer, r32 tim
       worldTransform = TransformTo(pActor->mpParent->mTransform.mPosition, pActor->mpParent->mTransform.mRotation, pActor->mpParent->mTransform.mScale);
     }
 
-    r32m4 localTransform{ TransformTo(pActor->mTransform.mPosition, pActor->mTransform.mRotation, pActor->mTransform.mScale) };
+    r32m4 localTransform{ TransformTo(pActor->mTransform.mPosition, {}, pActor->mTransform.mScale) };
+
+    r32m4 r0{ glm::identity<r32m4>() };
+    r0 = glm::rotate(r0, pActor->mpParent->mTransform.mRotation.x, { 1.f, 0.f, 0.f });
+    r0 = glm::rotate(r0, pActor->mpParent->mTransform.mRotation.y, { 0.f, 1.f, 0.f });
+    r0 = glm::rotate(r0, pActor->mpParent->mTransform.mRotation.z, { 0.f, 0.f, 1.f });
 
     renderer.mUniformBlockProjection =
     {
@@ -393,8 +413,13 @@ template<typename Renderer> void RendererRender(Renderer& renderer)
   // Gizmo pass
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
   glEnable(GL_DEPTH_TEST);
-  RendererPassGizmo(renderer);
+  //RendererPassGizmo(renderer);
   glDisable(GL_DEPTH_TEST);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  // ImGui pass
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+  RendererPassImGui(renderer);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 template<typename Renderer> void RendererRenderEnd(Renderer& renderer)

@@ -2,7 +2,7 @@
 #include <Api.h>
 
 #include <Actors/Player.h>
-#include <Actors/Patrol.h>
+#include <Actors/EntitySpawner.h>
 
 int main(int argc, char** argv)
 {
@@ -12,16 +12,8 @@ int main(int argc, char** argv)
   ContextRegisterDebugHandler();
 
   ACS::Create<Player>("Player");
+  ACS::Create<EntitySpawner>("EntitySpawner", 1.f / 60);
 
-  for (u32 i{}; i < 32; i++)
-  {
-    Patrol& patrol{ ACS::Create<Patrol>("Patrol_" + std::to_string(i), i) };
-
-    r32v2 randomPosition{ glm::diskRand(100.f) };
-
-    patrol.mTransform.mPosition = { randomPosition.x, 0.f, randomPosition.y };
-  }
-  
   ContextRun(context);
 
   ContextDestroy(context);

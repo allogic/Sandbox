@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{eedead61-2811-41c9-8a1d-72b4aca9211c}</ProjectGuid>
-    <RootNamespace>Engine</RootNamespace>
+    <ProjectGuid>{cbd1ccd5-198a-4efc-94f0-5eb9e32f8387}</ProjectGuid>
+    <RootNamespace>ImGui</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -78,15 +78,13 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir)Include;$(SolutionDir)Include;$(SolutionDir)ImGui\Include;$(IncludePath)</IncludePath>
-    <SourcePath>$(ProjectDir)Source;$(SolutionDir)Source;$(SourcePath)</SourcePath>
-    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)Include;$(SolutionDir)Include;$(IncludePath)</IncludePath>
+    <SourcePath>$(ProjectDir)Source;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(ProjectDir)Include;$(SolutionDir)Include;$(SolutionDir)ImGui\Include;$(IncludePath)</IncludePath>
-    <SourcePath>$(ProjectDir)Source;$(SolutionDir)Source;$(SourcePath)</SourcePath>
-    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)Include;$(SolutionDir)Include;$(IncludePath)</IncludePath>
+    <SourcePath>$(ProjectDir)Source;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -127,7 +125,6 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -145,35 +142,25 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Include\ACS.h" />
-    <ClInclude Include="Include\Components\RenderComponents.h" />
-    <ClInclude Include="Include\Context.h" />
-    <ClInclude Include="Include\Importer.h" />
-    <ClInclude Include="Include\Api.h" />
-    <ClInclude Include="Include\Components\CameraComponents.h" />
-    <ClInclude Include="Include\Core.h" />
-    <ClInclude Include="Include\Events.h" />
-    <ClInclude Include="Include\Components\BufferComponents.h" />
-    <ClInclude Include="Include\FrameBuffers\FrameBufferDeferred.h" />
-    <ClInclude Include="Include\Components\LightComponents.h" />
-    <ClInclude Include="Include\Components\ShaderComponents.h" />
-    <ClInclude Include="Include\Components\TextureComponents.h" />
-    <ClInclude Include="Include\Transform.h" />
-    <ClInclude Include="Include\Uniforms\LambertUniform.h" />
-    <ClInclude Include="Include\Utility.h" />
-    <ClInclude Include="Include\Registry.h" />
-    <ClInclude Include="Include\Renderer.h" />
-    <ClInclude Include="Include\Types.h" />
-    <ClInclude Include="Include\Components\UniformComponents.h" />
-    <ClInclude Include="Include\Components\VertexComponents.h" />
-    <ClInclude Include="Include\Uniforms\CameraUniform.h" />
-    <ClInclude Include="Include\Uniforms\GlobalUniform.h" />
-    <ClInclude Include="Include\Uniforms\LightUniform.h" />
-    <ClInclude Include="Include\Uniforms\ProjectionUniform.h" />
+    <ClCompile Include="Source\imgui.cpp" />
+    <ClCompile Include="Source\imgui_demo.cpp" />
+    <ClCompile Include="Source\imgui_draw.cpp" />
+    <ClCompile Include="Source\imgui_impl_glfw.cpp" />
+    <ClCompile Include="Source\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="Source\imgui_widgets.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Include\imconfig.h" />
+    <ClInclude Include="Include\imgui.h" />
+    <ClInclude Include="Include\imgui_impl_glfw.h" />
+    <ClInclude Include="Include\imgui_impl_opengl3.h" />
+    <ClInclude Include="Include\imgui_internal.h" />
+    <ClInclude Include="Include\imstb_rectpack.h" />
+    <ClInclude Include="Include\imstb_textedit.h" />
+    <ClInclude Include="Include\imstb_truetype.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
