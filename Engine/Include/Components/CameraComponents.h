@@ -11,13 +11,13 @@
 
 struct Camera : Component
 {
-  r32       mAspect        { 1280.f / 720.f };
-  r32       mFovRad        { glm::radians(45.f) };
-  r32v3     mRight         { 1.f, 0.f, 0.f };
-  r32v3     mUp            { 0.f, 1.f, 0.f };
-  r32v3     mFront         { 0.f, 0.f, -1.f };
-  r32       mNear          { 0.1f };
-  r32       mFar           { 100000.f };
+  r32       mAspect{ 1280.f / 720.f };
+  r32       mFovRad{ glm::radians(45.f) };
+  r32v3     mRight { 1.f, 0.f, 0.f };
+  r32v3     mUp    { 0.f, 1.f, 0.f };
+  r32v3     mFront { 0.f, 0.f, -1.f };
+  r32       mNear  { 0.1f };
+  r32       mFar   { 100000.f };
 };
 
 /*

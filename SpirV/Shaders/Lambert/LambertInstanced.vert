@@ -4,9 +4,7 @@ struct Transform
 {
   float position[3];
   float rotation[3];
-  float localRight[3];
-  float localUp[3];
-  float localFront[3];
+  float scale[3];
 };
 
 layout (binding = 0, std430) buffer TransformBuffer
@@ -18,8 +16,7 @@ layout (binding = 0) uniform ProjectionUniform
 {
   mat4 uProjection;
   mat4 uView;
-  mat4 uTransformCamera;
-  mat4 uTransformModel;
+  mat4 uTransform;
 };
 
 layout (location = 0) in vec3 iPosition;
@@ -67,24 +64,19 @@ void main()
   // Transform helper references
   vec3 transformPosition = ToVec3(transforms[objIndex].position);
   vec3 transformRotation = ToVec3(transforms[objIndex].rotation);
-  vec3 transformLocalRight = ToVec3(transforms[objIndex].localRight);
-  vec3 transformLocalUp = ToVec3(transforms[objIndex].localUp);
-  vec3 transformLocalFront = ToVec3(transforms[objIndex].localFront);
+  vec3 transformScale = ToVec3(transforms[objIndex].scale);
 
   // Compute rotation matrix
   mat4 localRotation = mat4(1.f);
-  localRotation = Rotate3D(transformLocalRight, transformRotation.x);
-  localRotation = Rotate3D(transformLocalUp, transformRotation.y);
-  localRotation = Rotate3D(transformLocalFront, transformRotation.z);
 
     // Compute transform matrix
-  mat4 tvp = uProjection * uView * inverse(uTransformCamera) * uTransformModel;
+  mat4 tvp = uProjection * uView * uTransform;
 
   // Compute vertex rotation in local space
   vec3 vertexPosition = vec4(localRotation * vec4(iPosition, 1.f)).xyz;
 
   // Forward fragment shader
-  vertOut.position = vec4(uTransformModel * vec4(vertexPosition + transformPosition, 1.f)).xyz;
+  vertOut.position = vec4(uTransform * vec4(vertexPosition + transformPosition, 1.f)).xyz;
   vertOut.normal = iNormal;
   vertOut.uv = iUv;
   vertOut.color = iColor;

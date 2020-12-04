@@ -3,6 +3,8 @@
 #include <Core.h>
 #include <Types.h>
 #include <Transform.h>
+#include <Registry.h>
+#include <Utility.h>
 
 /*
 * Type deduction utilities.
@@ -21,6 +23,8 @@ struct Identity
 */
 
 struct Actor;
+struct Context;
+struct Renderer;
 
 /*
 * Actor component system.
@@ -39,6 +43,9 @@ struct Object
 };
 struct Actor
 {
+  Context&            mContext  { RegistryGetOrCreate<Context>("context") };
+  Renderer&           mRenderer { RegistryGetOrCreate<Renderer>("renderer") };
+
   Actor*              mpParent  {};
   std::vector<Actor*> mChilds   {};
 
@@ -57,6 +64,21 @@ struct Actor
   virtual void OnUpdateFixed(r32 time, r32 timeDelta) {}
   virtual void OnGizmo() {}
   virtual void OnImGui() {}
+
+  r32m4 LocalToWorld()
+  {
+    r32m4 transform{ glm::identity<r32m4>() };
+
+    Actor* pActor{ mpParent };
+
+    while (pActor)
+    {
+      transform *= TransformTo(pActor->mTransform);
+      pActor = pActor->mpParent;
+    }
+
+    return transform * TransformTo(mTransform);
+  }
 };
 
 static std::map<std::string, Object*> sObjectRegistry  {};
@@ -112,45 +134,6 @@ namespace ACS
         if (ImGui::TreeNodeEx(pObject->mpActor, 0, "%s", pObject->mpActor->mName.c_str()))
         {
           DebugTreeChildsRecursive(pObject->mpActor);
-
-          /*
-          for (const auto& [hash, pComponent] : components)
-          {
-            if (ImGui::TreeNodeEx(pComponent, 0, "%s", pComponent->name))
-            {
-              if (hash == Register<ACS::Components::TTransform>())
-              {
-                auto pTransform = (ACS::Components::TTransform*)pComponent;
-
-                ImGui::InputFloat3("Position", &pTransform->position[0]);
-                ImGui::InputFloat3("Rotation", &pTransform->rotation[0]);
-                ImGui::InputFloat3("Scale", &pTransform->scale[0]);
-                ImGui::InputFloat3("Right", &pTransform->right[0]);
-                ImGui::InputFloat3("Up", &pTransform->up[0]);
-                ImGui::InputFloat3("Forward", &pTransform->forward[0]);
-                ImGui::InputFloat3("Local Right", &pTransform->localRight[0]);
-                ImGui::InputFloat3("Local Up", &pTransform->localUp[0]);
-                ImGui::InputFloat3("Local Forward", &pTransform->localForward[0]);
-              }
-              else if (hash == Register<ACS::Components::TCamera>())
-              {
-                auto pCamera = (ACS::Components::TCamera*)pComponent;
-
-                ImGui::Checkbox("Projection", (b8*)(&pCamera->projection));
-
-              }
-              else if (hash == Register<ACS::Components::TMesh>())
-              {
-                auto pMesh = (ACS::Components::TMesh*)pComponent;
-
-                ImGui::LabelText("Vertex Count", "%d", pMesh->pVertexLayout->vertexCount);
-                ImGui::LabelText("Triangle Count", "%d", pMesh->pVertexLayout->indexCount / 3);
-              }
-
-              ImGui::TreePop();
-            }
-          }
-          */
 
           ImGui::TreePop();
         }
@@ -259,6 +242,13 @@ namespace ACS
     }
   }
   
+  template<typename C>
+  requires std::is_base_of_v<Component, C>
+  C* Find()
+  {
+    return nullptr;
+  }
+
   /*
   * Object dispatching.
   */

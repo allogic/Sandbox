@@ -147,6 +147,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="Shaders\Compute\AsteroidPhysic.comp" />
     <None Include="Shaders\Compute\ShipOctree.comp" />
     <None Include="Shaders\Compute\ShipPath.comp" />
     <None Include="Shaders\Compute\ShipPhysic.comp" />

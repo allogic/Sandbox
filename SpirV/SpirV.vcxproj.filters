@@ -29,6 +29,7 @@
     <None Include="Shaders\Screen\CloudVolumePass.frag" />
     <None Include="Shaders\Lambert\LambertInstanced.vert" />
     <None Include="Shaders\Screen\DeferredCopyPass.frag" />
+    <None Include="Shaders\Compute\AsteroidPhysic.comp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">

@@ -1,8 +1,11 @@
 #define SANDBOX_ENGINE_IMPLEMENTATION
 #include <Api.h>
 
-#include <Actors/Player.h>
-#include <Actors/EntitySpawner.h>
+#include <Actors/DebugActor.h>
+#include <Actors/PlayerActor.h>
+#include <Actors/EntitySpawnerActor.h>
+
+#include <Actors/Ambient/AsteroidFieldActor.h>
 
 int main(int argc, char** argv)
 {
@@ -12,7 +15,9 @@ int main(int argc, char** argv)
   ContextRegisterDebugHandler();
 
   ACS::Create<Player>("Player");
-  ACS::Create<EntitySpawner>("EntitySpawner", 1.f / 60);
+  ACS::Create<Debug>("Debug");
+  ACS::Create<AsteroidField>("AsteroidField", (u32)(1024 * 32));
+  ACS::Create<EntitySpawner>("EntitySpawner", 1.f / 1);
 
   ContextRun(context);
 

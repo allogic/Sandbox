@@ -4,8 +4,7 @@ layout (binding = 0) uniform ProjectionUniform
 {
   mat4 uProjection;
   mat4 uView;
-  mat4 uTransformCamera;
-  mat4 uTransformModel;
+  mat4 uTransform;
 };
 
 layout (location = 0) in vec3 iPosition;
@@ -23,9 +22,9 @@ layout (location = 0) out VertOut
 
 void main()
 {
-  mat4 tvp = uProjection * uView * uTransformModel * uTransformCamera;
+  mat4 tvp = uProjection * uView * uTransform;
 
-  vertOut.position = vec4(uTransformModel * vec4(iPosition, 1.f)).xyz;
+  vertOut.position = vec4(uTransform * vec4(iPosition, 1.f)).xyz;
   vertOut.normal = iNormal;
   vertOut.uv = iUv;
   vertOut.color = iColor;

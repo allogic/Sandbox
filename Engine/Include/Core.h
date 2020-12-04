@@ -20,6 +20,7 @@
 #include <cassert>
 #include <random>
 #include <type_traits>
+#include <filesystem>
 
 #include <glad/glad.h>
 

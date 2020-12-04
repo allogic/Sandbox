@@ -79,16 +79,7 @@ template<typename Renderer> void RendererPassGeometry(Renderer& renderer)
 
   ACS::DispatchFor<Renderable>([&](Actor* pActor, Renderable* pRenderable)
   {
-    r32m4 worldTransform{ glm::identity<r32m4>() };
-
-    if (pActor->mpParent)
-    {
-      worldTransform = TransformTo(pActor->mpParent->mTransform.mPosition, pActor->mpParent->mTransform.mRotation, pActor->mpParent->mTransform.mScale);
-    }
-    
-    r32m4 localTransform{ TransformTo(pActor->mTransform.mPosition, pActor->mTransform.mRotation, pActor->mTransform.mScale) };
-
-    renderer.mUniformBlockProjection.mTransformModel = worldTransform * localTransform;
+    renderer.mUniformBlockProjection.mTransform = pActor->LocalToWorld();
     UniformLayoutDataSet(renderer.mUniformProjection, 1, &renderer.mUniformBlockProjection);
 
     for (u32 i{}; i < pRenderable->mpMeshLambert->mNumSubMeshes; i++)
@@ -115,7 +106,7 @@ template<typename Renderer> void RendererPassGeometryInstanced(Renderer& rendere
 
   ACS::DispatchFor<RenderableInstanced>([&](Actor* pActor, RenderableInstanced* pRenderable)
   {
-    renderer.mUniformBlockProjection.mTransformModel = glm::identity<r32m4>();
+    renderer.mUniformBlockProjection.mTransform = pActor->LocalToWorld();
     UniformLayoutDataSet(renderer.mUniformProjection, 1, &renderer.mUniformBlockProjection);
 
     BufferLayoutMap(*pRenderable->mpBufferTransform, 0);
@@ -200,9 +191,7 @@ template<typename Renderer> void RendererPassGizmo(Renderer& renderer)
 
   UniformLayoutMap(renderer.mUniformProjection, 0);
 
-  r32m4 worldTransform{ TransformTo({ 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f }) };
-
-  renderer.mUniformBlockProjection.mTransformModel = worldTransform;
+  renderer.mUniformBlockProjection.mTransform = TransformTo({ 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f });
   UniformLayoutDataSet(renderer.mUniformProjection, 1, &renderer.mUniformBlockProjection);
 
   ShaderLayoutBind(renderer.mShaderGizmo);
@@ -327,7 +316,6 @@ template<typename Renderer> void RendererRenderBegin(Renderer& renderer, r32 tim
     {
       .mProjection     { glm::perspective(pCamera->mFovRad, pCamera->mAspect, pCamera->mNear, pCamera->mFar) },
       .mView           { localTransform * glm::inverse(worldTransform) },
-      .mTransformCamera{ glm::identity<r32m4>() },
     };
     renderer.mUniformBlockCamera =
     {
@@ -413,7 +401,7 @@ template<typename Renderer> void RendererRender(Renderer& renderer)
   // Gizmo pass
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
   glEnable(GL_DEPTH_TEST);
-  //RendererPassGizmo(renderer);
+  RendererPassGizmo(renderer);
   glDisable(GL_DEPTH_TEST);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

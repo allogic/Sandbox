@@ -10,8 +10,7 @@ layout (binding = 1) uniform ProjectionUniform
 {
   mat4 uProjection;
   mat4 uView;
-  mat4 uTransformCamera;
-  mat4 uTransformModel;
+  mat4 uTransform;
 };
 layout (binding = 2) uniform CameraUniform
 {

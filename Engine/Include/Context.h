@@ -197,6 +197,8 @@ template<typename Context> void ContextRun(Context& context)
     time = (r32)glfwGetTime();
     timeDelta = time - timePrev;
 
+    ACS::Update();
+
     ACS::Dispatch([=](Actor* pActor)
     {
       pActor->OnUpdate(time, timeDelta);
@@ -217,8 +219,6 @@ template<typename Context> void ContextRun(Context& context)
 
       timeRenderPrev = time;
     }
-
-    ACS::Update();
 
     timePrev = time;
   }
