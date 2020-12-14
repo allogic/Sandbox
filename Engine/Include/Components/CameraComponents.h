@@ -11,13 +11,13 @@
 
 struct Camera : Component
 {
-  r32       mAspect{ 1280.f / 720.f };
-  r32       mFovRad{ glm::radians(45.f) };
-  r32v3     mRight { 1.f, 0.f, 0.f };
-  r32v3     mUp    { 0.f, 1.f, 0.f };
-  r32v3     mFront { 0.f, 0.f, -1.f };
-  r32       mNear  { 0.1f };
-  r32       mFar   { 100000.f };
+  r32   mAspect{ 1280.f / 720.f };
+  r32   mFovRad{ glm::radians(45.f) };
+  r32v3 mRight { 1.f, 0.f, 0.f };
+  r32v3 mUp    { 0.f, 1.f, 0.f };
+  r32v3 mFront { 0.f, 0.f, -1.f };
+  r32   mNear  { 0.1f };
+  r32   mFar   { 100000.f };
 };
 
 /*
@@ -56,27 +56,27 @@ struct CameraControllerOrbit : Component
 * Camera controller managmenet.
 */
 
-template<typename Context, typename Camera, typename Controller> void CameraControllerUpdateInputOrbit(Context const& context, Camera& camera, Controller& controller, r32 timeDelta)
+template<typename Window, typename Camera, typename Controller> void CameraControllerUpdateInputOrbit(Window const& window, Camera& camera, Controller& controller, r32 timeDelta)
 {
   r32 distanceScaleLog{ glm::log(controller.mScrollDistance) };
 
-  if (KeyHeld(context, GLFW_KEY_A)) controller.mPositionAccel += glm::normalize(camera.mLocalRight) * controller.mPositionAmount * distanceScaleLog * timeDelta;
-  if (KeyHeld(context, GLFW_KEY_D)) controller.mPositionAccel += -glm::normalize(camera.mLocalRight) * controller.mPositionAmount * distanceScaleLog * timeDelta;
+  if (KeyHeld(window, GLFW_KEY_A)) controller.mPositionAccel += glm::normalize(camera.mLocalRight) * controller.mPositionAmount * distanceScaleLog * timeDelta;
+  if (KeyHeld(window, GLFW_KEY_D)) controller.mPositionAccel += -glm::normalize(camera.mLocalRight) * controller.mPositionAmount * distanceScaleLog * timeDelta;
 
   r32v3 localFrontNoXRot{ glm::cross(camera.mUp, camera.mLocalRight) };
 
-  if (KeyHeld(context, GLFW_KEY_S)) controller.mPositionAccel += glm::normalize(localFrontNoXRot) * controller.mPositionAmount * distanceScaleLog * timeDelta;
-  if (KeyHeld(context, GLFW_KEY_W)) controller.mPositionAccel += -glm::normalize(localFrontNoXRot) * controller.mPositionAmount * distanceScaleLog * timeDelta;
+  if (KeyHeld(window, GLFW_KEY_S)) controller.mPositionAccel += glm::normalize(localFrontNoXRot) * controller.mPositionAmount * distanceScaleLog * timeDelta;
+  if (KeyHeld(window, GLFW_KEY_W)) controller.mPositionAccel += -glm::normalize(localFrontNoXRot) * controller.mPositionAmount * distanceScaleLog * timeDelta;
 
   static r32v2 mousePositionDown{};
 
-  if (MouseDown(context, GLFW_MOUSE_BUTTON_RIGHT))
+  if (MouseDown(window, GLFW_MOUSE_BUTTON_RIGHT))
   {
-    mousePositionDown = MousePosition(context);
+    mousePositionDown = MousePosition(window);
   }
-  if (MouseHeld(context, GLFW_MOUSE_BUTTON_RIGHT))
+  if (MouseHeld(window, GLFW_MOUSE_BUTTON_RIGHT))
   {
-    r32v2 mousePosition{ MousePosition(context) };
+    r32v2 mousePosition{ MousePosition(window) };
     r32v2 mousePositionDelta{ mousePositionDown - mousePosition };
     r32v2 mousePositionDeltaAligned{ mousePositionDelta.x, -mousePositionDelta.y };
 
@@ -84,7 +84,7 @@ template<typename Context, typename Camera, typename Controller> void CameraCont
       controller.mRotationAccel += glm::normalize(mousePositionDeltaAligned) * controller.mRotationAmount * distanceScaleLog * timeDelta;
   }
 
-  controller.mScrollAccel += -MouseScroll(context).y * controller.mScrollAmount * timeDelta;
+  controller.mScrollAccel += -MouseScroll(window).y * controller.mScrollAmount * timeDelta;
 
   controller.mPositionVelocity += -controller.mPositionVelocity * controller.mPositionVelocityDecay * timeDelta;
   controller.mRotationVelocityAngular += -controller.mRotationVelocityAngular * controller.mRotationVelocityDecay * timeDelta;

@@ -153,17 +153,9 @@
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Include\Actors\Ambient\AsteroidFieldActor.h" />
     <ClInclude Include="Include\Actors\DebugActor.h" />
-    <ClInclude Include="Include\Actors\EntitySpawnerActor.h" />
-    <ClInclude Include="Include\Actors\Ships\FighterLindwurmActor.h" />
-    <ClInclude Include="Include\Actors\Fleets\FleetSimpleActor.h" />
+    <ClInclude Include="Include\Actors\LightActor.h" />
     <ClInclude Include="Include\Actors\PlayerActor.h" />
-    <ClInclude Include="Include\Actors\PlayerControllerActor.h" />
-    <ClInclude Include="Include\Actors\Ships\ScoutWespeActor.h" />
-    <ClInclude Include="Include\Components\AI\IdleBehaviourComponent.h" />
-    <ClInclude Include="Include\SystemDatabase.h" />
-    <ClInclude Include="Include\AssetDatabase.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="imgui.ini" />

@@ -2,7 +2,6 @@
 
 #include <Core.h>
 #include <Types.h>
-#include <ACS.h>
 
 /*
 * Vertex layouts.
@@ -43,8 +42,13 @@ struct VertexScreen
 * Mesh components.
 */
 
+struct SubMesh
+{
+  //TODO: refactor into single array
+};
+
 template<typename Vertex, typename Index>
-struct MeshLayout : Component
+struct MeshLayout
 {
   using VertexType = Vertex;
   using IndexType  = Index;
@@ -77,6 +81,7 @@ template<typename MeshLayout> void MeshLayoutCreate(MeshLayout& meshLayout, u32 
   meshLayout.mIndexBufferSizes = { pIndexBufferSizes, pIndexBufferSizes + numSubMeshes };
 
   glGenVertexArrays(numSubMeshes, meshLayout.mVaos.data());
+
   glGenBuffers(numSubMeshes, meshLayout.mVbos.data());
   glGenBuffers(numSubMeshes, meshLayout.mEbos.data());
 
@@ -85,12 +90,12 @@ template<typename MeshLayout> void MeshLayoutCreate(MeshLayout& meshLayout, u32 
     glBindVertexArray(meshLayout.mVaos[i]);
 
     glBindBuffer(GL_ARRAY_BUFFER, meshLayout.mVbos[i]);
+    glBufferStorage(GL_ARRAY_BUFFER, meshLayout.mVertexBufferSizes[i] * sizeof(MeshLayout::VertexType), nullptr, GL_DYNAMIC_STORAGE_BIT | GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 
     switch (MeshLayout::VertexType::sType)
     {
       case eVertexLayoutGizmo:
       {
-        glBufferStorage(GL_ARRAY_BUFFER, meshLayout.mVertexBufferSizes[i] * sizeof(MeshLayout::VertexType), nullptr, GL_DYNAMIC_STORAGE_BIT);
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(MeshLayout::VertexType), (void*)(0));
@@ -99,7 +104,6 @@ template<typename MeshLayout> void MeshLayoutCreate(MeshLayout& meshLayout, u32 
       }
       case eVertexLayoutLambert:
       {
-        glBufferStorage(GL_ARRAY_BUFFER, meshLayout.mVertexBufferSizes[i] * sizeof(MeshLayout::VertexType), nullptr, GL_DYNAMIC_STORAGE_BIT);
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
         glEnableVertexAttribArray(2);
@@ -112,7 +116,6 @@ template<typename MeshLayout> void MeshLayoutCreate(MeshLayout& meshLayout, u32 
       }
       case eVertexLayoutScreen:
       {
-        glBufferStorage(GL_ARRAY_BUFFER, meshLayout.mVertexBufferSizes[i] * sizeof(MeshLayout::VertexType), nullptr, GL_DYNAMIC_STORAGE_BIT);
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(MeshLayout::VertexType), (void*)(0));
@@ -123,7 +126,7 @@ template<typename MeshLayout> void MeshLayoutCreate(MeshLayout& meshLayout, u32 
     }
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshLayout.mEbos[i]);
-    glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, meshLayout.mIndexBufferSizes[i] * sizeof(MeshLayout::IndexType), nullptr, GL_DYNAMIC_STORAGE_BIT);
+    glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, meshLayout.mIndexBufferSizes[i] * sizeof(MeshLayout::IndexType), nullptr, GL_DYNAMIC_STORAGE_BIT | GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
   }
 
   glBindVertexArray(0);
@@ -139,9 +142,11 @@ static                        void MeshLayoutUnbind()
 template<typename MeshLayout> void MeshLayoutData(MeshLayout const& meshLayout, u32 subMeshIndex, void* pVertexData, void* pIndexData)
 {
   glBindBuffer(GL_ARRAY_BUFFER, meshLayout.mVbos[subMeshIndex]);
+  //void* pVertexBuffer{ glMapBufferRange(GL_ARRAY_BUFFER, 0, meshLayout.mVertexBufferSizes[subMeshIndex] * sizeof(MeshLayout::VertexType), GL_MAP_WRITE_BIT | GL_MAP_COHERENT_BIT) };
   glBufferSubData(GL_ARRAY_BUFFER, 0, meshLayout.mVertexBufferSizes[subMeshIndex] * sizeof(MeshLayout::VertexType), pVertexData);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshLayout.mEbos[subMeshIndex]);
+  //void* pIndexBuffer{ glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, meshLayout.mIndexBufferSizes[subMeshIndex] * sizeof(MeshLayout::IndexType), GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT) };
   glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, meshLayout.mIndexBufferSizes[subMeshIndex] * sizeof(MeshLayout::IndexType), pIndexData);
 }
 template<typename MeshLayout> void MeshLayoutDataSub(MeshLayout const& meshLayout, u32 subMeshIndex, void* pVertexData, void* pIndexData, u32 vertexBufferOffset, u32 indexBufferOffset, u32 vertexBufferSizeSub, u32 indexBufferSizeSub)
@@ -164,6 +169,7 @@ template<typename MeshLayout> void MeshLayoutDestroy(MeshLayout const& meshLayou
 {
   glDeleteBuffers(meshLayout.mNumSubMeshes, meshLayout.mVbos.data());
   glDeleteBuffers(meshLayout.mNumSubMeshes, meshLayout.mEbos.data());
+
   glDeleteVertexArrays(meshLayout.mNumSubMeshes, meshLayout.mVaos.data());
 }
 

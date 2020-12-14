@@ -2,10 +2,9 @@
 
 #include <Core.h>
 #include <Types.h>
-#include <ACS.h>
 
 /*
-* Texture components.
+* Texture layouts.
 */
 
 enum TextureLayoutType : u32
@@ -21,7 +20,7 @@ enum TextureFormatType : u32
 enum TextureWrapMode : u32
 {
   eTextureWrapRepeat = GL_REPEAT,
-  eTextureClampEdge = GL_CLAMP_TO_EDGE,
+  eTextureClampEdge  = GL_CLAMP_TO_EDGE,
 };
 enum TextureFilterMode : u32
 {
@@ -30,7 +29,7 @@ enum TextureFilterMode : u32
 };
 
 template<u32 Layout, u32 Format>
-struct TextureLayout : Component
+struct TextureLayout
 {
   constexpr static u32 sLayout{ Layout };
   constexpr static u32 sFormat{ Format };
@@ -49,7 +48,7 @@ using TextureR32RGBA = TextureLayout<eTextureLayoutR32, eTextureFormatRGBA>;
 * Texture management.
 */
 
-template<typename TextureLayout> void TextureLayoutDataSet(TextureLayout const& textureLayout, u32 isDepthTexture, void* pImageData)
+template<typename TextureLayout> void TextureLayoutData(TextureLayout const& textureLayout, u32 isDepthTexture, void* pImageData)
 {
   s32 formatInternal{};
   s32 format{};
@@ -62,8 +61,14 @@ template<typename TextureLayout> void TextureLayoutDataSet(TextureLayout const& 
   }
   switch (TextureLayout::sFormat)
   {
-    case eTextureFormatRGB: formatInternal = GL_RGB8UI; format = GL_RGB; break;
-    case eTextureFormatRGBA: formatInternal = GL_RGBA32F; format = GL_RGBA; break;
+    case eTextureFormatRGB:
+      formatInternal = (TextureLayout::sLayout == eTextureLayoutR32) ? GL_RGB32F : GL_RGB8UI;
+      format = GL_RGB;
+      break;
+    case eTextureFormatRGBA:
+      formatInternal = (TextureLayout::sLayout == eTextureLayoutR32) ? GL_RGBA32F : GL_RGBA8UI;
+      format = GL_RGBA;
+      break;
   }
 
   if (isDepthTexture)
@@ -90,7 +95,7 @@ template<typename TextureLayout> void TextureLayoutCreate(TextureLayout& texture
   glTextureParameteri(textureLayout.mTid, GL_TEXTURE_MIN_FILTER, (s32)filter);
   glTextureParameteri(textureLayout.mTid, GL_TEXTURE_MAG_FILTER, (s32)filter);
 
-  TextureLayoutDataSet(textureLayout, isDepthTexture, nullptr);
+  TextureLayoutData(textureLayout, isDepthTexture, nullptr);
 
   glBindTexture(GL_TEXTURE_2D, 0);
 }

@@ -8,17 +8,10 @@
 * Light components.
 */
 
-enum LightFormType
+struct LightPoint : Component
 {
-  eLightFormDirectional,
-  eLightFormPoint,
+  r32   mRadius              {};
+  r32v4 mColor               {};
+  r32   mAttenuationLinear   {};
+  r32   mAttenuationQuadratic{};
 };
-
-template<u32 Type>
-struct LightLayout : Component
-{
-  constexpr static u32 sType{ Type };
-};
-
-using LightDirctional = LightLayout<eLightFormDirectional>;
-using LightPoint      = LightLayout<eLightFormPoint>;

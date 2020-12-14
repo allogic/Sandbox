@@ -22,50 +22,50 @@ struct Event
 };
 
 /*
-* Context state handling.
+* Window state handling.
 */
 
-template<typename Context> u32   WindowStatus(Context const& context)
+template<typename Window> u32   WindowStatus(Window const& window)
 {
-  return context.mStatus;
+  return window.mStatus;
 }
-template<typename Context> r32v2 WindowSize(Context const& context)
+template<typename Window> r32v2 WindowSize(Window const& window)
 {
-  return { context.mWidth, context.mHeight };
+  return { window.mWidth, window.mHeight };
 }
-template<typename Context> r32   WindowAspect(Context const& context)
+template<typename Window> r32   WindowAspect(Window const& window)
 {
-  return (r32)context.mWidth / context.mHeight;
+  return (r32)window.mWidth / window.mHeight;
 }
-template<typename Context> r32v2 MousePosition(Context const& context)
+template<typename Window> r32v2 MousePosition(Window const& window)
 {
-  return context.mMousePosition;
+  return window.mMousePosition;
 }
-template<typename Context> r32v2 MouseScroll(Context const& context)
+template<typename Window> r32v2 MouseScroll(Window const& window)
 {
-  return context.mMouseScroll;
+  return window.mMouseScroll;
 }
-template<typename Context> u32   MouseDown(Context const& context, u32 key)
+template<typename Window> u32   MouseDown(Window const& window, u32 key)
 {
-  return context.mMouseKeyStates[key].mActionCurr == eEventDown;
+  return window.mMouseKeyStates[key].mActionCurr == eEventDown;
 }
-template<typename Context> u32   MouseHeld(Context const& context, u32 key)
+template<typename Window> u32   MouseHeld(Window const& window, u32 key)
 {
-  return context.mMouseKeyStates[key].mActionCurr == eEventHeld;
+  return window.mMouseKeyStates[key].mActionCurr == eEventHeld;
 }
-template<typename Context> u32   MouseUp(Context const& context, u32 key)
+template<typename Window> u32   MouseUp(Window const& window, u32 key)
 {
-  return context.mMouseKeyStates[key].mActionCurr == eEventUp;
+  return window.mMouseKeyStates[key].mActionCurr == eEventUp;
 }
-template<typename Context> u32   KeyDown(Context const& context, u32 key)
+template<typename Window> u32   KeyDown(Window const& window, u32 key)
 {
-  return context.mKeyboardKeyStates[key].mActionCurr == eEventDown;
+  return window.mKeyboardKeyStates[key].mActionCurr == eEventDown;
 }
-template<typename Context> u32   KeyHeld(Context const& context, u32 key)
+template<typename Window> u32   KeyHeld(Window const& window, u32 key)
 {
-  return context.mKeyboardKeyStates[key].mActionCurr == eEventHeld;
+  return window.mKeyboardKeyStates[key].mActionCurr == eEventHeld;
 }
-template<typename Context> u32   KeyUp(Context const& context, u32 key)
+template<typename Window> u32   KeyUp(Window const& window, u32 key)
 {
-  return context.mKeyboardKeyStates[key].mActionCurr == eEventUp;
+  return window.mKeyboardKeyStates[key].mActionCurr == eEventUp;
 }

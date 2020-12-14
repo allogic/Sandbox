@@ -150,26 +150,28 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Include\ACS.h" />
+    <ClInclude Include="Include\ADB.h" />
     <ClInclude Include="Include\Components\RenderComponents.h" />
-    <ClInclude Include="Include\Context.h" />
+    <ClInclude Include="Include\Window.h" />
+    <ClInclude Include="Include\Gui\ACS.h" />
+    <ClInclude Include="Include\Gui\ADB.h" />
+    <ClInclude Include="Include\Gui\FrameBufferDeferred.h" />
     <ClInclude Include="Include\Importer.h" />
     <ClInclude Include="Include\Api.h" />
     <ClInclude Include="Include\Components\CameraComponents.h" />
     <ClInclude Include="Include\Core.h" />
     <ClInclude Include="Include\Events.h" />
-    <ClInclude Include="Include\Components\BufferComponents.h" />
-    <ClInclude Include="Include\FrameBuffers\FrameBufferDeferred.h" />
+    <ClInclude Include="Include\Layouts\BufferLayouts.h" />
+    <ClInclude Include="Include\FrameBufferDeferred.h" />
     <ClInclude Include="Include\Components\LightComponents.h" />
-    <ClInclude Include="Include\Components\ShaderComponents.h" />
-    <ClInclude Include="Include\Components\TextureComponents.h" />
-    <ClInclude Include="Include\Transform.h" />
-    <ClInclude Include="Include\Uniforms\LambertUniform.h" />
+    <ClInclude Include="Include\Layouts\ShaderLayouts.h" />
+    <ClInclude Include="Include\Layouts\TextureLayouts.h" />
     <ClInclude Include="Include\Utility.h" />
     <ClInclude Include="Include\Registry.h" />
     <ClInclude Include="Include\Renderer.h" />
     <ClInclude Include="Include\Types.h" />
-    <ClInclude Include="Include\Components\UniformComponents.h" />
-    <ClInclude Include="Include\Components\VertexComponents.h" />
+    <ClInclude Include="Include\Layouts\UniformLayouts.h" />
+    <ClInclude Include="Include\Layouts\VertexLayouts.h" />
     <ClInclude Include="Include\Uniforms\CameraUniform.h" />
     <ClInclude Include="Include\Uniforms\GlobalUniform.h" />
     <ClInclude Include="Include\Uniforms\LightUniform.h" />

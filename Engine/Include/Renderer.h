@@ -5,21 +5,20 @@
 #include <Registry.h>
 #include <ACS.h>
 #include <Utility.h>
+#include <FrameBufferDeferred.h>
 
-#include <FrameBuffers/FrameBufferDeferred.h>
+#include <Layouts/VertexLayouts.h>
+#include <Layouts/ShaderLayouts.h>
+#include <Layouts/TextureLayouts.h>
+#include <Layouts/BufferLayouts.h>
+#include <Layouts/UniformLayouts.h>
 
-#include <Components/VertexComponents.h>
-#include <Components/UniformComponents.h>
-#include <Components/BufferComponents.h>
-#include <Components/TextureComponents.h>
-#include <Components/ShaderComponents.h>
 #include <Components/CameraComponents.h>
 #include <Components/LightComponents.h>
 #include <Components/RenderComponents.h>
 
 #include <Uniforms/GlobalUniform.h>
 #include <Uniforms/ProjectionUniform.h>
-#include <Uniforms/LambertUniform.h>
 #include <Uniforms/CameraUniform.h>
 #include <Uniforms/LightUniform.h>
 
@@ -35,14 +34,12 @@ struct Renderer
   UniformBlockGlobal                     mUniformBlockGlobal         {};
   UniformBlockProjection                 mUniformBlockProjection     {};
   UniformBlockCamera                     mUniformBlockCamera         {};
-  UniformBlockLambert                    mUniformBlockLambert        {};
 
   std::array<UniformBlockPointLight, 32> mUniformBlockPointLights    {};
 
   UniformLayout<UniformBlockGlobal>      mUniformGlobal              {};
   UniformLayout<UniformBlockProjection>  mUniformProjection          {};
   UniformLayout<UniformBlockCamera>      mUniformCamera              {};
-  UniformLayout<UniformBlockLambert>     mUniformLambert             {};
 
   UniformLayout<UniformBlockPointLight>  mUniformPointLights         {};
 
@@ -77,21 +74,27 @@ template<typename Renderer> void RendererPassGeometry(Renderer& renderer)
 
   ShaderLayoutBind(renderer.mShaderLambert);
 
-  ACS::DispatchFor<Renderable>([&](Actor* pActor, Renderable* pRenderable)
+  ACS::DispatchFor<Transform, Renderable>([&](Transform* pTransform, Renderable* pRenderable)
   {
-    renderer.mUniformBlockProjection.mTransform = pActor->LocalToWorld();
+    renderer.mUniformBlockProjection.mTransform = pTransform->LocalToWorld();
     UniformLayoutDataSet(renderer.mUniformProjection, 1, &renderer.mUniformBlockProjection);
 
-    for (u32 i{}; i < pRenderable->mpMeshLambert->mNumSubMeshes; i++)
+    if (pRenderable->mpMeshLambert->mStatus == eAsyncStateReady)
     {
-      if (pRenderable->mpTextureAlbedo) TextureLayoutMapSampler(*pRenderable->mpTextureAlbedo, 0);
-      if (pRenderable->mpTextureNormal) TextureLayoutMapSampler(*pRenderable->mpTextureNormal, 1);
-      if (pRenderable->mpTextureSpecular) TextureLayoutMapSampler(*pRenderable->mpTextureSpecular, 2);
-      if (pRenderable->mpTextureMetallic) TextureLayoutMapSampler(*pRenderable->mpTextureMetallic, 3);
-      if (pRenderable->mpTextureRoughness) TextureLayoutMapSampler(*pRenderable->mpTextureRoughness, 4);
+      for (u32 i{}; i < pRenderable->mpMeshLambert->mInstance.mNumSubMeshes; i++)
+      {
+        if (pRenderable->mpTextureAlbedo->mStatus == eAsyncStateReady) TextureLayoutMapSampler(pRenderable->mpTextureAlbedo->mInstance, 0);
+        if (pRenderable->mpTextureNormal->mStatus == eAsyncStateReady) TextureLayoutMapSampler(pRenderable->mpTextureNormal->mInstance, 1);
+        if (pRenderable->mpTextureSpecular->mStatus == eAsyncStateReady) TextureLayoutMapSampler(pRenderable->mpTextureSpecular->mInstance, 2);
+        if (pRenderable->mpTextureHeight->mStatus == eAsyncStateReady) TextureLayoutMapSampler(pRenderable->mpTextureHeight->mInstance, 3);
+        if (pRenderable->mpTextureMetallic->mStatus == eAsyncStateReady) TextureLayoutMapSampler(pRenderable->mpTextureMetallic->mInstance, 4);
+        if (pRenderable->mpTextureRoughness->mStatus == eAsyncStateReady) TextureLayoutMapSampler(pRenderable->mpTextureRoughness->mInstance, 5);
 
-      MeshLayoutBind(*pRenderable->mpMeshLambert, i);
-      MeshLayoutRenderPartial(*pRenderable->mpMeshLambert, i, eRenderModeTriangle);
+        MeshLayoutBind(pRenderable->mpMeshLambert->mInstance, i);
+        MeshLayoutRenderPartial(pRenderable->mpMeshLambert->mInstance, i, eRenderModeTriangle);
+
+        TextureLayoutUnbind();
+      }
     }
   });
 
@@ -104,25 +107,31 @@ template<typename Renderer> void RendererPassGeometryInstanced(Renderer& rendere
 {
   UniformLayoutMap(renderer.mUniformProjection, 0);
 
-  ACS::DispatchFor<RenderableInstanced>([&](Actor* pActor, RenderableInstanced* pRenderable)
+  ACS::DispatchFor<Transform, RenderableInstanced>([&](Transform* pTransform, RenderableInstanced* pRenderable)
   {
-    renderer.mUniformBlockProjection.mTransform = pActor->LocalToWorld();
+    renderer.mUniformBlockProjection.mTransform = pTransform->LocalToWorld();
     UniformLayoutDataSet(renderer.mUniformProjection, 1, &renderer.mUniformBlockProjection);
 
     BufferLayoutMap(*pRenderable->mpBufferTransform, 0);
 
     ShaderLayoutBind(renderer.mShaderLambertInstanced);
 
-    for (u32 i{}; i < pRenderable->mpMeshLambert->mNumSubMeshes; i++)
+    if (pRenderable->mpMeshLambert->mStatus == eAsyncStateReady)
     {
-      if (pRenderable->mpTextureAlbedo) TextureLayoutMapSampler(*pRenderable->mpTextureAlbedo, 0);
-      if (pRenderable->mpTextureNormal) TextureLayoutMapSampler(*pRenderable->mpTextureNormal, 1);
-      if (pRenderable->mpTextureSpecular) TextureLayoutMapSampler(*pRenderable->mpTextureSpecular, 2);
-      if (pRenderable->mpTextureMetallic) TextureLayoutMapSampler(*pRenderable->mpTextureMetallic, 3);
-      if (pRenderable->mpTextureRoughness) TextureLayoutMapSampler(*pRenderable->mpTextureRoughness, 4);
+      for (u32 i{}; i < pRenderable->mpMeshLambert->mInstance.mNumSubMeshes; i++)
+      {
+        if (pRenderable->mpTextureAlbedo->mStatus == eAsyncStateReady) TextureLayoutMapSampler(pRenderable->mpTextureAlbedo->mInstance, 0);
+        if (pRenderable->mpTextureNormal->mStatus == eAsyncStateReady) TextureLayoutMapSampler(pRenderable->mpTextureNormal->mInstance, 1);
+        if (pRenderable->mpTextureSpecular->mStatus == eAsyncStateReady) TextureLayoutMapSampler(pRenderable->mpTextureSpecular->mInstance, 2);
+        if (pRenderable->mpTextureHeight->mStatus == eAsyncStateReady) TextureLayoutMapSampler(pRenderable->mpTextureHeight->mInstance, 3);
+        if (pRenderable->mpTextureMetallic->mStatus == eAsyncStateReady) TextureLayoutMapSampler(pRenderable->mpTextureMetallic->mInstance, 4);
+        if (pRenderable->mpTextureRoughness->mStatus == eAsyncStateReady) TextureLayoutMapSampler(pRenderable->mpTextureRoughness->mInstance, 5);
 
-      MeshLayoutBind(*pRenderable->mpMeshLambert, i);
-      MeshLayoutRenderInstancedPartial(*pRenderable->mpMeshLambert, i, eRenderModeTriangle, pRenderable->mpBufferTransform->mBufferSize);
+        MeshLayoutBind(pRenderable->mpMeshLambert->mInstance, i);
+        MeshLayoutRenderInstancedPartial(pRenderable->mpMeshLambert->mInstance, i, eRenderModeTriangle, pRenderable->mpBufferTransform->mBufferSize);
+
+        TextureLayoutUnbind();
+      }
     }
   });
 
@@ -138,15 +147,14 @@ template<typename Renderer> void RendererPassLight(Renderer& renderer)
   TextureLayoutMapSampler(renderer.mFrameBufferDeferred.mTextureAlbedo, 1);
   TextureLayoutMapSampler(renderer.mFrameBufferDeferred.mTextureNormal, 2);
   TextureLayoutMapSampler(renderer.mFrameBufferDeferred.mTextureSpecular, 3);
-  TextureLayoutMapSampler(renderer.mFrameBufferDeferred.mTextureMetallic, 4);
-  TextureLayoutMapSampler(renderer.mFrameBufferDeferred.mTextureRoughness, 5);
-  TextureLayoutMapSampler(renderer.mTextureNoise, 6);
+  TextureLayoutMapSampler(renderer.mFrameBufferDeferred.mTextureHeight, 4);
+  TextureLayoutMapSampler(renderer.mFrameBufferDeferred.mTextureMetallic, 5);
+  TextureLayoutMapSampler(renderer.mFrameBufferDeferred.mTextureRoughness, 6);
 
   UniformLayoutMap(renderer.mUniformGlobal, 0);
   UniformLayoutMap(renderer.mUniformProjection, 1);
   UniformLayoutMap(renderer.mUniformCamera, 2);
   UniformLayoutMap(renderer.mUniformPointLights, 3);
-  UniformLayoutMap(renderer.mUniformLambert, 4);
 
   ShaderLayoutBind(renderer.mShaderDeferredLight);
 
@@ -179,12 +187,7 @@ template<typename Renderer> void RendererPassGizmo(Renderer& renderer)
 {
   MeshLayoutBind(renderer.mMeshGizmoLineBatch, 0);
 
-  RendererLineBatchPopMatrix(renderer);
-  RendererLineBatchPushLine(renderer, { 0.f, 0.f, 0.f }, { 10.f, 0.f, 0.f }, { 1.f, 0.f, 0.f, 1.f });
-  RendererLineBatchPushLine(renderer, { 0.f, 0.f, 0.f }, { 0.f, 10.f, 0.f }, { 0.f, 1.f, 0.f, 1.f });
-  RendererLineBatchPushLine(renderer, { 0.f, 0.f, 0.f }, { 0.f, 0.f, 10.f }, { 0.f, 0.f, 1.f, 1.f });
-
-  ACS::Dispatch([=](Actor* pActor)
+  ACS::Dispatch([](Actor* pActor)
   {
     pActor->OnGizmo();
   });
@@ -231,7 +234,6 @@ template<typename Renderer> void RendererCreate(Renderer& renderer, u32 width, u
   UniformLayoutCreate(renderer.mUniformGlobal);
   UniformLayoutCreate(renderer.mUniformProjection);
   UniformLayoutCreate(renderer.mUniformCamera);
-  UniformLayoutCreate(renderer.mUniformLambert);
 
   UniformLayoutCreate(renderer.mUniformPointLights, (u32)renderer.mUniformBlockPointLights.size());
 
@@ -296,51 +298,40 @@ template<typename Renderer> void RendererRenderBegin(Renderer& renderer, r32 tim
   };
 
   // update camera parameters
-  ACS::DispatchFor<Camera>([&](Actor* pActor, Camera* pCamera)
+  ACS::DispatchFor<Transform, Camera>([&](Transform* pTransform, Camera* pCamera)
   {
-    r32m4 worldTransform{ glm::identity<r32m4>() };
-
-    if (pActor->mpParent)
-    {
-      worldTransform = TransformTo(pActor->mpParent->mTransform.mPosition, pActor->mpParent->mTransform.mRotation, pActor->mpParent->mTransform.mScale);
-    }
-
-    r32m4 localTransform{ TransformTo(pActor->mTransform.mPosition, {}, pActor->mTransform.mScale) };
-
-    r32m4 r0{ glm::identity<r32m4>() };
-    r0 = glm::rotate(r0, pActor->mpParent->mTransform.mRotation.x, { 1.f, 0.f, 0.f });
-    r0 = glm::rotate(r0, pActor->mpParent->mTransform.mRotation.y, { 0.f, 1.f, 0.f });
-    r0 = glm::rotate(r0, pActor->mpParent->mTransform.mRotation.z, { 0.f, 0.f, 1.f });
+    r32m4 worldTransform{ TransformTo(pTransform->mPosition, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f }) };
+    r32m4 localTransform{ TransformTo({ 0.f, 0.f, 0.f }, pTransform->mRotation, { 1.f, 1.f, 1.f }) };
 
     renderer.mUniformBlockProjection =
     {
-      .mProjection     { glm::perspective(pCamera->mFovRad, pCamera->mAspect, pCamera->mNear, pCamera->mFar) },
-      .mView           { localTransform * glm::inverse(worldTransform) },
+      .mProjection{ glm::perspective(pCamera->mFovRad, pCamera->mAspect, pCamera->mNear, pCamera->mFar) },
+      .mView      { localTransform * glm::inverse(worldTransform) },
     };
     renderer.mUniformBlockCamera =
     {
-      .mPosition  { 0.f, 0.f, 0.f },
-      .mRotation  { 0.f, 0.f, 0.f },
-      .mRight     { 1.f, 0.f, 0.f },
-      .mUp        { 0.f, 1.f, 0.f },
-      .mFront     { 0.f, 0.f, 1.f },
-      .mLocalRight{ 1.f, 0.f, 0.f },
-      .mLocalUp   { 0.f, 1.f, 0.f },
-      .mLocalFront{ 0.f, 0.f, 1.f },
+      .mPosition  {
+        r32v3{ localTransform * glm::inverse(worldTransform) * r32v4{ pTransform->mPosition, 1.f } }
+      },
     };
   });
 
   // update light parameters
-  ACS::DispatchFor<LightPoint>([&](Actor* pActor, LightPoint* pLightPoint)
+  for (u32 i{}; i < renderer.mUniformBlockPointLights.size(); i++)
   {
-    renderer.mUniformBlockPointLights[0] =
+    renderer.mUniformBlockPointLights[i].mEnabled = 0;
+  }
+  u32 lightIndex{};
+  ACS::DispatchFor<Transform, LightPoint>([&](Transform* pTransform, LightPoint* pLightPoint)
+  {
+    renderer.mUniformBlockPointLights[lightIndex++] =
     {
-      .mPosition            { 0.f, 0.f, 0.f },
-      .mRadius              { 600.f },
-      .mColor               { 1.f, 1.f, 1.f, 1.f },
+      .mPosition            { pTransform->mPosition },
+      .mRadius              { pLightPoint->mRadius },
+      .mColor               { pLightPoint->mColor },
       .mEnabled             { 1 },
-      .mAttenuationLinear   { 0.f },
-      .mAttenuationQuadratic{ 0.001f },
+      .mAttenuationLinear   { pLightPoint->mAttenuationLinear },
+      .mAttenuationQuadratic{ pLightPoint->mAttenuationQuadratic },
     };
   });
 
@@ -389,7 +380,6 @@ template<typename Renderer> void RendererRender(Renderer& renderer)
 
   // Copy geometry depth into default framebuffer
   glBindFramebuffer(GL_READ_FRAMEBUFFER, renderer.mFrameBufferDeferred.mFbo);
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
   glBlitFramebuffer(0, 0, 1280, 720, 0, 0, 1280, 720, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -427,7 +417,6 @@ template<typename Renderer> void RendererDestroy(Renderer const& renderer)
   UniformLayoutDestroy(renderer.mUniformProjection);
   UniformLayoutDestroy(renderer.mUniformCamera);
   UniformLayoutDestroy(renderer.mUniformPointLights);
-  UniformLayoutDestroy(renderer.mUniformLambert);
 
   ShaderLayoutDestroy(renderer.mShaderLambert);
   ShaderLayoutDestroy(renderer.mShaderLambertInstanced);
@@ -471,17 +460,15 @@ template<typename Renderer> void RendererLineBatchPushLine(Renderer& renderer, r
 }
 template<typename Renderer> void RendererLineBatchPushBox(Renderer& renderer, r32v3 const& position, r32v3 const& size, r32v4 const& color)
 {
-  r32v3 half{ size };
+  r32v3 blf{ renderer.mTransformGizmo * r32v4{ -size.x, -size.y, -size.z, 1.f } };
+  r32v3 brf{ renderer.mTransformGizmo * r32v4{ size.x, -size.y, -size.z, 1.f } };
+  r32v3 tlf{ renderer.mTransformGizmo * r32v4{ -size.x,  size.y, -size.z, 1.f } };
+  r32v3 trf{ renderer.mTransformGizmo * r32v4{ size.x,  size.y, -size.z, 1.f } };
 
-  r32v3 blf{ renderer.mTransformGizmo * r32v4{ -half.x, -half.y, -half.z, 1.f } };
-  r32v3 brf{ renderer.mTransformGizmo * r32v4{ half.x, -half.y, -half.z, 1.f } };
-  r32v3 tlf{ renderer.mTransformGizmo * r32v4{ -half.x,  half.y, -half.z, 1.f } };
-  r32v3 trf{ renderer.mTransformGizmo * r32v4{ half.x,  half.y, -half.z, 1.f } };
-
-  r32v3 blb{ renderer.mTransformGizmo * r32v4{ -half.x, -half.y,  half.z, 1.f } };
-  r32v3 brb{ renderer.mTransformGizmo * r32v4{ half.x, -half.y,  half.z, 1.f } };
-  r32v3 tlb{ renderer.mTransformGizmo * r32v4{ -half.x,  half.y,  half.z, 1.f } };
-  r32v3 trb{ renderer.mTransformGizmo * r32v4{ half.x,  half.y,  half.z, 1.f } };
+  r32v3 blb{ renderer.mTransformGizmo * r32v4{ -size.x, -size.y,  size.z, 1.f } };
+  r32v3 brb{ renderer.mTransformGizmo * r32v4{ size.x, -size.y,  size.z, 1.f } };
+  r32v3 tlb{ renderer.mTransformGizmo * r32v4{ -size.x,  size.y,  size.z, 1.f } };
+  r32v3 trb{ renderer.mTransformGizmo * r32v4{ size.x,  size.y,  size.z, 1.f } };
 
   VertexGizmo vertices[8]
   {

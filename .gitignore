@@ -349,8 +349,11 @@ MigrationBackup/
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 
-# Dont ignore wavefront files
-!Models/*/*.obj
+# Ignore textures
+Textures/*
+
+# Model files
+Models/*
 
 # Dont ignore some binary files
-!Binary/*.exe
+!Binary/*

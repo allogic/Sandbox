@@ -23,37 +23,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Include\SystemDatabase.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\Actors\DebugActor.h">
+    <ClInclude Include="Include\Actors\LightActor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Include\Actors\PlayerActor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Include\Actors\PlayerControllerActor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\Actors\EntitySpawnerActor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\AssetDatabase.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\Actors\Ships\ScoutWespeActor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\Actors\Ships\FighterLindwurmActor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\Actors\Fleets\FleetSimpleActor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\Actors\Ambient\AsteroidFieldActor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\Components\AI\IdleBehaviourComponent.h">
+    <ClInclude Include="Include\Actors\DebugActor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

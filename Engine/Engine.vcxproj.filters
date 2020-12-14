@@ -51,34 +51,10 @@
     <ClInclude Include="Include\Utility.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Include\Context.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\Uniforms\LambertUniform.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Include\ACS.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Include\Components\BufferComponents.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Include\Components\LightComponents.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\Components\ShaderComponents.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\Components\TextureComponents.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\Components\UniformComponents.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\Components\VertexComponents.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\FrameBuffers\FrameBufferDeferred.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Include\Components\CameraComponents.h">
@@ -87,7 +63,37 @@
     <ClInclude Include="Include\Components\RenderComponents.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Include\Transform.h">
+    <ClInclude Include="Include\Gui\ACS.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Gui\FrameBufferDeferred.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\FrameBufferDeferred.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Layouts\ShaderLayouts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Layouts\TextureLayouts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Layouts\VertexLayouts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Layouts\BufferLayouts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Layouts\UniformLayouts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\ADB.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Gui\ADB.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

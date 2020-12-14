@@ -3,25 +3,21 @@
 
 #include <Actors/DebugActor.h>
 #include <Actors/PlayerActor.h>
-#include <Actors/EntitySpawnerActor.h>
-
-#include <Actors/Ambient/AsteroidFieldActor.h>
 
 int main(int argc, char** argv)
 {
-  Context& context{ RegistryGetOrCreate<Context>("context") };
+  Window& window{ RegistryGetOrCreate<Window>("window") };
 
-  ContextCreate(context, 1280, 720, "Sandbox");
-  ContextRegisterDebugHandler();
+  WindowCreate(window, 1280, 720, "Sandbox");
+  WindowRegisterDebugHandler();
 
-  ACS::Create<Player>("Player");
-  ACS::Create<Debug>("Debug");
-  ACS::Create<AsteroidField>("AsteroidField", (u32)(1024 * 32));
-  ACS::Create<EntitySpawner>("EntitySpawner", 1.f / 1);
+  Player* pPlayer{ ACS::Create<Player>("Player") };
+  pPlayer->mpTransform->mPosition = { 0.f, 5.f, 10.f };
+  Debug* pDebug{ ACS::Create<Debug>("Debug") };
 
-  ContextRun(context);
+  WindowRun(window);
 
-  ContextDestroy(context);
+  WindowDestroy(window);
 
   return 0;
 }

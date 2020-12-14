@@ -2,14 +2,13 @@
 
 #include <Core.h>
 #include <Types.h>
-#include <ACS.h>
 
 /*
-* Uniform components.
+* Uniform layouts.
 */
 
 template<typename Buffer>
-struct UniformLayout : Component
+struct UniformLayout
 {
   using BufferType = Buffer;
 

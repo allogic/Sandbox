@@ -3,7 +3,7 @@
 #include <Core.h>
 #include <Types.h>
 
-#include <Components/TextureComponents.h>
+#include <Layouts/TextureLayouts.h>
 
 /*
 * FrameBuffer layouts.
@@ -18,6 +18,7 @@ struct FrameBufferDeferred
   TextureR32RGBA mTextureAlbedo   {};
   TextureR32RGBA mTextureNormal   {};
   TextureR32RGBA mTextureSpecular {};
+  TextureR32RGBA mTextureHeight   {};
   TextureR32RGBA mTextureMetallic {};
   TextureR32RGBA mTextureRoughness{};
   TextureR32RGBA mTextureDepth    {};
@@ -38,6 +39,7 @@ template<typename FrameBuffer> void FrameBufferCreate(FrameBuffer& frameBuffer, 
   TextureLayoutCreate(frameBuffer.mTextureAlbedo, frameBuffer.mWidth, frameBuffer.mHeight, 0, eTextureClampEdge, eTextureFilterNearest);
   TextureLayoutCreate(frameBuffer.mTextureNormal, frameBuffer.mWidth, frameBuffer.mHeight, 0, eTextureClampEdge, eTextureFilterNearest);
   TextureLayoutCreate(frameBuffer.mTextureSpecular, frameBuffer.mWidth, frameBuffer.mHeight, 0, eTextureClampEdge, eTextureFilterNearest);
+  TextureLayoutCreate(frameBuffer.mTextureHeight, frameBuffer.mWidth, frameBuffer.mHeight, 0, eTextureClampEdge, eTextureFilterNearest);
   TextureLayoutCreate(frameBuffer.mTextureMetallic, frameBuffer.mWidth, frameBuffer.mHeight, 0, eTextureClampEdge, eTextureFilterNearest);
   TextureLayoutCreate(frameBuffer.mTextureRoughness, frameBuffer.mWidth, frameBuffer.mHeight, 0, eTextureClampEdge, eTextureFilterNearest);
   TextureLayoutCreate(frameBuffer.mTextureDepth, frameBuffer.mWidth, frameBuffer.mHeight, 1, eTextureClampEdge, eTextureFilterNearest);
@@ -48,8 +50,9 @@ template<typename FrameBuffer> void FrameBufferCreate(FrameBuffer& frameBuffer, 
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, frameBuffer.mTextureAlbedo.mTid, 0);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, frameBuffer.mTextureNormal.mTid, 0);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, frameBuffer.mTextureSpecular.mTid, 0);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, frameBuffer.mTextureMetallic.mTid, 0);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, frameBuffer.mTextureRoughness.mTid, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, frameBuffer.mTextureHeight.mTid, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT5, GL_TEXTURE_2D, frameBuffer.mTextureMetallic.mTid, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT6, GL_TEXTURE_2D, frameBuffer.mTextureRoughness.mTid, 0);
 
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, frameBuffer.mTextureDepth.mTid, 0);
 
@@ -61,9 +64,10 @@ template<typename FrameBuffer> void FrameBufferCreate(FrameBuffer& frameBuffer, 
     GL_COLOR_ATTACHMENT3,
     GL_COLOR_ATTACHMENT4,
     GL_COLOR_ATTACHMENT5,
+    GL_COLOR_ATTACHMENT6,
   };
 
-  glDrawBuffers(6, buffers);
+  glDrawBuffers(7, buffers);
 
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
@@ -79,6 +83,7 @@ template<typename FrameBuffer> void FrameBufferDestroy(FrameBuffer const& frameB
   TextureLayoutDestroy(frameBuffer.mTextureAlbedo);
   TextureLayoutDestroy(frameBuffer.mTextureNormal);
   TextureLayoutDestroy(frameBuffer.mTextureSpecular);
+  TextureLayoutDestroy(frameBuffer.mTextureHeight);
   TextureLayoutDestroy(frameBuffer.mTextureMetallic);
   TextureLayoutDestroy(frameBuffer.mTextureRoughness);
   TextureLayoutDestroy(frameBuffer.mTextureDepth);

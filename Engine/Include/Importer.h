@@ -3,8 +3,8 @@
 #include <Core.h>
 #include <Types.h>
 
-#include <Components/TextureComponents.h>
-#include <Components/VertexComponents.h>
+#include <Layouts/VertexLayouts.h>
+#include <Layouts/TextureLayouts.h>
 
 /*
 * Texture loading utilities.
@@ -47,11 +47,11 @@ template<typename TextureLayout> void TextureFrom(TextureLayout& textureLayout, 
     for (u32 i{}; i < imageData.size(); i++)
       imageData[i] = pBlob[i] / 255.f;
 
-    TextureLayoutDataSet(textureLayout, 0, imageData.data());
+    TextureLayoutData(textureLayout, 0, imageData.data());
   }
   else
   {
-    TextureLayoutDataSet(textureLayout, 0, pBlob);
+    TextureLayoutData(textureLayout, 0, pBlob);
   }
 
   stbi_image_free(pBlob);
@@ -92,7 +92,7 @@ template<typename MeshLayout> void MeshFrom(MeshLayout& meshLayout, std::string 
   for (u32 i{}; i < numMeshes; i++)
   {
     aiMesh const* pMesh{ pScene->mMeshes[i] };
-    
+
     if (!(pMesh->mPrimitiveTypes & aiPrimitiveType_TRIANGLE))
       continue;
 
@@ -131,7 +131,7 @@ template<typename MeshLayout> void MeshFrom(MeshLayout& meshLayout, std::string 
       for (u32 j{}; j < textureCount; j++)
       {
         pMaterial->GetTexture((aiTextureType)i, j, &texturePath);
-        std::printf("%s\n", texturePath.C_Str());
+        //std::printf("%s\n", texturePath.C_Str());
       }
     }
 
